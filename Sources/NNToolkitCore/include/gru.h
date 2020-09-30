@@ -18,6 +18,9 @@
 extern "C" {
 #endif
 
+
+
+
 typedef struct {
     int inputFeatureChannels;
 
@@ -30,6 +33,8 @@ typedef struct {
      */
     bool flipOutputGates;
 
+    bool v2;
+
     int batchSize;
 
     ActivationFunction* reccurrentActivation;
@@ -37,7 +42,7 @@ typedef struct {
     ActivationFunction* activation;
 } GRUConfig;
 
-GRUConfig GRUConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool flipOutputGates,int batchSize, ActivationFunction* reccurrentActivation, ActivationFunction* activation);
+GRUConfig GRUConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool flipOutputGates, bool v2, int batchSize, ActivationFunction* reccurrentActivation, ActivationFunction* activation);
 
 
 typedef struct {

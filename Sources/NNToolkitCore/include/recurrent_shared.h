@@ -9,14 +9,16 @@
 #ifndef recurrent_shared_h
 #define recurrent_shared_h
 
+
 #include <stdio.h>
 #include "activation.h"
+#include <stdbool.h>
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-void ComputeGate(int in, int out, ActivationFunction* activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, float* gate);
+void ComputeGate(int in, int out, ActivationFunction* activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, bool useHiddenBias, float* gate);
 
 #if defined __cplusplus
 }

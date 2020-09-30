@@ -12,10 +12,11 @@
 #include "stdlib.h"
 #include "string.h"
 
-GRUConfig GRUConfigCreate(int input, int output, bool flipOutputGates, int batchSize, ActivationFunction* reccurrent_activation, ActivationFunction* activation){
+GRUConfig GRUConfigCreate(int input, int output, bool flipOutputGates, bool v2, int batchSize, ActivationFunction* reccurrent_activation, ActivationFunction* activation){
     GRUConfig config;
     config.inputFeatureChannels = input;
     config.batchSize = batchSize;
+    config.v2 = v2;
     config.outputFeatureChannels = output;
     config.flipOutputGates = flipOutputGates;
     config.reccurrentActivation = reccurrent_activation;
@@ -64,10 +65,10 @@ void GRUCellCompute(GRUFilter* filter, const float *x, const float *h_pr, float*
     int in = filter->config.inputFeatureChannels;
     // z = sigmoid(x * Wz + h_pr * Uz + bz)
     float* z = buffer;
-    ComputeGate(in, out, filter->config.reccurrentActivation,  x, h_pr, filter->weights->Wz, filter->weights->Uz, filter->weights->b_iz, filter->weights->b_hz, z);
+    ComputeGate(in, out, filter->config.reccurrentActivation,  x, h_pr, filter->weights->Wz, filter->weights->Uz, filter->weights->b_iz, filter->weights->b_hz, filter->config.v2,  z);
     // r = sigmoid(x * Wr + h_pr * Ur + br)
     float* r = z + out;
-    ComputeGate(in, out, filter->config.reccurrentActivation, x, h_pr, filter->weights->Wr, filter->weights->Ur, filter->weights->b_ir, filter->weights->b_hr, r);
+    ComputeGate(in, out, filter->config.reccurrentActivation, x, h_pr, filter->weights->Wr, filter->weights->Ur, filter->weights->b_ir, filter->weights->b_hr, filter->config.v2, r);
     //
     // h_tilda = tanh(x * Wh + b_ih +  r <*> (h_prev * Uh + b_ih));
     float* h_tilda = r + out;
@@ -75,15 +76,26 @@ void GRUCellCompute(GRUFilter* filter, const float *x, const float *h_pr, float*
     MatMul(x, filter->weights->Wh, h_tilda, 1, out, in, 0.0);
     //x * Wh + b_ih
     VectorAdd(h_tilda, filter->weights->b_ih, h_tilda, out);
+    
     float *h_prev_Uh = h_tilda + out;
+
+    // V2
+    if (filter->config.v2) {
 //    h_prev * UH
-    MatMul(h_pr, filter->weights->Uh, h_prev_Uh, 1, out, out, 0.0);
-//    (h_prev * UH + b_hh)
-    VectorAdd(h_prev_Uh, filter->weights->b_hh, h_prev_Uh, out);
-    //(h_prev * UH + b_hh) <*>r
-    VectorMul(r, h_prev_Uh, h_prev_Uh, out);
-    //x * Wh + b_ih + (h_prev * UH + b_hh) <*>r
-    VectorAdd(h_tilda, h_prev_Uh, h_tilda, out);
+        MatMul(h_pr, filter->weights->Uh, h_prev_Uh, 1, out, out, 0.0);
+    //    (h_prev * UH + b_hh)
+        VectorAdd(h_prev_Uh, filter->weights->b_hh, h_prev_Uh, out);
+        //(h_prev * UH + b_hh) <*>r
+        VectorMul(r, h_prev_Uh, h_prev_Uh, out);
+        //x * Wh + b_ih + h_prev_UH
+        VectorAdd(h_tilda, h_prev_Uh, h_tilda, out);
+    } else {
+        // (hprev <*> r)
+        VectorMul(r, h_pr, h_prev_Uh, out);
+        // UH * (hprev <*> r) + h_tida
+        MatMul(h_prev_Uh, filter->weights->Uh, h_tilda, 1, out, out, 1.0);
+    }
+
     //tanh(x * Wh + (h_prev <*> r) * Uh + bh);
     ActivationFunctionApply(filter->config.activation, h_tilda, h_tilda);
 //    filter->config.activation(h_tilda, h_tilda, out);

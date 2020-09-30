@@ -9,7 +9,8 @@
 #include "recurrent_shared.h"
 #include "operations.h"
 
-void ComputeGate(int in, int out, ActivationFunction* activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, float* gate) {
+
+void ComputeGate(int in, int out, ActivationFunction* activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, bool useHiddenBias,  float* gate) {
     // out = x * W
     MatMul(x, W, gate, 1, out, in, 0.0);
 //    out = x * W + b_i
@@ -17,7 +18,9 @@ void ComputeGate(int in, int out, ActivationFunction* activation, const float *x
     // in_U = h_t * U
     MatMul(h, U, gate, 1, out, out, 1.0);
     // g = g + b;
-    VectorAdd(gate, b_h, gate, out);
+    if (useHiddenBias){
+        VectorAdd(gate, b_h, gate, out);
+    }
     // g = activation(g);
     ActivationFunctionApply(activation, gate, gate);
 }
