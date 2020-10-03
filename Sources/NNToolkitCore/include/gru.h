@@ -20,7 +20,6 @@ extern "C" {
 
 
 
-
 typedef struct {
     int inputFeatureChannels;
 
