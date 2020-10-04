@@ -64,21 +64,8 @@ SpectrogramFilter* SpectrogramFilterCreate(SpectrogramConfig config){
         filter->window[i] = 1.0;
     return filter;
 }
-
-void SpectrogramFilterSetWindowType(SpectrogramFilter *filter, FFTWindowType type) {
-    switch (type) {
-        case FFTWindowTypeHann:
-            vDSP_hann_window(filter->window, filter->config
-                             .nfft, 0);
-            break;
-        case FFTWindowTypeHamming:
-            vDSP_hamm_window(filter->window, filter->config.nfft, 0);
-            break;
-        case FFTWindowTypeBlackMan:
-            vDSP_blkman_window(filter->window, filter->config.nfft, 0);
-        default:
-            break;
-    }
+void SpectrogramFilterApplyWindowFunc(SpectrogramFilter *filter, window_fn fn) {
+    fn(filter->window, filter->config.nfft);
 }
 
 void complex_spectrogram(SpectrogramFilter *filter, const float* input, float* output) {

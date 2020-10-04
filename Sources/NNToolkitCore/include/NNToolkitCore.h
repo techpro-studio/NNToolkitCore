@@ -14,6 +14,7 @@
 #include "dense.h"
 #include "spectrogram.h"
 #include "debug.h"
+#include "window.h"
 #include "conv_1d_default_impl.h"
 
 #endif /* Header_h */

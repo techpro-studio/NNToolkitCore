@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include "stdbool.h"
 #include <Accelerate/Accelerate.h>
+#include "window.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -37,15 +38,10 @@ typedef struct {
     float *window;
 } SpectrogramFilter;
 
-typedef enum {
-    FFTWindowTypeHamming = 1,
-    FFTWindowTypeHann = 2,
-    FFTWindowTypeBlackMan = 3,
-} FFTWindowType;
 
 SpectrogramFilter* SpectrogramFilterCreate(SpectrogramConfig config);
 
-void SpectrogramFilterSetWindowType(SpectrogramFilter *filter, FFTWindowType type);
+void SpectrogramFilterApplyWindowFunc(SpectrogramFilter *filter, window_fn fn);
 
 void SpectrogramFilterApply(SpectrogramFilter *filter, const float *input, float* output);
 
