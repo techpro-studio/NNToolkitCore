@@ -1,12 +1,12 @@
 //
-//  File.h
+//  window.h
 //  
 //
 //  Created by Alex on 04.10.2020.
 //
 
-#ifndef File_h
-#define File_h
+#ifndef window_h
+#define window_h
 
 #include <stdio.h>
 
