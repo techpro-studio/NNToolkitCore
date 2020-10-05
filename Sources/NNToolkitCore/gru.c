@@ -7,16 +7,16 @@
 //
 
 #include "gru.h"
-#include "recurrent_shared.h"
 #include "operations.h"
 #include "stdlib.h"
 #include "string.h"
 
-GRUConfig GRUConfigCreate(int input, int output, bool flipOutputGates, bool v2, int batchSize, ActivationFunction* reccurrent_activation, ActivationFunction* activation){
+GRUConfig GRUConfigCreate(int input, int output, bool flipOutputGates, bool v2, bool returnSequences, int batchSize, ActivationFunction* reccurrent_activation, ActivationFunction* activation){
     GRUConfig config;
     config.inputFeatureChannels = input;
     config.batchSize = batchSize;
     config.v2 = v2;
+    config.returnSequences = returnSequences;
     config.outputFeatureChannels = output;
     config.flipOutputGates = flipOutputGates;
     config.reccurrentActivation = reccurrent_activation;
@@ -59,6 +59,24 @@ void GRUFilterDestroy(GRUFilter *filter) {
     free(filter->weights);
     free(filter);
 }
+
+void ComputeGate(int in, int out, ActivationFunction* activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, bool useHiddenBias,  float* gate) {
+    // out = x * W
+    MatMul(x, W, gate, 1, out, in, 0.0);
+//    out = x * W + b_i
+    VectorAdd(gate, b_i, gate, out);
+    // in_U = h_t * U
+    MatMul(h, U, gate, 1, out, out, 1.0);
+    // g = g + b;
+    if (useHiddenBias){
+        VectorAdd(gate, b_h, gate, out);
+    }
+    // g = activation(g);
+    if (activation){
+        ActivationFunctionApply(activation, gate, gate);
+    }
+}
+
 
 void GRUCellCompute(GRUFilter* filter, const float *x, const float *h_pr, float* ht, float *buffer) {
     int out = filter->config.outputFeatureChannels;
@@ -117,8 +135,9 @@ void GRUFilterApply(GRUFilter *filter, const float *input, float* output){
     int out = filter->config.outputFeatureChannels;
     int in = filter->config.inputFeatureChannels;
     for (int i = 0; i < filter->config.batchSize; ++i){
-        GRUCellCompute(filter, input + i * in, filter->state, output + i * out, filter->buffer);
-        memcpy(filter->state, output + i * out, out * sizeof(float));
+        int outputIndex = filter->config.returnSequences ? i * out : 0;
+        GRUCellCompute(filter, input + i * in, filter->state, output + outputIndex, filter->buffer);
+        memcpy(filter->state, output + outputIndex, out * sizeof(float));
     }
 }
 

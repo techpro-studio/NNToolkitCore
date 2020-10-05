@@ -18,13 +18,14 @@ extern "C" {
 #endif
 
 
-
 typedef struct {
     int inputFeatureChannels;
 
     int outputFeatureChannels;
 
     bool v2;
+
+    bool returnSequences;
 
     int batchSize;
 
@@ -33,8 +34,7 @@ typedef struct {
     ActivationFunction* activation;
 } LSTMConfig;
 
-LSTMConfig LSTMConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool v2, int batchSize, ActivationFunction* reccurrentActivation, ActivationFunction* activation);
-
+LSTMConfig LSTMConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool v2, bool returnSequences, int batchSize, ActivationFunction* reccurrentActivation, ActivationFunction* activation);
 
 typedef struct {
     float *W;
@@ -51,7 +51,6 @@ typedef struct {
     float *output;
     LSTMWeights* weights;
 } LSTMFilter;
-
 
 LSTMFilter* LSTMFilterCreate(LSTMConfig config);
 

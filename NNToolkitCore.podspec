@@ -1,8 +1,8 @@
 Pod::Spec.new do |s|
   s.name             = 'NNToolkitCore'
-  s.version          = '0.1.0'
+  s.version          = '0.2.0'
   s.summary          = 'Core C library with NN filters'
-  s.description      = "Spectrogram. Conv1d. GRU. BatchNorm. Dense"
+  s.description      = "LSTM. Conv1d. GRU. BatchNorm. Dense. Audio processing tools"
 
   s.homepage         = 'https://github.com/techpro-studio/NNToolkit'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }

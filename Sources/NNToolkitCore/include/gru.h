@@ -34,6 +34,8 @@ typedef struct {
 
     bool v2;
 
+    bool returnSequences;
+
     int batchSize;
 
     ActivationFunction* reccurrentActivation;
@@ -41,7 +43,7 @@ typedef struct {
     ActivationFunction* activation;
 } GRUConfig;
 
-GRUConfig GRUConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool flipOutputGates, bool v2, int batchSize, ActivationFunction* reccurrentActivation, ActivationFunction* activation);
+GRUConfig GRUConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool flipOutputGates, bool v2, bool returnSequences, int batchSize, ActivationFunction* reccurrentActivation, ActivationFunction* activation);
 
 
 typedef struct {

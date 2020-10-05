@@ -18,4 +18,4 @@ void hann_window(float *vector, int size);
 
 void blackman_window(float *vector, int size);
 
-#endif /* File_h */
+#endif 
