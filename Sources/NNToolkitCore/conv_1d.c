@@ -62,8 +62,6 @@ void Conv1dFilterApply(Conv1dFilter *filter, const float *input, float* output){
             {
                 const float* rowPtr = floatInput + i * filter->config.inputSize + inputRowOffset;
                 const float* weightsPtr = outputFeatureWeights + (i * kernelSize);
-                float dot = 0.0;
-
                 result += fn(rowPtr, weightsPtr, kernelSize);
             }
 

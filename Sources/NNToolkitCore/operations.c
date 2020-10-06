@@ -16,7 +16,7 @@ float VectorDotDefault(const float *a, const float *b, int size){
     return result;
 }
 
-#define vector_dot(NUM)  float VectorDot##NUM(const float* a, const float *b, int size)\
+#define vector_dot_(NUM)  float VectorDot##NUM(const float* a, const float *b, int size)\
 {\
     float sum = 0.0f;\
     int iterations = size / NUM;\
@@ -34,11 +34,11 @@ float VectorDotDefault(const float *a, const float *b, int size){
     return sum;\
 }
 
-vector_dot(2)
-vector_dot(3)
-vector_dot(4)
-vector_dot(8)
-vector_dot(16)
+vector_dot_(2)
+vector_dot_(3)
+vector_dot_(4)
+vector_dot_(8)
+vector_dot_(16)
 
 
 typedef enum {
