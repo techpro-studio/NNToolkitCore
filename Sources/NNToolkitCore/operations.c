@@ -40,7 +40,6 @@ vector_dot_(4)
 vector_dot_(8)
 vector_dot_(16)
 
-
 typedef enum {
     two = 2, three = 3, four = 4, eight = 8, sixteen = 16
 }optimal_vector_size;
