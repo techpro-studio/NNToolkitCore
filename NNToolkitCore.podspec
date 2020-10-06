@@ -1,10 +1,10 @@
 Pod::Spec.new do |s|
   s.name             = 'NNToolkitCore'
-  s.version          = '0.2.0'
+  s.version          = '0.3.0'
   s.summary          = 'Core C library with NN filters'
   s.description      = "LSTM. Conv1d. GRU. BatchNorm. Dense. Audio processing tools"
 
-  s.homepage         = 'https://github.com/techpro-studio/NNToolkit'
+  s.homepage         = 'https://github.com/techpro-studio/NNToolkitCore'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Oleksii Moiseenko' => 'oleksiimoiseenko@gmail.com' }
   s.source           = { :git => 'https://github.com/techpro-studio/NNToolkitCore.git', :tag => s.version }

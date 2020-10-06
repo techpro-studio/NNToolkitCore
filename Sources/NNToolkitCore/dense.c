@@ -36,7 +36,6 @@ void DenseFilterDestroy(DenseFilter *filter) {
 }
 
 void DenseFilterApply(DenseFilter *filter, const float *input, float* output) {
-//#error тут что то не то
     MatMul(input, filter->weights->W, output, 1,  filter->config.outputSize, filter->config.inputSize, 0.0);
     VectorAdd(output, filter->weights->b, output, filter->config.outputSize);
     ActivationFunctionApply(filter->config.activation, output, output);

@@ -16,7 +16,15 @@ void MatMul(const float *a, const float *b, float* result, int m, int n, int k, 
 
 void MatMul2(const float *a, const float *b, float* result, int m, int n, int k);
 
+void MatTrans(const float *a, float *b, int m, int n);
+
 void VectorAdd(const float *a, const float *b, float *result, int size);
+
+typedef float (*VectorDotF)(const float *a, const float *b, int size);
+
+VectorDotF GetOptimized(int size);
+
+float VectorDotDefault(const float *a, const float *b, int size);
 
 void VectorMul(const float *a, const float *b, float* result, int size);
 

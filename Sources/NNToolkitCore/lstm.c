@@ -10,7 +10,6 @@
 #include "string.h"
 #include "activation.h"
 #include "operations.h"
-#include "debug.h"
 
 LSTMConfig LSTMConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool v2, bool returnSequences, int batchSize, ActivationFunction* reccurrentActivation, ActivationFunction* activation){
     LSTMConfig config;

@@ -8,7 +8,8 @@
 
 #include "conv_1d.h"
 #include "stdlib.h"
-#include <simd/simd.h>
+#include <dispatch/dispatch.h>
+#include "operations.h"
 
 
 Conv1dConfig Conv1dConfigCreate(int inputFeatureChannels, int outputFeatureChannels, int kernelSize, int stride, int inputSize){
@@ -22,41 +23,56 @@ Conv1dConfig Conv1dConfigCreate(int inputFeatureChannels, int outputFeatureChann
     return config;
 }
 
-Conv1dFilter* Conv1dFilterCreate(Conv1dConfig config) {
 
+Conv1dFilter* Conv1dFilterCreate(Conv1dConfig config) {
     Conv1dFilter* filter = malloc(sizeof(Conv1dFilter));
     filter->config = config;
     //w8s
     filter->weights = malloc(sizeof(Conv1dWeights));
     filter->weights->W = malloc(config.kernelSize * config.inputFeatureChannels * config.outputFeatureChannels * sizeof(float));
     filter->weights->b = malloc(config.outputFeatureChannels * sizeof(float));
-
+    filter->v_dot = GetOptimized(config.kernelSize);
+    filter->buffer = malloc(config.inputSize * config.inputFeatureChannels * sizeof(float));
     return filter;
 }
 
 void Conv1dFilterDestroy(Conv1dFilter *filter){
-    if (filter->implementer){
-        filter->implementer->destroyFn(filter->implementer->ptr);
-        free(filter->implementer);
-    }
+    free(filter->buffer);
     free(filter->weights->W);
     free(filter->weights->b);
     free(filter->weights);
     free(filter);
 }
 
-Conv1dImplementer* Conv1dImplementerCreate(ImplemnterApply applyFn, ImplemnterDestroy destroyFn, void *ptr){
-    Conv1dImplementer* implementer = malloc(sizeof(Conv1dImplementer));
-    implementer->destroyFn = destroyFn;
-    implementer->ptr = ptr;
-    implementer->applyFn = applyFn;
-    return implementer;
-}
-
 void Conv1dFilterApply(Conv1dFilter *filter, const float *input, float* output){
-    filter->implementer->applyFn(filter->implementer->ptr, input, output);
-}
+    float *floatInput = (float*)filter->buffer;
+    MatTrans((float *) input, floatInput, filter->config.inputFeatureChannels, filter->config.inputSize);
+    int kernelSize = filter->config.kernelSize;
+    VectorDotF fn = (VectorDotF) filter->v_dot;
+    dispatch_apply(filter->config.outputFeatureChannels, DISPATCH_APPLY_AUTO, ^(size_t outFeature) {
+        for (int x = 0; x < filter->config.outputSize; ++x){
+            int weightsOffset = (int)outFeature * filter->config.inputFeatureChannels * kernelSize;
+            const float *outputFeatureWeights = filter->weights->W + weightsOffset;
 
+            float result = 0.0f;
+
+            int inputRowOffset = x * filter->config.stride;
+
+            for (int i = 0; i < filter->config.inputFeatureChannels; ++i)
+            {
+                const float* rowPtr = floatInput + i * filter->config.inputSize + inputRowOffset;
+                const float* weightsPtr = outputFeatureWeights + (i * kernelSize);
+                float dot = 0.0;
+
+                result += fn(rowPtr, weightsPtr, kernelSize);
+            }
+
+            result += filter->weights->b[outFeature];
+
+            ((float *)output)[x * filter->config.outputFeatureChannels + outFeature] = result;
+        }
+    });
+}
 
 
 

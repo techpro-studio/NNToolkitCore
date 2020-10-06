@@ -16,6 +16,8 @@
 extern "C" {
 #endif
 
+
+
 typedef struct {
     int inputFeatureChannels;
     int outputFeatureChannels;
@@ -33,21 +35,11 @@ typedef struct {
 } Conv1dWeights;
 
 
-typedef void(*ImplemnterDestroy)(void * ptr);
-typedef int(*ImplemnterApply)(void * ptr, const void *input, void *output);
-
-typedef struct {
-    ImplemnterApply applyFn;
-    ImplemnterDestroy destroyFn;
-    void *ptr;
-} Conv1dImplementer;
-
-Conv1dImplementer* Conv1dImplementerCreate(ImplemnterApply applyFn, ImplemnterDestroy destroyFn, void *ptr);
-
 typedef struct {
     Conv1dConfig config;
     Conv1dWeights* weights;
-    Conv1dImplementer *implementer;
+    void *buffer;
+    void *v_dot;
 } Conv1dFilter;
 
 Conv1dFilter* Conv1dFilterCreate(Conv1dConfig config);
