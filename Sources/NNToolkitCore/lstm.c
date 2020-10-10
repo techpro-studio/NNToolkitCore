@@ -10,6 +10,7 @@
 #include "string.h"
 #include "activation.h"
 #include "operations.h"
+#include "debug.h"
 
 LSTMConfig LSTMConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool v2, bool returnSequences, int batchSize, ActivationFunction* reccurrentActivation, ActivationFunction* activation){
     LSTMConfig config;
@@ -36,7 +37,7 @@ LSTMFilter* LSTMFilterCreate(LSTMConfig config){
     int computationBufferSize = 7 * out * sizeof(float);
     filter->buffer = malloc(computationBufferSize);
     memset(filter->buffer, 0, computationBufferSize);
-    int weightsBufferSize = 4 * in * out + 4 * out * out + 2 * 4 * out * sizeof(float);
+    int weightsBufferSize = (4 * in * out + 4 * out * out + 2 * 4 * out) * sizeof(float);
     float *buffer = malloc(weightsBufferSize);
     memset(buffer, 0, weightsBufferSize);
     filter->weights->W = buffer;
