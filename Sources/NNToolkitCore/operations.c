@@ -101,10 +101,9 @@ void VectorAdd(const float *a, const float * b,float *result, int size){
     vDSP_vadd(a, 1, b, 1, result, 1, size);
 }
 
-
-
-
-
+void VectorSum(const float *a, float* result, int size){
+    vDSP_sve(a, 1, result, size);
+}
 
 void VectorMul(const float *a, const float *b, float* result, int size){
     vDSP_vmul(a, 1, b, 1, result, 1, size);
@@ -112,6 +111,10 @@ void VectorMul(const float *a, const float *b, float* result, int size){
 
 void VectorMulS(const float *a, float b, float *c, int size) {
     vDSP_vsmul(a, 1, &b, c, 1, size);
+}
+
+void VectorDivS(const float *a, float b, float *c, int size){
+    vDSP_vsdiv(a, 1, &b, c, 1, size);
 }
 
 void VectorAddS(const float *a, float b, float *c, int size){

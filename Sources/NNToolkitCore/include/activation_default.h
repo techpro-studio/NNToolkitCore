@@ -18,13 +18,15 @@ extern "C" {
 
 ActivationFunction* ActivationFunctionCreateIdentity(int inputSize);
 
-ActivationFunction * ActivationFunctionCreateSigmoid(int inputSize);
+ActivationFunction* ActivationFunctionCreateSoftmax(int inputSize, int vectorSize);
 
-ActivationFunction * ActivationFunctionCreateReLU(int inputSize, float a);
+ActivationFunction* ActivationFunctionCreateSigmoid(int inputSize);
 
-ActivationFunction * ActivationFunctionCreateTanh(int inputSize);
+ActivationFunction* ActivationFunctionCreateReLU(int inputSize, float a);
 
-ActivationFunction * ActivationFunctionCreateHardSigmoid(int inputSize);
+ActivationFunction* ActivationFunctionCreateTanh(int inputSize);
+
+ActivationFunction* ActivationFunctionCreateHardSigmoid(int inputSize);
 
 #if defined __cplusplus
 }

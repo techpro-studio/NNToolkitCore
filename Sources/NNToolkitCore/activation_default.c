@@ -10,7 +10,12 @@
 #include "operations.h"
 #include "string.h"
 #include "stdlib.h"
+#include <dispatch/dispatch.h>
+
+
+
 //SIGMOID
+
 
 
 void activation_sigmoid(void *implementer, const float *input, float *output, int size) {
@@ -113,6 +118,7 @@ void HardSigmoidImplementerDestroy(void * ptr){
     free(ptr);
 }
 
+
 ActivationFunction * ActivationFunctionCreateHardSigmoid(int inputSize){
     HardSigmoidImplementer* implementer = malloc(sizeof(HardSigmoidImplementer));
     implementer->zeros = malloc(2 * inputSize * sizeof(float));
@@ -121,6 +127,47 @@ ActivationFunction * ActivationFunctionCreateHardSigmoid(int inputSize){
     VectorAddS(implementer->ones, 1.0f, implementer->ones, inputSize);
     return ActivationFunctionCreate(inputSize, HardSigmoidImplementerDestroy, implementer, activation_hard_sigmoid);
 }
+
+
+// SOFTMAX
+
+typedef struct {
+    int vectorSize;
+} SoftmaxImplementer;
+
+
+
+
+void softmax(const float *input, float *output, int vectorSize){
+    VectorExp(input, output, vectorSize);
+    float sum = 0.0f;
+    VectorSum(output, &sum, vectorSize);
+    VectorDivS(output, sum, output, vectorSize);
+}
+
+void activation_softmax(void *implementer, const float *input, float *output, int size){
+    SoftmaxImplementer* impl = (SoftmaxImplementer *)implementer;
+    if (size == 1){
+        softmax(input, output, impl->vectorSize);
+        return;
+    }
+    dispatch_apply(size, DISPATCH_APPLY_AUTO, ^(size_t index) {
+        size_t offset = index * impl->vectorSize;
+        softmax(input + offset, output + offset, impl->vectorSize);
+    });
+}
+
+
+void SoftmaxImplementerDestroy(void *ptr){
+    free(ptr);
+}
+
+ActivationFunction* ActivationFunctionCreateSoftmax(int inputSize, int vectorSize){
+    SoftmaxImplementer *implementer = malloc(sizeof(SoftmaxImplementer));
+    implementer->vectorSize = vectorSize;
+    return ActivationFunctionCreate(inputSize, SoftmaxImplementerDestroy, implementer, activation_softmax);
+}
+
 
 
 

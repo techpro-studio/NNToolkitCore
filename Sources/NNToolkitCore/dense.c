@@ -24,7 +24,7 @@ DenseFilter* DenseFilterCreate(DenseConfig config) {
     DenseFilter* filter = malloc(sizeof(DenseFilter));
     filter->config = config;
     filter->weights = malloc(sizeof(DenseWeights));
-    filter->weights->W = malloc((config.inputSize + 1) * config.outputSize * sizeof(float));
+    filter->weights->W = malloc(config.inputSize * (config.outputSize + 1) * sizeof(float));
     filter->weights->b = filter->weights->W + config.inputSize * config.outputSize;
     return filter;
 }
@@ -38,7 +38,9 @@ void DenseFilterDestroy(DenseFilter *filter) {
 void DenseFilterApply(DenseFilter *filter, const float *input, float* output) {
     MatMul(input, filter->weights->W, output, 1,  filter->config.outputSize, filter->config.inputSize, 0.0);
     VectorAdd(output, filter->weights->b, output, filter->config.outputSize);
-    ActivationFunctionApply(filter->config.activation, output, output);
+    if (filter->config.activation) {
+        ActivationFunctionApply(filter->config.activation, output, output);
+    }
 }
 
 
@@ -46,5 +48,6 @@ void DenseFilterApplyTimeDistributed(DenseFilter *filter, int size, const float 
     dispatch_apply(size, DISPATCH_APPLY_AUTO, ^(size_t i) {
         DenseFilterApply(filter, input + i * filter->config.inputSize, output + i * filter->config.outputSize);
     });
+
 }
 

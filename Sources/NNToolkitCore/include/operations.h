@@ -20,6 +20,8 @@ void MatTrans(const float *a, float *b, int m, int n);
 
 void VectorAdd(const float *a, const float *b, float *result, int size);
 
+void VectorSum(const float *a, float* result,  int size);
+
 typedef float (*VectorDotF)(const float *a, const float *b, int size);
 
 VectorDotF GetOptimized(int size);
@@ -31,6 +33,8 @@ void VectorMul(const float *a, const float *b, float* result, int size);
 void VectorAddS(const float *a, float b, float *c, int size);
 
 void VectorMulS(const float *a, float b, float *c, int size);
+
+void VectorDivS(const float *a, float b, float *c, int size);
 
 void VectorNeg(const float *a, float *c, int size);
 
