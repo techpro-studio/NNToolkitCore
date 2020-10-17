@@ -18,6 +18,21 @@ extern "C" {
 #endif
 
 
+
+typedef struct {
+    ActivationFunction* candidateGateActivation;
+    ActivationFunction* inputGateActivation;
+    ActivationFunction* forgetGateActivation;
+    ActivationFunction* outputGateActivation;
+    ActivationFunction* outputActivation;
+} LSTMActivations;
+
+
+LSTMActivations LSTMActivationsCreate(ActivationFunction* inputGateActivation, ActivationFunction* forgetGateActivation, ActivationFunction* candidateGateActivation, ActivationFunction* outputGateActivation, ActivationFunction* outputActivation);
+
+
+LSTMActivations LSTMActivationsCreateDefault(int size);
+
 typedef struct {
     int inputFeatureChannels;
 
@@ -27,14 +42,13 @@ typedef struct {
 
     bool returnSequences;
 
-    int batchSize;
+    int timesteps;
 
-    ActivationFunction* reccurrentActivation;
+    LSTMActivations activations;
 
-    ActivationFunction* activation;
 } LSTMConfig;
 
-LSTMConfig LSTMConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool v2, bool returnSequences, int batchSize, ActivationFunction* reccurrentActivation, ActivationFunction* activation);
+LSTMConfig LSTMConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool v2, bool returnSequences, int timesteps, LSTMActivations lstmActivations);
 
 typedef struct {
     float *W;
@@ -44,21 +58,17 @@ typedef struct {
 } LSTMWeights;
 
 
-typedef struct {
-    LSTMConfig config;
-    float *buffer;
-    float *state;
-    float *output;
-    LSTMWeights* weights;
-} LSTMFilter;
+typedef struct LSTMFilterStruct* LSTMFilter;
 
-LSTMFilter* LSTMFilterCreate(LSTMConfig config);
+LSTMFilter LSTMFilterCreateForInference(LSTMConfig config);
+
+LSTMFilter LSTMFilterCreateForTraining(LSTMConfig config, int miniBatchSize);
 
 //feature channels in row, row major pointer
 
-void LSTMFilterApply(LSTMFilter *filter, const float *input, float* output);
+void LSTMFilterApply(LSTMFilter filter, const float *input, float* output);
 
-void LSTMFilterDestroy(LSTMFilter *filter);
+void LSTMFilterDestroy(LSTMFilter filter);
 
 
 #if defined __cplusplus

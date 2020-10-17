@@ -14,7 +14,7 @@
 GRUConfig GRUConfigCreate(int input, int output, bool flipOutputGates, bool v2, bool returnSequences, int batchSize, ActivationFunction* reccurrent_activation, ActivationFunction* activation){
     GRUConfig config;
     config.inputFeatureChannels = input;
-    config.batchSize = batchSize;
+    config.timesteps = batchSize;
     config.v2 = v2;
     config.returnSequences = returnSequences;
     config.outputFeatureChannels = output;
@@ -24,8 +24,15 @@ GRUConfig GRUConfigCreate(int input, int output, bool flipOutputGates, bool v2, 
     return config;
 }
 
-GRUFilter* GRUFilterCreate(GRUConfig config) {
-    GRUFilter* filter = malloc(sizeof(GRUFilter));
+struct GRUFilterStruct {
+    GRUConfig config;
+    float *buffer;
+    float *state;
+    GRUWeights* weights;
+} ;
+
+GRUFilter GRUFilterCreate(GRUConfig config) {
+    GRUFilter filter = malloc(sizeof(struct GRUFilterStruct));
     filter->config = config;
     filter->weights = malloc(sizeof(GRUWeights));
     int in = config.inputFeatureChannels;
@@ -53,7 +60,7 @@ GRUFilter* GRUFilterCreate(GRUConfig config) {
 }
 
 
-void GRUFilterDestroy(GRUFilter *filter) {
+void GRUFilterDestroy(GRUFilter filter) {
     free(filter->weights->Wz);
     free(filter->state);
     free(filter->weights);
@@ -78,7 +85,7 @@ void ComputeGate(int in, int out, ActivationFunction* activation, const float *x
 }
 
 
-void GRUCellCompute(GRUFilter* filter, const float *x, const float *h_pr, float* ht, float *buffer) {
+void GRUCellCompute(GRUFilter filter, const float *x, const float *h_pr, float* ht, float *buffer) {
     int out = filter->config.outputFeatureChannels;
     int in = filter->config.inputFeatureChannels;
     // z = sigmoid(x * Wz + h_pr * Uz + bz)
@@ -131,10 +138,10 @@ void GRUCellCompute(GRUFilter* filter, const float *x, const float *h_pr, float*
     VectorAdd(minus_z_pw, z_h_pw, ht, out);
 }
 
-void GRUFilterApply(GRUFilter *filter, const float *input, float* output){
+void GRUFilterApply(GRUFilter filter, const float *input, float* output){
     int out = filter->config.outputFeatureChannels;
     int in = filter->config.inputFeatureChannels;
-    for (int i = 0; i < filter->config.batchSize; ++i){
+    for (int i = 0; i < filter->config.timesteps; ++i){
         int outputIndex = filter->config.returnSequences ? i * out : 0;
         GRUCellCompute(filter, input + i * in, filter->state, output + outputIndex, filter->buffer);
         memcpy(filter->state, output + outputIndex, out * sizeof(float));

@@ -36,7 +36,7 @@ typedef struct {
 
     bool returnSequences;
 
-    int batchSize;
+    int timesteps;
 
     ActivationFunction* reccurrentActivation;
 
@@ -68,21 +68,15 @@ typedef struct {
 } GRUWeights;
 
 
-typedef struct {
-    GRUConfig config;
-    float *buffer;
-    float *state;
-    GRUWeights* weights;
-} GRUFilter;
+typedef struct GRUFilterStruct * GRUFilter;
 
-
-GRUFilter* GRUFilterCreate(GRUConfig config);
+GRUFilter GRUFilterCreate(GRUConfig config);
 
 //feature channels in row
 
-void GRUFilterApply(GRUFilter *filter, const float *input, float* output);
+void GRUFilterApply(GRUFilter filter, const float *input, float* output);
 
-void GRUFilterDestroy(GRUFilter *filter);
+void GRUFilterDestroy(GRUFilter filter);
 
 
 #if defined __cplusplus

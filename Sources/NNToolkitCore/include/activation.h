@@ -26,7 +26,7 @@ typedef struct {
     ActivationFunctionImpl function;
 } ActivationFunction;
 
-ActivationFunction* ActivationFunctionCreate(int size, ActivationImplementerDestroy destroyFn,void *implementer, ActivationFunctionImpl function);
+ActivationFunction* ActivationFunctionCreate(int size, ActivationImplementerDestroy destroyFn, void *implementer, ActivationFunctionImpl function);
 
 ActivationFunction* ActivationFunctionCreateSimple(int size, ActivationFunctionImpl function);
 
