@@ -9,8 +9,14 @@
 #include "spectrogram.h"
 #include <dispatch/dispatch.h>
 
-typedef void (*spectrogram_implementer)(SpectrogramFilter *filter, const float* input, float* output);
+typedef void (*spectrogram_implementer)(SpectrogramFilter filter, const float* input, float* output);
 
+
+struct SpectrogramFilterStruct{
+    SpectrogramConfig config;
+    void* fftSetup;
+    float *window;
+};
 
 SpectrogramConfig SpectrogramConfigCreate(int nfft, int noverlap, int inputSize, bool complex, float fftNormalizationFactor){
     SpectrogramConfig config;
@@ -36,7 +42,7 @@ inline static void Magnitude(DSPSplitComplex *split, float *freqsPtr, const int 
 }
 
 
-static void real_spectrogram(SpectrogramFilter *filter, const float* input, float* output){
+static void real_spectrogram(SpectrogramFilter filter, const float* input, float* output){
     dispatch_apply(filter->config.ntimeSeries, DISPATCH_APPLY_AUTO, ^(size_t timed) {
         int nfft = filter->config.nfft;
         int nfreq = filter->config.nfreq;
@@ -55,8 +61,8 @@ static void real_spectrogram(SpectrogramFilter *filter, const float* input, floa
 
 }
 
-SpectrogramFilter* SpectrogramFilterCreate(SpectrogramConfig config){
-    SpectrogramFilter* filter = malloc(sizeof(SpectrogramFilter));
+SpectrogramFilter SpectrogramFilterCreate(SpectrogramConfig config){
+    SpectrogramFilter filter = malloc(sizeof(struct SpectrogramFilterStruct));
     filter->config = config;
     filter->fftSetup = vDSP_DFT_zop_CreateSetup(NULL, config.nfft, vDSP_DFT_FORWARD);
     filter->window = malloc(config.nfft * sizeof(float));
@@ -64,11 +70,11 @@ SpectrogramFilter* SpectrogramFilterCreate(SpectrogramConfig config){
         filter->window[i] = 1.0;
     return filter;
 }
-void SpectrogramFilterApplyWindowFunc(SpectrogramFilter *filter, window_fn fn) {
+void SpectrogramFilterApplyWindowFunc(SpectrogramFilter filter, window_fn fn) {
     fn(filter->window, filter->config.nfft);
 }
 
-void complex_spectrogram(SpectrogramFilter *filter, const float* input, float* output) {
+void complex_spectrogram(SpectrogramFilter filter, const float* input, float* output) {
     dispatch_apply(filter->config.ntimeSeries, DISPATCH_APPLY_AUTO, ^(size_t timed) {
         int nfft = filter->config.nfft;
         int nfreq = filter->config.nfreq;
@@ -86,12 +92,12 @@ void complex_spectrogram(SpectrogramFilter *filter, const float* input, float* o
     });
 }
 
-void SpectrogramFilterApply(SpectrogramFilter *filter, const float *input, float* output){
+void SpectrogramFilterApply(SpectrogramFilter filter, const float *input, float* output){
     spectrogram_implementer impl = filter->config.complex ? complex_spectrogram : real_spectrogram;
     impl(filter, input, output);
 }
 
-void SpectrogramFilterDestroy(SpectrogramFilter *filter){
+void SpectrogramFilterDestroy(SpectrogramFilter filter){
     vDSP_DFT_DestroySetup(filter->fftSetup);
     free(filter);
 }

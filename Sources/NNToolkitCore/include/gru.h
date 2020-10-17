@@ -38,12 +38,12 @@ typedef struct {
 
     int timesteps;
 
-    ActivationFunction* reccurrentActivation;
+    ActivationFunction reccurrentActivation;
 
-    ActivationFunction* activation;
+    ActivationFunction activation;
 } GRUConfig;
 
-GRUConfig GRUConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool flipOutputGates, bool v2, bool returnSequences, int batchSize, ActivationFunction* reccurrentActivation, ActivationFunction* activation);
+GRUConfig GRUConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool flipOutputGates, bool v2, bool returnSequences, int batchSize, ActivationFunction reccurrentActivation, ActivationFunction activation);
 
 
 typedef struct {
@@ -69,6 +69,8 @@ typedef struct {
 
 
 typedef struct GRUFilterStruct * GRUFilter;
+
+GRUWeights* GRUFilterGetWeights(GRUFilter filter);
 
 GRUFilter GRUFilterCreate(GRUConfig config);
 

@@ -16,17 +16,17 @@
 extern "C" {
 #endif
 
-ActivationFunction* ActivationFunctionCreateIdentity(int inputSize);
+ActivationFunction ActivationFunctionCreateIdentity(int inputSize);
 
-ActivationFunction* ActivationFunctionCreateSoftmax(int inputSize, int vectorSize);
+ActivationFunction ActivationFunctionCreateSoftmax(int inputSize, int vectorSize);
 
-ActivationFunction* ActivationFunctionCreateSigmoid(int inputSize);
+ActivationFunction ActivationFunctionCreateSigmoid(int inputSize);
 
-ActivationFunction* ActivationFunctionCreateReLU(int inputSize, float a);
+ActivationFunction ActivationFunctionCreateReLU(int inputSize, float a);
 
-ActivationFunction* ActivationFunctionCreateTanh(int inputSize);
+ActivationFunction ActivationFunctionCreateTanh(int inputSize);
 
-ActivationFunction* ActivationFunctionCreateHardSigmoid(int inputSize);
+ActivationFunction ActivationFunctionCreateHardSigmoid(int inputSize);
 
 #if defined __cplusplus
 }

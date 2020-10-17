@@ -34,19 +34,15 @@ typedef struct {
     float *b;
 } Conv1dWeights;
 
+typedef struct Conv1dFilterStruct* Conv1dFilter;
 
-typedef struct {
-    Conv1dConfig config;
-    Conv1dWeights* weights;
-    void *buffer;
-    void *v_dot;
-} Conv1dFilter;
+Conv1dWeights* Conv1dFilterGetWeights(Conv1dFilter filter);
 
-Conv1dFilter* Conv1dFilterCreate(Conv1dConfig config);
+Conv1dFilter Conv1dFilterCreate(Conv1dConfig config);
 
-void Conv1dFilterApply(Conv1dFilter *filter, const float *input, float* output);
+void Conv1dFilterApply(Conv1dFilter filter, const float *input, float* output);
 
-void Conv1dFilterDestroy(Conv1dFilter *filter);
+void Conv1dFilterDestroy(Conv1dFilter filter);
 
 #if defined __cplusplus
 }

@@ -11,6 +11,16 @@
 #include <dispatch/dispatch.h>
 #include "operations.h"
 
+struct Conv1dFilterStruct {
+    Conv1dConfig config;
+    Conv1dWeights* weights;
+    void *buffer;
+    void *v_dot;
+} ;
+
+Conv1dWeights* Conv1dFilterGetWeights(Conv1dFilter filter){
+    return filter->weights;
+}
 
 Conv1dConfig Conv1dConfigCreate(int inputFeatureChannels, int outputFeatureChannels, int kernelSize, int stride, int inputSize){
     Conv1dConfig config;
@@ -24,8 +34,8 @@ Conv1dConfig Conv1dConfigCreate(int inputFeatureChannels, int outputFeatureChann
 }
 
 
-Conv1dFilter* Conv1dFilterCreate(Conv1dConfig config) {
-    Conv1dFilter* filter = malloc(sizeof(Conv1dFilter));
+Conv1dFilter Conv1dFilterCreate(Conv1dConfig config) {
+    Conv1dFilter filter = malloc(sizeof(struct Conv1dFilterStruct));
     filter->config = config;
     //w8s
     filter->weights = malloc(sizeof(Conv1dWeights));
@@ -36,7 +46,7 @@ Conv1dFilter* Conv1dFilterCreate(Conv1dConfig config) {
     return filter;
 }
 
-void Conv1dFilterDestroy(Conv1dFilter *filter){
+void Conv1dFilterDestroy(Conv1dFilter filter){
     free(filter->buffer);
     free(filter->weights->W);
     free(filter->weights->b);
@@ -44,7 +54,7 @@ void Conv1dFilterDestroy(Conv1dFilter *filter){
     free(filter);
 }
 
-void Conv1dFilterApply(Conv1dFilter *filter, const float *input, float* output){
+void Conv1dFilterApply(Conv1dFilter filter, const float *input, float* output){
     float *floatInput = (float*)filter->buffer;
     MatTrans((float *) input, floatInput, filter->config.inputFeatureChannels, filter->config.inputSize);
     int kernelSize = filter->config.kernelSize;

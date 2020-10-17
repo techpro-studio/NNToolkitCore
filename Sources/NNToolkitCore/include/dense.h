@@ -26,23 +26,22 @@ typedef struct {
 typedef struct {
     int inputSize;
     int outputSize;
-    ActivationFunction *activation;
+    ActivationFunction activation;
 } DenseConfig;
 
-typedef struct {
-    DenseConfig config;
-    DenseWeights* weights;
-} DenseFilter;
+typedef struct DenseFilterStruct* DenseFilter;
 
-DenseConfig DenseConfigCreate(int inputSize, int outputSize, ActivationFunction *activation);
+DenseWeights* DenseFilterGetWeights(DenseFilter filter);
 
-DenseFilter* DenseFilterCreate(DenseConfig config);
+DenseConfig DenseConfigCreate(int inputSize, int outputSize, ActivationFunction activation);
 
-void DenseFilterApply(DenseFilter *filter, const float *input, float* output);
+DenseFilter DenseFilterCreate(DenseConfig config);
 
-void DenseFilterApplyTimeDistributed(DenseFilter *filter, int size, const float *input, float* output);
+void DenseFilterApply(DenseFilter filter, const float *input, float* output);
 
-void DenseFilterDestroy(DenseFilter *filter);
+void DenseFilterApplyTimeDistributed(DenseFilter filter, int size, const float *input, float* output);
+
+void DenseFilterDestroy(DenseFilter filter);
 
 
 #if defined __cplusplus

@@ -30,18 +30,17 @@ typedef struct {
     int batchSize;
 } BatchNormConfig;
 
-typedef struct {
-    BatchNormConfig config;
-    BatchNormWeights* weights;
-} BatchNormFilter;
+typedef struct BatchNormFilterStruct* BatchNormFilter;
+
+BatchNormWeights* BatchNormFilterGetWeights(BatchNormFilter filter);
 
 BatchNormConfig BatchNormConfigCreate(int featureChannels, float epsilon, int batchSize);
 
-BatchNormFilter* BatchNormFilterCreate(BatchNormConfig config);
+BatchNormFilter BatchNormFilterCreate(BatchNormConfig config);
 
-void BatchNormFilterApply(BatchNormFilter *filter, const float *input, float* output);
+void BatchNormFilterApply(BatchNormFilter filter, const float *input, float* output);
 
-void BatchNormFilterDestroy(BatchNormFilter *filter);
+void BatchNormFilterDestroy(BatchNormFilter filter);
 
 
 #if defined __cplusplus

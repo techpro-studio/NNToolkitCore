@@ -19,20 +19,15 @@ typedef void(*ActivationFunctionImpl)(void *, const float *, float *, int);
 
 typedef void(*ActivationImplementerDestroy)(void *);
 
-typedef struct {
-    void *implementer;
-    int inputSize;
-    ActivationImplementerDestroy destroyFn;
-    ActivationFunctionImpl function;
-} ActivationFunction;
+typedef struct ActivationFunctionStruct* ActivationFunction;
 
-ActivationFunction* ActivationFunctionCreate(int size, ActivationImplementerDestroy destroyFn, void *implementer, ActivationFunctionImpl function);
+ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestroy destroyFn, void *implementer, ActivationFunctionImpl function);
 
-ActivationFunction* ActivationFunctionCreateSimple(int size, ActivationFunctionImpl function);
+ActivationFunction ActivationFunctionCreateSimple(int size, ActivationFunctionImpl function);
 
-void ActivationFunctionDestroy(ActivationFunction *);
+void ActivationFunctionDestroy(ActivationFunction );
 
-void ActivationFunctionApply(ActivationFunction *, const float *, float *);
+void ActivationFunctionApply(ActivationFunction , const float *, float *);
 
 
 #if defined __cplusplus

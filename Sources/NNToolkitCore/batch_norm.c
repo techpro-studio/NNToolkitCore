@@ -11,6 +11,15 @@
 #include "stdlib.h"
 #include <dispatch/dispatch.h>
 
+struct BatchNormFilterStruct{
+    BatchNormConfig config;
+    BatchNormWeights* weights;
+};
+
+BatchNormWeights* BatchNormFilterGetWeights(BatchNormFilter filter){
+    return filter->weights;
+}
+
 BatchNormConfig BatchNormConfigCreate(int featureChannels, float epsilon, int batchSize){
     BatchNormConfig config;
     config.batchSize = batchSize;
@@ -19,8 +28,8 @@ BatchNormConfig BatchNormConfigCreate(int featureChannels, float epsilon, int ba
     return config;
 }
 
-BatchNormFilter* BatchNormFilterCreate(BatchNormConfig config) {
-    BatchNormFilter* filter = malloc(sizeof(BatchNormFilter));
+BatchNormFilter BatchNormFilterCreate(BatchNormConfig config) {
+    BatchNormFilter filter = malloc(sizeof(struct BatchNormFilterStruct));
     filter->config = config;
     filter->weights = malloc(sizeof(BatchNormWeights));
     float *weights = malloc(4 * config.featureChannels * sizeof(float));
@@ -31,7 +40,7 @@ BatchNormFilter* BatchNormFilterCreate(BatchNormConfig config) {
     return filter;
 }
 
-void BatchNormFilterDestroy(BatchNormFilter *filter) {
+void BatchNormFilterDestroy(BatchNormFilter filter) {
     free(filter->weights->gamma);
     free(filter->weights);
     free(filter);
@@ -40,7 +49,7 @@ void BatchNormFilterDestroy(BatchNormFilter *filter) {
 
 //output_image = (input_image - mean[c]) * gamma[c] / sqrt(variance[c] + epsilon) + beta[c];
 
-void BatchNormFilterApplySlice(BatchNormFilter *filter, const float *input, float* output){
+void BatchNormFilterApplySlice(BatchNormFilter filter, const float *input, float* output){
     int size = filter->config.featureChannels;
     float buffer[size];
     // output = - mean
@@ -59,7 +68,7 @@ void BatchNormFilterApplySlice(BatchNormFilter *filter, const float *input, floa
     VectorAdd(output, filter->weights->beta, output, size);
 }
 
-void BatchNormFilterApply(BatchNormFilter *filter, const float *input, float* output) {
+void BatchNormFilterApply(BatchNormFilter filter, const float *input, float* output) {
     if (filter->config.batchSize == 1){
         BatchNormFilterApplySlice(filter, input, output);
         return;

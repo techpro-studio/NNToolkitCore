@@ -25,7 +25,7 @@ void activation_sigmoid(void *implementer, const float *input, float *output, in
     VectorReciprocal(output, output, size);
 }
 
-ActivationFunction * ActivationFunctionCreateSigmoid(int inputSize){
+ActivationFunction ActivationFunctionCreateSigmoid(int inputSize){
     return ActivationFunctionCreateSimple(inputSize, activation_sigmoid);
 }
 
@@ -39,7 +39,7 @@ void activation_tanh(void *implementer, const float *input, float *output, int s
     VectorTanh(input,output, size);
 }
 
-ActivationFunction * ActivationFunctionCreateTanh(int inputSize){
+ActivationFunction ActivationFunctionCreateTanh(int inputSize){
     return ActivationFunctionCreateSimple(inputSize, activation_tanh);
 }
 
@@ -56,7 +56,7 @@ void activation_identity(void *implementer, const float *input, float *output, i
     memcpy(output, input, size * sizeof(float));
 }
 
-ActivationFunction* ActivationFunctionCreateIdentity(int inputSize) {
+ActivationFunction ActivationFunctionCreateIdentity(int inputSize) {
     return ActivationFunctionCreateSimple(inputSize, activation_identity);
 }
 
@@ -85,7 +85,7 @@ void ReLUImplementerDestroy(void * ptr){
     free(ptr);
 }
 
-ActivationFunction * ActivationFunctionCreateReLU(int inputSize, float a) {
+ActivationFunction ActivationFunctionCreateReLU(int inputSize, float a) {
     ReLUImplementer* implementer = malloc(sizeof(ReLUImplementer));
     implementer->zeros = malloc(inputSize * sizeof(float));
     implementer->a = a;
@@ -119,7 +119,7 @@ void HardSigmoidImplementerDestroy(void * ptr){
 }
 
 
-ActivationFunction * ActivationFunctionCreateHardSigmoid(int inputSize){
+ActivationFunction ActivationFunctionCreateHardSigmoid(int inputSize){
     HardSigmoidImplementer* implementer = malloc(sizeof(HardSigmoidImplementer));
     implementer->zeros = malloc(2 * inputSize * sizeof(float));
     implementer->ones = implementer->zeros + inputSize;
@@ -162,7 +162,7 @@ void SoftmaxImplementerDestroy(void *ptr){
     free(ptr);
 }
 
-ActivationFunction* ActivationFunctionCreateSoftmax(int inputSize, int vectorSize){
+ActivationFunction ActivationFunctionCreateSoftmax(int inputSize, int vectorSize){
     SoftmaxImplementer *implementer = malloc(sizeof(SoftmaxImplementer));
     implementer->vectorSize = vectorSize;
     return ActivationFunctionCreate(inputSize, SoftmaxImplementerDestroy, implementer, activation_softmax);

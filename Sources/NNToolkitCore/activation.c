@@ -10,19 +10,26 @@
 #include "stdlib.h"
 #include <string.h>
 
-void ActivationFunctionApply(ActivationFunction * filter, const float * input, float * output){
+struct ActivationFunctionStruct {
+    void *implementer;
+    int inputSize;
+    ActivationImplementerDestroy destroyFn;
+    ActivationFunctionImpl function;
+};
+
+void ActivationFunctionApply(ActivationFunction  filter, const float * input, float * output){
     filter->function(filter->implementer, input, output, filter->inputSize);
 }
 
-void ActivationFunctionDestroy(ActivationFunction *filter){
+void ActivationFunctionDestroy(ActivationFunction filter){
     if (filter->implementer){
         filter->destroyFn(filter->implementer);
     }
     free(filter);
 }
 
-ActivationFunction* ActivationFunctionCreate(int size, ActivationImplementerDestroy destroyFn,void *implementer, ActivationFunctionImpl function) {
-    ActivationFunction * filter = malloc(sizeof(ActivationFunction));
+ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestroy destroyFn,void *implementer, ActivationFunctionImpl function) {
+    ActivationFunction filter = malloc(sizeof(struct ActivationFunctionStruct));
     filter->implementer = implementer;
     filter->inputSize = size;
     filter->destroyFn = destroyFn;
@@ -30,6 +37,6 @@ ActivationFunction* ActivationFunctionCreate(int size, ActivationImplementerDest
     return filter;
 }
 
-ActivationFunction* ActivationFunctionCreateSimple(int size, ActivationFunctionImpl function){
+ActivationFunction ActivationFunctionCreateSimple(int size, ActivationFunctionImpl function){
     return ActivationFunctionCreate(size, NULL, NULL, function);
 }

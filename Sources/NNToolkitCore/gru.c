@@ -11,7 +11,7 @@
 #include "stdlib.h"
 #include "string.h"
 
-GRUConfig GRUConfigCreate(int input, int output, bool flipOutputGates, bool v2, bool returnSequences, int batchSize, ActivationFunction* reccurrent_activation, ActivationFunction* activation){
+GRUConfig GRUConfigCreate(int input, int output, bool flipOutputGates, bool v2, bool returnSequences, int batchSize, ActivationFunction reccurrent_activation, ActivationFunction activation){
     GRUConfig config;
     config.inputFeatureChannels = input;
     config.timesteps = batchSize;
@@ -29,7 +29,12 @@ struct GRUFilterStruct {
     float *buffer;
     float *state;
     GRUWeights* weights;
-} ;
+};
+
+GRUWeights* GRUFilterGetWeights(GRUFilter filter){
+    return filter->weights;
+}
+
 
 GRUFilter GRUFilterCreate(GRUConfig config) {
     GRUFilter filter = malloc(sizeof(struct GRUFilterStruct));
@@ -67,7 +72,7 @@ void GRUFilterDestroy(GRUFilter filter) {
     free(filter);
 }
 
-void ComputeGate(int in, int out, ActivationFunction* activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, bool useHiddenBias,  float* gate) {
+void ComputeGate(int in, int out, ActivationFunction activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, bool useHiddenBias,  float* gate) {
     // out = x * W
     MatMul(x, W, gate, 1, out, in, 0.0);
 //    out = x * W + b_i

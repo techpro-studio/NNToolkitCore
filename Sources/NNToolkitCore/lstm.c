@@ -12,7 +12,7 @@
 #include "operations.h"
 
 
-LSTMActivations LSTMActivationsCreate(ActivationFunction* inputGateActivation, ActivationFunction* forgetGateActivation, ActivationFunction* candidateGateActivation, ActivationFunction* outputGateActivation, ActivationFunction* outputActivation){
+LSTMActivations LSTMActivationsCreate(ActivationFunction inputGateActivation, ActivationFunction forgetGateActivation, ActivationFunction candidateGateActivation, ActivationFunction outputGateActivation, ActivationFunction outputActivation){
     LSTMActivations activations;
     activations.candidateGateActivation = candidateGateActivation;
     activations.forgetGateActivation = forgetGateActivation;
@@ -41,6 +41,19 @@ LSTMActivations LSTMActivationsCreateDefault(int size){
    );
 }
 
+void LSTMActivationsDestroy(LSTMActivations activations){
+    ActivationFunctionDestroy(activations.inputGateActivation);
+    ActivationFunctionDestroy(activations.forgetGateActivation);
+    ActivationFunctionDestroy(activations.candidateGateActivation);
+    ActivationFunctionDestroy(activations.outputGateActivation);
+    ActivationFunctionDestroy(activations.outputActivation);
+}
+
+
+LSTMWeights* LSTMFilterGetWeights(LSTMFilter filter){
+    return filter->weights;
+}
+
 LSTMConfig LSTMConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool v2, bool returnSequences, int timesteps, LSTMActivations activations){
     LSTMConfig config;
     config.inputFeatureChannels = inputFeatureChannels;
@@ -54,7 +67,9 @@ LSTMConfig LSTMConfigCreate(int inputFeatureChannels, int outputFeatureChannels,
 
 
 LSTMFilter LSTMFilterCreateForTraining(LSTMConfig config, int miniBatchSize){
+    LSTMFilter filter = malloc(sizeof(struct LSTMFilterStruct));
 
+    return filter;
 }
 
 LSTMFilter LSTMFilterCreateForInference(LSTMConfig config){

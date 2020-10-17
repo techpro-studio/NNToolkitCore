@@ -20,18 +20,20 @@ extern "C" {
 
 
 typedef struct {
-    ActivationFunction* candidateGateActivation;
-    ActivationFunction* inputGateActivation;
-    ActivationFunction* forgetGateActivation;
-    ActivationFunction* outputGateActivation;
-    ActivationFunction* outputActivation;
+    ActivationFunction candidateGateActivation;
+    ActivationFunction inputGateActivation;
+    ActivationFunction forgetGateActivation;
+    ActivationFunction outputGateActivation;
+    ActivationFunction outputActivation;
 } LSTMActivations;
 
 
-LSTMActivations LSTMActivationsCreate(ActivationFunction* inputGateActivation, ActivationFunction* forgetGateActivation, ActivationFunction* candidateGateActivation, ActivationFunction* outputGateActivation, ActivationFunction* outputActivation);
 
+LSTMActivations LSTMActivationsCreate(ActivationFunction inputGateActivation, ActivationFunction forgetGateActivation, ActivationFunction candidateGateActivation, ActivationFunction outputGateActivation, ActivationFunction outputActivation);
 
 LSTMActivations LSTMActivationsCreateDefault(int size);
+
+void LSTMActivationsDestroy(LSTMActivations activations);
 
 typedef struct {
     int inputFeatureChannels;
@@ -59,6 +61,8 @@ typedef struct {
 
 
 typedef struct LSTMFilterStruct* LSTMFilter;
+
+LSTMWeights* LSTMFilterGetWeights(LSTMFilter filter);
 
 LSTMFilter LSTMFilterCreateForInference(LSTMConfig config);
 
