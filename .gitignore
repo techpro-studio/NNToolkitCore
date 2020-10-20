@@ -1,6 +1,7 @@
 # Prerequisites
 *.d
 .swiftpm/
+Tests/
 
 # Object files
 *.o
