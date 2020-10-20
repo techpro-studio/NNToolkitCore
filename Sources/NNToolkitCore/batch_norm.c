@@ -9,7 +9,6 @@
 #include "batch_norm.h"
 #import "operations.h"
 #include "stdlib.h"
-#include <dispatch/dispatch.h>
 
 struct BatchNormFilterStruct{
     BatchNormConfig config;
@@ -20,23 +19,24 @@ BatchNormWeights* BatchNormFilterGetWeights(BatchNormFilter filter){
     return filter->weights;
 }
 
-BatchNormConfig BatchNormConfigCreate(int featureChannels, float epsilon, int batchSize){
+BatchNormConfig BatchNormConfigCreate(int feature_channels, float epsilon, int batch_size){
     BatchNormConfig config;
-    config.batchSize = batchSize;
+    config.batch_size = batch_size;
     config.epsilon = epsilon;
-    config.featureChannels = featureChannels;
+    config.feature_channels = feature_channels;
     return config;
 }
 
 BatchNormFilter BatchNormFilterCreate(BatchNormConfig config) {
     BatchNormFilter filter = malloc(sizeof(struct BatchNormFilterStruct));
     filter->config = config;
+    int chan = config.feature_channels;
     filter->weights = malloc(sizeof(BatchNormWeights));
-    float *weights = malloc(4 * config.featureChannels * sizeof(float));
+    float *weights = malloc(4 * chan * sizeof(float));
     filter->weights->gamma = weights;
-    filter->weights->beta = filter->weights->gamma + config.featureChannels;
-    filter->weights->mean = filter->weights->beta + config.featureChannels;
-    filter->weights->variance = filter->weights->mean + config.featureChannels;
+    filter->weights->beta = filter->weights->gamma + chan;
+    filter->weights->mean = filter->weights->beta + chan;
+    filter->weights->variance = filter->weights->mean + chan;
     return filter;
 }
 
@@ -50,7 +50,7 @@ void BatchNormFilterDestroy(BatchNormFilter filter) {
 //output_image = (input_image - mean[c]) * gamma[c] / sqrt(variance[c] + epsilon) + beta[c];
 
 void BatchNormFilterApplySlice(BatchNormFilter filter, const float *input, float* output){
-    int size = filter->config.featureChannels;
+    int size = filter->config.feature_channels;
     float buffer[size];
     // output = - mean
     VectorNeg(filter->weights->mean, output, size);
@@ -68,15 +68,17 @@ void BatchNormFilterApplySlice(BatchNormFilter filter, const float *input, float
     VectorAdd(output, filter->weights->beta, output, size);
 }
 
-void BatchNormFilterApply(BatchNormFilter filter, const float *input, float* output) {
-    if (filter->config.batchSize == 1){
+int BatchNormFilterApply(BatchNormFilter filter, const float *input, float* output) {
+    if (filter->config.batch_size == 1){
         BatchNormFilterApplySlice(filter, input, output);
-        return;
+        return 0;
     }
-    dispatch_apply(filter->config.batchSize, DISPATCH_APPLY_AUTO, ^(size_t index) {
-        size_t offset = index * filter->config.featureChannels;
+
+    P_LOOP_START(filter->config.batch_size, index)
+        size_t offset = index * filter->config.feature_channels;
         BatchNormFilterApplySlice(filter, input + offset, output + offset);
-    });
+    P_LOOP_END
+    return 0;
 }
 
 

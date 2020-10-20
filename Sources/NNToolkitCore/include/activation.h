@@ -10,6 +10,7 @@
 #define activation_h
 
 #include <stdio.h>
+#include "stdbool.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -21,13 +22,17 @@ typedef void(*ActivationImplementerDestroy)(void *);
 
 typedef struct ActivationFunctionStruct* ActivationFunction;
 
-ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestroy destroyFn, void *implementer, ActivationFunctionImpl function);
+ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestroy destroy_fn, void *implementer, ActivationFunctionImpl function, ActivationFunctionImpl derivative, ActivationFunctionImpl cached_derivative);
 
-ActivationFunction ActivationFunctionCreateSimple(int size, ActivationFunctionImpl function);
+void ActivationFunctionDestroy(ActivationFunction filter);
 
-void ActivationFunctionDestroy(ActivationFunction );
+void ActivationFunctionApply(ActivationFunction filter, const float *input, float *output);
 
-void ActivationFunctionApply(ActivationFunction , const float *, float *);
+void ActivationFunctionApplyDerivative(ActivationFunction filter, const float *input, float *output);
+
+bool ActivationFunctionSupportCachedDerivation(ActivationFunction filter);
+
+void ActivationFunctionApplyCachedDerivative(ActivationFunction filter, const float *input, float *output);
 
 
 #if defined __cplusplus

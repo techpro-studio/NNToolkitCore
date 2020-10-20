@@ -8,7 +8,6 @@
 
 #include "conv_1d.h"
 #include "stdlib.h"
-#include <dispatch/dispatch.h>
 #include "operations.h"
 
 struct Conv1dFilterStruct {
@@ -54,12 +53,12 @@ void Conv1dFilterDestroy(Conv1dFilter filter){
     free(filter);
 }
 
-void Conv1dFilterApply(Conv1dFilter filter, const float *input, float* output){
+int Conv1dFilterApply(Conv1dFilter filter, const float *input, float* output){
     float *floatInput = (float*)filter->buffer;
     MatTrans((float *) input, floatInput, filter->config.inputFeatureChannels, filter->config.inputSize);
     int kernelSize = filter->config.kernelSize;
     VectorDotF fn = (VectorDotF) filter->v_dot;
-    dispatch_apply(filter->config.outputFeatureChannels, DISPATCH_APPLY_AUTO, ^(size_t outFeature) {
+    P_LOOP_START(filter->config.outputFeatureChannels, outFeature)
         for (int x = 0; x < filter->config.outputSize; ++x){
             int weightsOffset = (int)outFeature * filter->config.inputFeatureChannels * kernelSize;
             const float *outputFeatureWeights = filter->weights->W + weightsOffset;
@@ -79,7 +78,8 @@ void Conv1dFilterApply(Conv1dFilter filter, const float *input, float* output){
 
             ((float *)output)[x * filter->config.outputFeatureChannels + outFeature] = result;
         }
-    });
+    P_LOOP_END
+    return 0;
 }
 
 

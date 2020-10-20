@@ -10,14 +10,20 @@
 #include "operations.h"
 #include "string.h"
 #include "stdlib.h"
-#include <dispatch/dispatch.h>
 
 
+
+ActivationFunction ActivationFunctionCreateSimple(int size, ActivationFunctionImpl function, ActivationFunctionImpl derivative) {
+    return ActivationFunctionCreate(size, NULL, NULL, function, derivative, NULL);
+}
+
+ActivationFunction ActivationFunctionCreateSimpleWithCached(int size, ActivationFunctionImpl function, ActivationFunctionImpl derivative, ActivationFunctionImpl cachedDerivative) {
+    return ActivationFunctionCreate(size, NULL, NULL, function, derivative, cachedDerivative);
+}
 
 //SIGMOID
 
-
-
+// 1 / 1 - exp(-x)
 void activation_sigmoid(void *implementer, const float *input, float *output, int size) {
     VectorNeg(input, output, size);
     VectorExp(output, output, size);
@@ -25,8 +31,25 @@ void activation_sigmoid(void *implementer, const float *input, float *output, in
     VectorReciprocal(output, output, size);
 }
 
+
+// sigmoid(x)' = sigmoid(x)* (1 * sigmoid(x));
+
+void activation_sigmoid_cached_derivative(void *implementer, const float *input, float *output, int size) {
+    VectorNeg(input, output, size);
+    VectorAddS(output, 1, output, size);
+    VectorMul(input, output, output, size);
+}
+
+
+void activation_sigmoid_derivative(void *implementer, const float *input, float *output, int size) {
+    activation_sigmoid(implementer, input, output, size);
+    activation_sigmoid_cached_derivative(implementer, output, output, size);
+}
+
+
+
 ActivationFunction ActivationFunctionCreateSigmoid(int inputSize){
-    return ActivationFunctionCreateSimple(inputSize, activation_sigmoid);
+    return ActivationFunctionCreateSimpleWithCached(inputSize, activation_sigmoid, activation_sigmoid_derivative, activation_sigmoid_cached_derivative);
 }
 
 
@@ -36,18 +59,31 @@ ActivationFunction ActivationFunctionCreateSigmoid(int inputSize){
 
 
 void activation_tanh(void *implementer, const float *input, float *output, int size){
-    VectorTanh(input,output, size);
+    VectorTanh(input, output, size);
 }
+
+void activation_tanh_cached_derivative(void *implementer, const float *input, float *output, int size) {
+    VectorMul(input, input, output, size);
+    VectorNeg(output, output, size);
+    VectorAddS(output, 1, output, size);
+}
+
+void activation_tanh_derivative(void *implementer, const float *input, float *output, int size) {
+    activation_tanh(implementer, input, output, size);
+    activation_tanh_cached_derivative(implementer, output, output, size);
+}
+
 
 ActivationFunction ActivationFunctionCreateTanh(int inputSize){
-    return ActivationFunctionCreateSimple(inputSize, activation_tanh);
+    return ActivationFunctionCreateSimpleWithCached(inputSize, activation_tanh, activation_tanh_derivative, activation_tanh_cached_derivative);
 }
-
-
 
 //Identity
 
 
+void activation_identity_derivative(void *implementer, const float *input, float *output, int size) {
+    memcpy(output, input, size * sizeof(float));
+}
 
 void activation_identity(void *implementer, const float *input, float *output, int size){
     if (input == output){
@@ -57,9 +93,8 @@ void activation_identity(void *implementer, const float *input, float *output, i
 }
 
 ActivationFunction ActivationFunctionCreateIdentity(int inputSize) {
-    return ActivationFunctionCreateSimple(inputSize, activation_identity);
+    return ActivationFunctionCreateSimple(inputSize, activation_identity, activation_identity_derivative);
 }
-
 
 
 // ReLU
@@ -70,6 +105,11 @@ typedef struct {
     float *zeros;
     float a;
 } ReLUImplementer;
+
+void activation_relu_derivative(void *implementer, const float *input, float *output, int size) {
+#warning implement this;
+    memcpy(output, input, size * sizeof(float));
+}
 
 void activation_relu(void *implementer, const float *input, float *output, int size){
     ReLUImplementer * impl = (ReLUImplementer *) implementer;
@@ -90,7 +130,7 @@ ActivationFunction ActivationFunctionCreateReLU(int inputSize, float a) {
     implementer->zeros = malloc(inputSize * sizeof(float));
     implementer->a = a;
     memset(implementer->zeros, 0, inputSize * sizeof(float));
-    return ActivationFunctionCreate(inputSize, ReLUImplementerDestroy, implementer, activation_relu);
+    return ActivationFunctionCreate(inputSize, ReLUImplementerDestroy, implementer, activation_relu, activation_relu_derivative, NULL);
 }
 
 
@@ -112,12 +152,16 @@ void activation_hard_sigmoid(void *implementer, const float *input, float *outpu
     VectorMax(output, impl->zeros, output, size);
 }
 
+void activation_hard_sigmoid_derivative(void *implementer, const float *input, float *output, int size) {
+#warning implement this;
+    memcpy(output, input, size * sizeof(float));
+}
+
 void HardSigmoidImplementerDestroy(void * ptr){
     HardSigmoidImplementer* impl = (HardSigmoidImplementer *) ptr;
     free(impl->zeros);
     free(ptr);
 }
-
 
 ActivationFunction ActivationFunctionCreateHardSigmoid(int inputSize){
     HardSigmoidImplementer* implementer = malloc(sizeof(HardSigmoidImplementer));
@@ -125,36 +169,40 @@ ActivationFunction ActivationFunctionCreateHardSigmoid(int inputSize){
     implementer->ones = implementer->zeros + inputSize;
     memset(implementer->zeros, 0, 2 * inputSize * sizeof(float));
     VectorAddS(implementer->ones, 1.0f, implementer->ones, inputSize);
-    return ActivationFunctionCreate(inputSize, HardSigmoidImplementerDestroy, implementer, activation_hard_sigmoid);
+    return ActivationFunctionCreate(inputSize, HardSigmoidImplementerDestroy, implementer, activation_hard_sigmoid, activation_hard_sigmoid_derivative, NULL);
 }
 
 
 // SOFTMAX
 
+
 typedef struct {
-    int vectorSize;
+    int vector_size;
 } SoftmaxImplementer;
 
 
-
-
-void softmax(const float *input, float *output, int vectorSize){
-    VectorExp(input, output, vectorSize);
+void softmax(const float *input, float *output, int vector_size){
+    VectorExp(input, output, vector_size);
     float sum = 0.0f;
-    VectorSum(output, &sum, vectorSize);
-    VectorDivS(output, sum, output, vectorSize);
+    VectorSum(output, &sum, vector_size);
+    VectorDivS(output, sum, output, vector_size);
 }
 
 void activation_softmax(void *implementer, const float *input, float *output, int size){
     SoftmaxImplementer* impl = (SoftmaxImplementer *)implementer;
     if (size == 1){
-        softmax(input, output, impl->vectorSize);
+        softmax(input, output, impl->vector_size);
         return;
     }
-    dispatch_apply(size, DISPATCH_APPLY_AUTO, ^(size_t index) {
-        size_t offset = index * impl->vectorSize;
-        softmax(input + offset, output + offset, impl->vectorSize);
-    });
+    P_LOOP_START(size, index)
+        size_t offset = index * impl->vector_size;
+        softmax(input + offset, output + offset, impl->vector_size);
+    P_LOOP_END
+}
+
+void activation_softmax_derivative(void *implementer, const float *input, float *output, int size) {
+#warning implement this;
+    memcpy(output, input, size * sizeof(float));
 }
 
 
@@ -164,8 +212,8 @@ void SoftmaxImplementerDestroy(void *ptr){
 
 ActivationFunction ActivationFunctionCreateSoftmax(int inputSize, int vectorSize){
     SoftmaxImplementer *implementer = malloc(sizeof(SoftmaxImplementer));
-    implementer->vectorSize = vectorSize;
-    return ActivationFunctionCreate(inputSize, SoftmaxImplementerDestroy, implementer, activation_softmax);
+    implementer->vector_size = vectorSize;
+    return ActivationFunctionCreate(inputSize, SoftmaxImplementerDestroy, implementer, activation_softmax, activation_softmax_derivative, NULL);
 }
 
 

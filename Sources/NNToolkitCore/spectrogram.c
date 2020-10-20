@@ -7,7 +7,8 @@
 //
 
 #include "spectrogram.h"
-#include <dispatch/dispatch.h>
+#include <Accelerate/Accelerate.h>
+#include "operations.h"
 
 typedef void (*spectrogram_implementer)(SpectrogramFilter filter, const float* input, float* output);
 
@@ -43,7 +44,7 @@ inline static void Magnitude(DSPSplitComplex *split, float *freqsPtr, const int 
 
 
 static void real_spectrogram(SpectrogramFilter filter, const float* input, float* output){
-    dispatch_apply(filter->config.ntimeSeries, DISPATCH_APPLY_AUTO, ^(size_t timed) {
+    P_LOOP_START(filter->config.ntimeSeries, timed)
         int nfft = filter->config.nfft;
         int nfreq = filter->config.nfreq;
         float normFactor = filter->config.fftNormalizationFactor;
@@ -57,8 +58,7 @@ static void real_spectrogram(SpectrogramFilter filter, const float* input, float
                          outputSplit.realp, outputSplit.imagp);
         vDSP_vsmul(outputMemory, 1, &normFactor, outputMemory, 1, nfft * 2);
         Magnitude(&outputSplit, output + timed * nfreq, nfreq);
-    });
-
+    P_LOOP_END
 }
 
 SpectrogramFilter SpectrogramFilterCreate(SpectrogramConfig config){

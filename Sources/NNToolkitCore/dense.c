@@ -9,7 +9,6 @@
 #include "dense.h"
 #include "operations.h"
 #include "stdlib.h"
-#include <dispatch/dispatch.h>
 
 struct DenseFilterStruct {
     DenseConfig config;
@@ -43,19 +42,20 @@ void DenseFilterDestroy(DenseFilter filter) {
     free(filter);
 }
 
-void DenseFilterApply(DenseFilter filter, const float *input, float* output) {
+int DenseFilterApply(DenseFilter filter, const float *input, float* output) {
     MatMul(input, filter->weights->W, output, 1,  filter->config.outputSize, filter->config.inputSize, 0.0);
     VectorAdd(output, filter->weights->b, output, filter->config.outputSize);
     if (filter->config.activation) {
         ActivationFunctionApply(filter->config.activation, output, output);
     }
+    return 0;
 }
 
 
-void DenseFilterApplyTimeDistributed(DenseFilter filter, int size, const float *input, float* output) {
-    dispatch_apply(size, DISPATCH_APPLY_AUTO, ^(size_t i) {
+int DenseFilterApplyTimeDistributed(DenseFilter filter, int size, const float *input, float* output) {
+    P_LOOP_START(size, i)
         DenseFilterApply(filter, input + i * filter->config.inputSize, output + i * filter->config.outputSize);
-    });
-
+    P_LOOP_END
+    return 0;
 }
 

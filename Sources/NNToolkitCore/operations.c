@@ -44,7 +44,7 @@ typedef enum {
     two = 2, three = 3, four = 4, eight = 8, sixteen = 16
 }optimal_vector_size;
 
-optimal_vector_size getOptimalVectorSize(int size){
+optimal_vector_size get_optimal_vector_size(int size){
     int optimalIndex = 0;
     int smallestValue = 230;
     optimal_vector_size values [] = {two, three, four, eight, sixteen};
@@ -68,7 +68,7 @@ VectorDotF GetOptimized(int size){
     if (size > 4000){
         return VectorDotDefault;
     }
-    optimal_vector_size value = getOptimalVectorSize(size);
+    optimal_vector_size value = get_optimal_vector_size(size);
     switch (value) {
         case two:
             return VectorDot2;
@@ -87,6 +87,10 @@ VectorDotF GetOptimized(int size){
 
 void MatMul(const float *a, const float *b, float* result, int m, int n, int k, float beta) {
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0, a, k, b, n, beta, result, n);
+}
+
+void MatMul3(const float *a, const float *b, bool a_transpose, bool b_transpose, float* result, int m, int n, int k, float beta){
+    cblas_sgemm(CblasRowMajor, a_transpose ? CblasTrans : CblasNoTrans, b_transpose ? CblasTrans : CblasNoTrans, m, n, k, 1.0, a, k, b, n, beta, result, n);
 }
 
 void MatMul2(const float *a, const float *b, float* result, int m, int n, int k) {

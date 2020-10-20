@@ -25,9 +25,9 @@ typedef struct {
 
 
 typedef struct {
-    int featureChannels;
+    int feature_channels;
     float epsilon;
-    int batchSize;
+    int batch_size;
 } BatchNormConfig;
 
 typedef struct BatchNormFilterStruct* BatchNormFilter;
@@ -38,7 +38,7 @@ BatchNormConfig BatchNormConfigCreate(int featureChannels, float epsilon, int ba
 
 BatchNormFilter BatchNormFilterCreate(BatchNormConfig config);
 
-void BatchNormFilterApply(BatchNormFilter filter, const float *input, float* output);
+int BatchNormFilterApply(BatchNormFilter filter, const float *input, float* output);
 
 void BatchNormFilterDestroy(BatchNormFilter filter);
 

@@ -11,7 +11,6 @@
 
 #include <stdio.h>
 #include "stdbool.h"
-#include <Accelerate/Accelerate.h>
 #include "window.h"
 
 #if defined __cplusplus

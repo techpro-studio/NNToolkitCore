@@ -76,7 +76,7 @@ GRUFilter GRUFilterCreate(GRUConfig config);
 
 //feature channels in row
 
-void GRUFilterApply(GRUFilter filter, const float *input, float* output);
+int GRUFilterApply(GRUFilter filter, const float *input, float* output);
 
 void GRUFilterDestroy(GRUFilter filter);
 

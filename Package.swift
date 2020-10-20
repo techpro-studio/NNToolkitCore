@@ -21,5 +21,6 @@ let package = Package(
         .target(
             name: "NNToolkitCore",
             dependencies: []),
+        .testTarget(name: "NNToolkitCoreTests", dependencies: ["NNToolkitCore"])
     ]
 )

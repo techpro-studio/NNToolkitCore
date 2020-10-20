@@ -37,9 +37,9 @@ DenseConfig DenseConfigCreate(int inputSize, int outputSize, ActivationFunction 
 
 DenseFilter DenseFilterCreate(DenseConfig config);
 
-void DenseFilterApply(DenseFilter filter, const float *input, float* output);
+int DenseFilterApply(DenseFilter filter, const float *input, float* output);
 
-void DenseFilterApplyTimeDistributed(DenseFilter filter, int size, const float *input, float* output);
+int DenseFilterApplyTimeDistributed(DenseFilter filter, int size, const float *input, float* output);
 
 void DenseFilterDestroy(DenseFilter filter);
 

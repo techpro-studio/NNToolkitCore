@@ -143,7 +143,7 @@ void GRUCellCompute(GRUFilter filter, const float *x, const float *h_pr, float* 
     VectorAdd(minus_z_pw, z_h_pw, ht, out);
 }
 
-void GRUFilterApply(GRUFilter filter, const float *input, float* output){
+int GRUFilterApply(GRUFilter filter, const float *input, float* output){
     int out = filter->config.outputFeatureChannels;
     int in = filter->config.inputFeatureChannels;
     for (int i = 0; i < filter->config.timesteps; ++i){
@@ -151,6 +151,7 @@ void GRUFilterApply(GRUFilter filter, const float *input, float* output){
         GRUCellCompute(filter, input + i * in, filter->state, output + outputIndex, filter->buffer);
         memcpy(filter->state, output + outputIndex, out * sizeof(float));
     }
+    return 0;
 }
 
 

@@ -18,7 +18,6 @@ extern "C" {
 #endif
 
 
-
 typedef struct {
     ActivationFunction candidateGateActivation;
     ActivationFunction inputGateActivation;
@@ -26,8 +25,6 @@ typedef struct {
     ActivationFunction outputGateActivation;
     ActivationFunction outputActivation;
 } LSTMActivations;
-
-
 
 LSTMActivations LSTMActivationsCreate(ActivationFunction inputGateActivation, ActivationFunction forgetGateActivation, ActivationFunction candidateGateActivation, ActivationFunction outputGateActivation, ActivationFunction outputActivation);
 
@@ -59,6 +56,19 @@ typedef struct {
     float *b_h;
 } LSTMWeights;
 
+typedef struct {
+    int mini_batch_size;
+} LSTMTrainingConfig;
+
+LSTMTrainingConfig LSTMTrainingConfigCreate(int miniBatchSize);
+
+typedef struct {
+    float * d_W;
+    float * d_U;
+    float * d_b_i;
+    float * d_b_h;
+    float * d_X;
+} LSTMGradients;
 
 typedef struct LSTMFilterStruct* LSTMFilter;
 
@@ -66,11 +76,15 @@ LSTMWeights* LSTMFilterGetWeights(LSTMFilter filter);
 
 LSTMFilter LSTMFilterCreateForInference(LSTMConfig config);
 
-LSTMFilter LSTMFilterCreateForTraining(LSTMConfig config, int miniBatchSize);
+LSTMFilter LSTMFilterCreateForTraining(LSTMConfig config, LSTMTrainingConfig training_config);
 
 //feature channels in row, row major pointer
 
-void LSTMFilterApply(LSTMFilter filter, const float *input, float* output);
+int LSTMFilterApply(LSTMFilter filter, const float *input, float* output);
+
+int LSTMFilterApplyTrainingBatch(LSTMFilter filter, const float *input, float* output);
+
+void LSTMFilterCalculateGradients(LSTMFilter filter, LSTMGradients *gradients, float *d_out);
 
 void LSTMFilterDestroy(LSTMFilter filter);
 

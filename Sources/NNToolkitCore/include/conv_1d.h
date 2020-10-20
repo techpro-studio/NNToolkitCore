@@ -40,7 +40,7 @@ Conv1dWeights* Conv1dFilterGetWeights(Conv1dFilter filter);
 
 Conv1dFilter Conv1dFilterCreate(Conv1dConfig config);
 
-void Conv1dFilterApply(Conv1dFilter filter, const float *input, float* output);
+int Conv1dFilterApply(Conv1dFilter filter, const float *input, float* output);
 
 void Conv1dFilterDestroy(Conv1dFilter filter);
 

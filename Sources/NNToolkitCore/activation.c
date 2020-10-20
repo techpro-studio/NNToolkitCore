@@ -12,31 +12,44 @@
 
 struct ActivationFunctionStruct {
     void *implementer;
-    int inputSize;
-    ActivationImplementerDestroy destroyFn;
+    int input_size;
+    ActivationImplementerDestroy destroy_fn;
+    ActivationFunctionImpl derivative;
+    ActivationFunctionImpl cached_derivative;
     ActivationFunctionImpl function;
 };
 
 void ActivationFunctionApply(ActivationFunction  filter, const float * input, float * output){
-    filter->function(filter->implementer, input, output, filter->inputSize);
+    filter->function(filter->implementer, input, output, filter->input_size);
 }
 
 void ActivationFunctionDestroy(ActivationFunction filter){
     if (filter->implementer){
-        filter->destroyFn(filter->implementer);
+        filter->destroy_fn(filter->implementer);
     }
     free(filter);
 }
 
-ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestroy destroyFn,void *implementer, ActivationFunctionImpl function) {
+ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestroy destroy_fn, void *implementer, ActivationFunctionImpl function, ActivationFunctionImpl derivative, ActivationFunctionImpl cached_derivative) {
     ActivationFunction filter = malloc(sizeof(struct ActivationFunctionStruct));
     filter->implementer = implementer;
-    filter->inputSize = size;
-    filter->destroyFn = destroyFn;
+    filter->input_size = size;
+    filter->destroy_fn = destroy_fn;
     filter->function = function;
+    filter->cached_derivative = cached_derivative;
+    filter->derivative = derivative;
     return filter;
 }
 
-ActivationFunction ActivationFunctionCreateSimple(int size, ActivationFunctionImpl function){
-    return ActivationFunctionCreate(size, NULL, NULL, function);
+void ActivationFunctionApplyCachedDerivative(ActivationFunction filter,  const float *a, float *output){
+    filter->cached_derivative(filter->implementer, a, output, filter->input_size);
 }
+
+void ActivationFunctionApplyDerivative(ActivationFunction filter,  const float *a, float *output){
+    filter->derivative(filter->implementer, a, output, filter->input_size);
+}
+
+bool ActivationFunctionSupportCachedDerivation(ActivationFunction filter){
+    return filter->cached_derivative != NULL;
+}
+
