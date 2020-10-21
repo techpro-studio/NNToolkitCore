@@ -28,8 +28,6 @@
 
 void MatMul(const float *a, const float *b, float* result, int m, int n, int k, float beta);
 
-void MatMul2(const float *a, const float *b, float* result, int m, int n, int k);
-
 void MatMul3(const float *a, const float *b, bool a_transpose, bool b_transpose, float* result, int m, int n, int k, float beta);
 
 void MatTrans(const float *a, float *b, int m, int n);

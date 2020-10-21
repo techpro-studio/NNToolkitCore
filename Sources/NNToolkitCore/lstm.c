@@ -10,6 +10,7 @@
 #include "string.h"
 #include "activation_default.h"
 #include "operations.h"
+#include "debug.h"
 
 LSTMActivations LSTMActivationsCreate(ActivationFunction inputGateActivation, ActivationFunction forgetGateActivation, ActivationFunction candidateGateActivation, ActivationFunction outputGateActivation, ActivationFunction outputActivation){
     LSTMActivations activations;
@@ -165,6 +166,8 @@ LSTMFilter LSTMFilterCreateForTraining(LSTMConfig config, LSTMTrainingConfig tra
     trainingData->dH = trainingData->output + batch * ts * out;
     trainingData->dC = trainingData->dH + batch * out;
 
+    memset(trainingData->input, 0, trainingCacheSize);
+
     int computationBufferSize = 3 * out * sizeof(float);
     filter->forwardComputationBuffer = malloc(computationBufferSize);
     memset(filter->forwardComputationBuffer, 0, computationBufferSize);
@@ -240,6 +243,28 @@ void LSTMCellForward(
     VectorMul(o, c_tanh, h, out);
 }
 
+int LSTMFilterApply(LSTMFilter filter, const float *input, float* output){
+    int out = filter->config.outputFeatureChannels;
+    int in = filter->config.inputFeatureChannels;
+    for (int i = 0; i < filter->config.timesteps; ++i){
+        float state[out];
+        int outputIndex = filter->config.returnSequences ? i * out : 0;
+        LSTMCellForward(filter->weights, filter->config.activations, in, out, input + i * in, filter->state, filter->output, state, output + outputIndex, filter->forwardComputationBuffer, filter->forwardComputationBuffer + 8);
+        memcpy(filter->output, output + outputIndex, out * sizeof(float));
+        memcpy(filter->state, state, out * sizeof(float));
+    }
+    return 0;
+}
+
+void LSTMFilterZeroState(LSTMFilter filter){
+    int size = filter->config.outputFeatureChannels * sizeof(float);
+    memset(filter->state, 0, size);
+    memset(filter->output, 0, size);
+}
+
+
+
+
 
 void ActivationDerivative(ActivationFunction activation, float *z, float *a, float* out){
     if(ActivationFunctionSupportCachedDerivation(activation)){
@@ -262,7 +287,8 @@ typedef struct {
     float *d_x_t;
     float *d_W_t;
     float *d_U_t;
-    float *d_b_t;
+    float *d_bi_t;
+    float *d_bh_t;
     float *d_c_t_prev;
 } CellBackwardGradients;
 
@@ -289,7 +315,7 @@ void LSTMCellBackward(
     float *g_t = f_t + out;
     float *o_t = g_t + out;
 
-    float *dgates = buffer + 4 * out;
+    float *dgates = buffer;
 
     float *d_i_t = dgates;
     float *d_f_t = d_i_t + out;
@@ -305,15 +331,17 @@ void LSTMCellBackward(
      */
     // d_o_t
     ActivationFunctionApply(activations.outputActivation, cache.c_t, d_o_t);
+    float *d_out_gate_act = d_o_t + out;
+    ActivationDerivative(activations.outputGateActivation, z_o_t, o_t, d_out_gate_act);
+    VectorMul(d_o_t, d_out_gate_act, d_o_t, out);
     VectorMul(d_h_t, d_o_t, d_o_t, out);
-
     // d_c_t
-    float *d_c_t = d_o_t + out;
+    float *d_c_t = d_out_gate_act + out;
     ActivationFunctionApplyDerivative(activations.outputActivation, cache.c_t, d_c_t);
     VectorMul(d_c_t, o_t, d_c_t, out);
     VectorMul(d_h_t, d_c_t, d_c_t, out);
-    VectorAdd(d_c_t, d_c_t_init, d_c_t, out);
-
+    if (d_c_t_init != NULL)
+        VectorAdd(d_c_t, d_c_t_init, d_c_t, out);
     /*
      Backward step 2
         FWD: c_t = i_t * g_t + f_t * c_t-1
@@ -338,18 +366,19 @@ void LSTMCellBackward(
     ActivationDerivative(activations.inputGateActivation, z_i_t, i_t, d_i_t);
     VectorMul(d_c_t, d_i_t, d_i_t, out);
     VectorMul(g_t, d_i_t, d_i_t, out);
-
     /*
         Forget gate:
         d_a_f_t = d_c_t * c_t-1;
         d_z_f_t = d_a_f_t * d_forget_activation(z_f_t);
-        for default sigmoid => d_z_i_t = d_c_t * c_t-1 * a_f_t * (1 - a_f_t);
+        for default sigmoid => d_z_f_t = d_c_t * c_t-1 * a_f_t * (1 - a_f_t);
      */
-
     ActivationDerivative(activations.forgetGateActivation, z_f_t, f_t, d_f_t);
     VectorMul(d_c_t, d_f_t, d_f_t, out);
-    VectorMul(cache.c_t_prev, d_f_t, d_f_t, out);
-
+    if (cache.c_t_prev == NULL){
+        memset(d_f_t, 0, out * sizeof(float));
+    } else {
+        VectorMul(cache.c_t_prev, d_f_t, d_f_t, out);
+    }
     /*
         Candidate gate:
         d_a_g_t = d_c_t * i_t;
@@ -372,38 +401,25 @@ void LSTMCellBackward(
         d_h_t-1 = dgates * UT;
      */
 
-    MatMul3(dgates, weigths->W, false, true, gradients.d_x_t, 1, in, 4 * out, 0.0);
-    MatMul3(dgates, weigths->U, false, true, gradients.d_h_t_prev, 1, out, 4 * out, 0.0);
+    MatMul3(weigths->W, dgates, false, false, gradients.d_x_t, in, 1, 4 * out, 0.0);
+    MatMul3(weigths->U, dgates, false, false, gradients.d_h_t_prev, out, 1, 4 * out, 0.0);
     /*
      Final backward step:
         d_w_t = d_gates * x_t
         d_u_t = d_gates * h_t-1
         d_b = d_gates
     */
-    int dgatesSize = 4 * out * sizeof(float);
 
-    MatMul3(dgates, cache.x_t, true, true, gradients.d_W_t, in, 4 * out, 1, 0.0);
-    MatMul3(dgates, cache.h_t_prev, true, true, gradients.d_U_t, out, 4 * out, 1, 0.0);
-    memcpy(gradients.d_b_t, dgates, dgatesSize);
-}
+    MatMul3(cache.x_t, dgates, false, false, gradients.d_W_t, in, 4 * out, 1, 0.0);
 
-int LSTMFilterApply(LSTMFilter filter, const float *input, float* output){
-    int out = filter->config.outputFeatureChannels;
-    int in = filter->config.inputFeatureChannels;
-    for (int i = 0; i < filter->config.timesteps; ++i){
-        float state[out];
-        int outputIndex = filter->config.returnSequences ? i * out : 0;
-        LSTMCellForward(filter->weights, filter->config.activations, in, out, input + i * in, filter->state, filter->output, state, output + outputIndex, filter->forwardComputationBuffer, filter->forwardComputationBuffer + 8);
-        memcpy(filter->output, output + outputIndex, out * sizeof(float));
-        memcpy(filter->state, state, out * sizeof(float));
+    if (cache.h_t_prev){
+        MatMul3(cache.h_t_prev, dgates, false, false, gradients.d_U_t, out, 4 * out, 1, 0.0);
+
+    } else {
+        memset(gradients.d_U_t, 0, 4 * out * out * sizeof(float));
     }
-    return 0;
-}
-
-void LSTMFilterZeroState(LSTMFilter filter){
-    int size = filter->config.outputFeatureChannels * sizeof(float);
-    memset(filter->state, 0, size);
-    memset(filter->output, 0, size);
+    memcpy(gradients.d_bi_t, dgates, 4 * out * sizeof(float));
+    memcpy(gradients.d_bh_t, dgates, 4 * out * sizeof(float));
 }
 
 
@@ -427,11 +443,13 @@ int LSTMFilterApplyTrainingBatch(LSTMFilter filter, const float *input, float* o
 
             float *c_t = filter->trainingData->state + out * i + b * ts * out;
             float *h_t = filter->trainingData->output + out * i + b * ts * out;
-            float *zifgo = filter->trainingData->zifgo + b * 8 * out;
+            float *zifgo = filter->trainingData->zifgo + i * 8 * out + 8 * b * ts * out;
+
             float *c_t_prev = filter->state;
             float *h_t_prev = filter->output;
 
             LSTMCellForward(filter->weights, filter->config.activations, in, out, x_t, c_t_prev, h_t_prev, c_t, h_t, zifgo , filter->forwardComputationBuffer);
+
             memcpy(filter->output, h_t, out * sizeof(float));
             memcpy(filter->state, c_t, out * sizeof(float));
         }
@@ -440,7 +458,7 @@ int LSTMFilterApplyTrainingBatch(LSTMFilter filter, const float *input, float* o
         memcpy(output, filter->trainingData->output, batch * ts * out * sizeof(float));
     } else {
         for (int b = 0; b < batch; ++b){
-            int offset = ((ts - 2) * out) + b * ts * out;
+            int offset = ((ts - 1) * out) + b * ts * out;
             memcpy(output + b * out, filter->trainingData->output + offset, out * sizeof(float));
         }
     }
@@ -451,17 +469,18 @@ LSTMGradients * LSTMGradientsCreate(LSTMConfig config, LSTMTrainingConfig traini
     LSTMGradients * gradients = malloc(sizeof(LSTMGradients));
     LSTMWeightsSize sizes = LSTMWeightsSizeFromConfig(config);
     int batch = trainingConfig.mini_batch_size;
-    gradients->d_W = malloc(sizes.buffer * batch);
+    int buff_size = sizes.buffer * batch + batch * config.timesteps * config.inputFeatureChannels * sizeof(float);
+    gradients->d_W = malloc(buff_size);
     gradients->d_U = gradients->d_W + batch * sizes.w;
     gradients->d_b_i = gradients->d_U + batch * sizes.u;
     gradients->d_b_h = gradients->d_b_i + batch * sizes.b_i;
-    gradients->d_X = malloc(1);
+    gradients->d_X = gradients->d_b_h + batch * sizes.b_h;
+    memset(gradients->d_W, 0, buff_size);
     return gradients;
 }
 
 void LSTMGradientsDestroy(LSTMGradients *gradients) {
     free(gradients->d_W);
-    free(gradients->d_X);
     free(gradients);
 }
 
@@ -484,63 +503,70 @@ void LSTMFilterCalculateGradients(LSTMFilter filter, LSTMGradients *gradients, f
 
     LSTMWeightsSize sizes = LSTMWeightsSizeFromConfig(filter->config);
 
-    float* dW = malloc(sizes.buffer * batch);
-    float* dU = dW + batch * sizes.w;
-    float* db = dU + batch * sizes.u;
-    float* dx = db + batch * sizes.b_i;
-    float* dc = filter->trainingData->dC;
-    float* dh = filter->trainingData->dH;
+    int buffer_size = sizes.buffer * batch + batch * in * ts * sizeof(float);
+
+    float *dW = malloc(buffer_size);
+    float *dU = dW + batch * sizes.w;
+    float *d_bi = dU + batch * sizes.u;
+    float *d_bh = d_bi + batch * sizes.b_i;
+    float *dx = d_bh + batch * sizes.b_h;
+
+    float *dc = filter->trainingData->dC;
+    float *dh = filter->trainingData->dH;
 
     memset(dW, 0, sizes.buffer * batch);
 
-    float* buffer = (float *) malloc(6 * out * sizeof(float));
-    float* zeros = buffer + 5 * out;
-
-    memset(zeros, 0, out * sizeof(float));
+    int computation_buffer_size = 6 * out * sizeof(float);
+    float *computation_buffer = (float *) malloc(computation_buffer_size);
+    memset(computation_buffer, 0, computation_buffer_size);
 
     S_LOOP_START(batch, b)
-        for(int t = ts - 1; ts >= 0; --t){
-
+        for(int t = ts - 1; t >= 0; --t){
             size_t tOutOffset = t * out + b * ts * out;
 
             CellBackwardCache cache;
 
             cache.c_t = c + tOutOffset;
-            cache.c_t_prev = t == 0 ? zeros : c + (tOutOffset - out);
-            cache.h_t_prev = t == 0 ? zeros : h + (tOutOffset - out);
+            cache.c_t_prev = t == 0 ? NULL : c + (tOutOffset - out);
+            cache.h_t_prev = t == 0 ? NULL : h + (tOutOffset - out);
             cache.x_t = x + t * in + b * ts * in;
             cache.zifgo = zifgo + (8 * tOutOffset);
 
             CellBackwardGradients currentGradients;
 
             currentGradients.d_W_t = dW + b * sizes.w;
-            currentGradients.d_U_t = dU +  b * sizes.u;
-            currentGradients.d_b_t = db +  b * sizes.b_i;
+            currentGradients.d_U_t = dU + b * sizes.u;
+            currentGradients.d_bi_t = d_bi + b * sizes.b_i;
+            currentGradients.d_bh_t = d_bh + b * sizes.b_h;
             currentGradients.d_c_t_prev = dc + (b * out);
             currentGradients.d_h_t_prev = dh + (b * out);
             currentGradients.d_x_t = dx + (t * in + b * ts * in);
 
-
-            float *d_c_t_init = t == ts - 1 ? zeros : dc + (b * out);
-            float *d_h_t_init = t == ts - 1 ? zeros : dh + (b * out);
+            float *d_c_t_init = t == ts - 1 ? NULL : dc + (b * out);
+            float *d_h_t_init = t == ts - 1 ? NULL : dh + (b * out);
 
             bool seq = filter->config.returnSequences;
 
-            float *d_out_t = zeros;
+            float d_out_t[out];
+            memset(d_out_t, 0, out * sizeof(float));
             if (seq){
-                d_out_t = dout + b * ts * out + t * out;
+                memcpy(d_out_t, dout + b * ts * out + t * out, out * sizeof(float));
             } else if (t == ts - 1){
-                d_out_t = dout + b * out;
+                memcpy(d_out_t, dout + b * out, out * sizeof(float));
             }
 
             float d_h_t[out];
-            VectorAdd(d_h_t_init, d_out_t, d_h_t, out);
+            memset(d_h_t, 0, out * sizeof(float));
 
-            LSTMCellBackward(filter->weights, filter->config.activations, in, out, d_h_t, d_c_t_init, cache, currentGradients, buffer);
+            VectorAdd(d_h_t_init == NULL ? d_h_t : d_h_t_init, d_out_t, d_h_t, out);
 
-            VectorAdd(gradients->d_W + b * sizes.w, currentGradients.d_W_t, gradients->d_W, sizes.w);
-            VectorAdd(gradients->d_U + b * sizes.u, currentGradients.d_U_t, gradients->d_U, sizes.u);
-            VectorAdd(gradients->d_b_i + b * sizes.b_i, currentGradients.d_b_t, gradients->d_b_i, sizes.b_i);
+            LSTMCellBackward(filter->weights, filter->config.activations, in, out, d_h_t, d_c_t_init, cache, currentGradients, computation_buffer);
+            memset(computation_buffer, 0, computation_buffer_size);
+            
+            VectorAdd(gradients->d_W + b * sizes.w, currentGradients.d_W_t, gradients->d_W + b * sizes.w, sizes.w);
+            VectorAdd(gradients->d_U + b * sizes.u, currentGradients.d_U_t, gradients->d_U + b * sizes.u, sizes.u);
+            VectorAdd(gradients->d_b_i + b * sizes.b_i, currentGradients.d_bi_t, gradients->d_b_i + b * sizes.b_i, sizes.b_i);
+            VectorAdd(gradients->d_b_h + b * sizes.b_h, currentGradients.d_bh_t, gradients->d_b_h + b * sizes.b_h, sizes.b_h);
         }
     S_LOOP_END
 

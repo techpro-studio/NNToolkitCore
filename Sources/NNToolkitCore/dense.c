@@ -51,11 +51,3 @@ int DenseFilterApply(DenseFilter filter, const float *input, float* output) {
     return 0;
 }
 
-
-int DenseFilterApplyTimeDistributed(DenseFilter filter, int size, const float *input, float* output) {
-    P_LOOP_START(size, i)
-        DenseFilterApply(filter, input + i * filter->config.inputSize, output + i * filter->config.outputSize);
-    P_LOOP_END
-    return 0;
-}
-
