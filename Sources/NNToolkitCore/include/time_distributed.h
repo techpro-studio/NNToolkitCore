@@ -18,13 +18,13 @@ typedef struct {
 
 
 typedef int (*filter_apply_fn)(void *filter, const float *input, float* output);
-typedef int (*filter_calculate_gradients_fn)(void *filter, void* gradients, float* dout);
+typedef int (*filter_calculate_gradient_fn)(void *filter, void* gradients, float* dout);
 
 TimeDistributedConfig TimeDistributedConfigCreate(int ts, int input_ts_offset, int output_ts_offset);
 
 typedef struct TimeDistributedStruct* TimeDistributed;
 
-TimeDistributed TimeDistributedCreate(TimeDistributedConfig config, void *filter, filter_apply_fn apply_fn, filter_calculate_gradients_fn back_fn);
+TimeDistributed TimeDistributedCreate(TimeDistributedConfig config, void *filter, filter_apply_fn apply_fn, filter_calculate_gradient_fn back_fn);
 
 int TimeDistributedFilterApply(TimeDistributed filter, const float *input, float* output);
 

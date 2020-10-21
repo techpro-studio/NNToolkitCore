@@ -13,7 +13,7 @@ struct TimeDistributedStruct{
     TimeDistributedConfig config;
     void *filter;
     filter_apply_fn apply_fn;
-    filter_calculate_gradients_fn back_fn;
+    filter_calculate_gradient_fn back_fn;
 };
 
 TimeDistributedConfig TimeDistributedConfigCreate(int ts, int input_ts_offset, int output_ts_offset){
@@ -24,7 +24,7 @@ TimeDistributedConfig TimeDistributedConfigCreate(int ts, int input_ts_offset, i
     return config;
 }
 
-TimeDistributed TimeDistributedCreate(TimeDistributedConfig config, void *filter, filter_apply_fn apply_fn, filter_calculate_gradients_fn back_fn){
+TimeDistributed TimeDistributedCreate(TimeDistributedConfig config, void *filter, filter_apply_fn apply_fn, filter_calculate_gradient_fn back_fn){
     TimeDistributed ts_filter = malloc(sizeof(struct TimeDistributedStruct));
     ts_filter->config = config;
     ts_filter->filter = filter;

@@ -68,11 +68,11 @@ typedef struct {
     float * d_b_i;
     float * d_b_h;
     float * d_X;
-} LSTMGradients;
+} LSTMGradient;
 
-LSTMGradients* LSTMGradientsCreate(LSTMConfig config, LSTMTrainingConfig trainingConfig);
+LSTMGradient* LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig trainingConfig);
 
-void LSTMGradientsDestroy(LSTMGradients *gradients);
+void LSTMGradientDestroy(LSTMGradient *gradients);
 
 typedef struct LSTMFilterStruct* LSTMFilter;
 
@@ -88,7 +88,7 @@ int LSTMFilterApply(LSTMFilter filter, const float *input, float* output);
 
 int LSTMFilterApplyTrainingBatch(LSTMFilter filter, const float *input, float* output);
 
-void LSTMFilterCalculateGradients(LSTMFilter filter, LSTMGradients *gradients, float *d_out);
+void LSTMFilterCalculateGradient(LSTMFilter filter, LSTMGradient *gradients, float *d_out);
 
 void LSTMFilterDestroy(LSTMFilter filter);
 

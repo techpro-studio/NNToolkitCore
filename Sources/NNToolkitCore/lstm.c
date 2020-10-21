@@ -465,8 +465,8 @@ int LSTMFilterApplyTrainingBatch(LSTMFilter filter, const float *input, float* o
     return 0;
 }
 
-LSTMGradients * LSTMGradientsCreate(LSTMConfig config, LSTMTrainingConfig trainingConfig) {
-    LSTMGradients * gradients = malloc(sizeof(LSTMGradients));
+LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig trainingConfig) {
+    LSTMGradient * gradients = malloc(sizeof(LSTMGradient));
     LSTMWeightsSize sizes = LSTMWeightsSizeFromConfig(config);
     int batch = trainingConfig.mini_batch_size;
     int buff_size = sizes.buffer * batch + batch * config.timesteps * config.inputFeatureChannels * sizeof(float);
@@ -479,13 +479,13 @@ LSTMGradients * LSTMGradientsCreate(LSTMConfig config, LSTMTrainingConfig traini
     return gradients;
 }
 
-void LSTMGradientsDestroy(LSTMGradients *gradients) {
-    free(gradients->d_W);
-    free(gradients);
+void LSTMGradientsDestroy(LSTMGradient *gradient) {
+    free(gradient->d_W);
+    free(gradient);
 }
 
 
-void LSTMFilterCalculateGradients(LSTMFilter filter, LSTMGradients *gradients, float *dout) {
+void LSTMFilterCalculateGradient(LSTMFilter filter, LSTMGradient *gradient, float *dout) {
     if (filter->trainingData == NULL){
         return;
     }
@@ -563,10 +563,10 @@ void LSTMFilterCalculateGradients(LSTMFilter filter, LSTMGradients *gradients, f
             LSTMCellBackward(filter->weights, filter->config.activations, in, out, d_h_t, d_c_t_init, cache, currentGradients, computation_buffer);
             memset(computation_buffer, 0, computation_buffer_size);
             
-            VectorAdd(gradients->d_W + b * sizes.w, currentGradients.d_W_t, gradients->d_W + b * sizes.w, sizes.w);
-            VectorAdd(gradients->d_U + b * sizes.u, currentGradients.d_U_t, gradients->d_U + b * sizes.u, sizes.u);
-            VectorAdd(gradients->d_b_i + b * sizes.b_i, currentGradients.d_bi_t, gradients->d_b_i + b * sizes.b_i, sizes.b_i);
-            VectorAdd(gradients->d_b_h + b * sizes.b_h, currentGradients.d_bh_t, gradients->d_b_h + b * sizes.b_h, sizes.b_h);
+            VectorAdd(gradient->d_W + b * sizes.w, currentGradients.d_W_t, gradient->d_W + b * sizes.w, sizes.w);
+            VectorAdd(gradient->d_U + b * sizes.u, currentGradients.d_U_t, gradient->d_U + b * sizes.u, sizes.u);
+            VectorAdd(gradient->d_b_i + b * sizes.b_i, currentGradients.d_bi_t, gradient->d_b_i + b * sizes.b_i, sizes.b_i);
+            VectorAdd(gradient->d_b_h + b * sizes.b_h, currentGradients.d_bh_t, gradient->d_b_h + b * sizes.b_h, sizes.b_h);
         }
     S_LOOP_END
 
