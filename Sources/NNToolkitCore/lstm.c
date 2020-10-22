@@ -38,6 +38,31 @@ void LSTMTrainingDataDestroy(LSTMTrainingData *data){
     free(data);
 }
 
+LSTMTrainingData* LSTMTrainingDataCreate(LSTMConfig config,  LSTMTrainingConfig trainingConfig){
+    LSTMTrainingData *trainingData = malloc(sizeof(LSTMTrainingData));
+
+    trainingData->config = trainingConfig;
+
+    int in = config.inputFeatureChannels;
+    int out = config.outputFeatureChannels;
+    int ts = config.timesteps;
+    int batch = trainingConfig.mini_batch_size;
+    /*
+     *input -> *zifgo(8 out) -> *state(out) -> *output(out) -> *dHt(out) -> *dCt(out)
+    */
+    int input = batch * in * ts;
+    int trainingCacheSize = (input + batch * ts * 10 * out + 2 * batch * out) * sizeof(float);
+
+    trainingData->input = malloc(trainingCacheSize);
+    trainingData->zifgo = trainingData->input + input;
+    trainingData->state = trainingData->zifgo + 8 * batch * ts * out;
+    trainingData->output = trainingData->state + batch * ts * out;
+    trainingData->dH = trainingData->output + batch * ts * out;
+    trainingData->dC = trainingData->dH + batch * out;
+
+    memset(trainingData->input, 0, trainingCacheSize);
+}
+
 struct LSTMFilterStruct {
     LSTMConfig config;
     float *forwardComputationBuffer;
@@ -143,34 +168,11 @@ LSTMTrainingConfig LSTMTrainingConfigCreate(int mini_batch_size){
 LSTMFilter LSTMFilterCreateForTraining(LSTMConfig config, LSTMTrainingConfig trainingConfig){
     LSTMFilter filter = LSTMFilterCreate(config);
 
-    LSTMTrainingData *trainingData = malloc(sizeof(LSTMTrainingData));
-
-    int in = config.inputFeatureChannels;
-    int out = config.outputFeatureChannels;
-    int ts = config.timesteps;
-    int batch = trainingConfig.mini_batch_size;
-    /*
-     *input -> *zifgo(8 out) -> *state(out) -> *output(out) -> *dHt(out) -> *dCt(out)
-    */
-    int input = batch * in * ts;
-    int trainingCacheSize = (input + batch * ts * 10 * out + 2 * batch * out) * sizeof(float);
-
-    trainingData->input = malloc(trainingCacheSize);
-    trainingData->zifgo = trainingData->input + input;
-    trainingData->state = trainingData->zifgo + 8 * batch * ts * out;
-    trainingData->output = trainingData->state + batch * ts * out;
-    trainingData->dH = trainingData->output + batch * ts * out;
-    trainingData->dC = trainingData->dH + batch * out;
-
-    memset(trainingData->input, 0, trainingCacheSize);
-
-    int computationBufferSize = 3 * out * sizeof(float);
+    int computationBufferSize = 3 * config.outputFeatureChannels * sizeof(float);
     filter->forwardComputationBuffer = malloc(computationBufferSize);
     memset(filter->forwardComputationBuffer, 0, computationBufferSize);
 
-    trainingData->config = trainingConfig;
-
-    filter->trainingData = trainingData;
+    filter->trainingData = LSTMTrainingDataCreate(config, trainingConfig);
 
     return filter;
 }

@@ -14,7 +14,7 @@
 #include "dense.h"
 #include "spectrogram.h"
 #include "debug.h"
-#include "time_distributed.h"
+#include "time_distributed_dense.h"
 #include "window.h"
 #include "lstm.h"
 #include "conv_1d.h"

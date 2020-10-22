@@ -22,6 +22,17 @@ typedef struct {
     float *b;
 } DenseWeights;
 
+typedef struct {
+    float *d_W;
+    float *d_b;
+    float *d_X;
+} DenseGradient;
+
+typedef struct {
+    int mini_batch_size;
+} DenseTrainingConfig;
+
+DenseTrainingConfig DenseTrainingConfigCreate(int batch);
 
 typedef struct {
     int inputSize;
@@ -29,20 +40,29 @@ typedef struct {
     ActivationFunction activation;
 } DenseConfig;
 
+DenseGradient* DenseGradientCreate(DenseConfig config, DenseTrainingConfig trainingConfig);
+
+void DenseGradientDestroy(DenseGradient *gradient);
+
 typedef struct DenseFilterStruct* DenseFilter;
 
 DenseWeights* DenseFilterGetWeights(DenseFilter filter);
 
 DenseConfig DenseConfigCreate(int inputSize, int outputSize, ActivationFunction activation);
 
-DenseFilter DenseFilterCreate(DenseConfig config);
+DenseFilter DenseFilterCreateForInference(DenseConfig config);
 
-DenseFilter DenseFilterCreateForTraining(DenseConfig config);
+DenseFilter DenseFilterCreateForTraining(DenseConfig config, DenseTrainingConfig training_config);
+
+DenseConfig DenseFilterGetConfig(DenseFilter filter);
 
 int DenseFilterApply(DenseFilter filter, const float *input, float* output);
 
-void DenseFilterDestroy(DenseFilter filter);
+int DenseFilterApplyTrainingBatch(DenseFilter filter, const float *input, float* output);
 
+void DenseFilterCalculateGradient(DenseFilter filter, DenseGradient *gradient, float *d_out);
+
+void DenseFilterDestroy(DenseFilter filter);
 
 #if defined __cplusplus
 }
