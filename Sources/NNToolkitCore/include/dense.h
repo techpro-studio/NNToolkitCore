@@ -37,6 +37,8 @@ DenseConfig DenseConfigCreate(int inputSize, int outputSize, ActivationFunction 
 
 DenseFilter DenseFilterCreate(DenseConfig config);
 
+DenseFilter DenseFilterCreateForTraining(DenseConfig config);
+
 int DenseFilterApply(DenseFilter filter, const float *input, float* output);
 
 void DenseFilterDestroy(DenseFilter filter);

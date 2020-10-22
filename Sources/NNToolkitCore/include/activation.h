@@ -28,11 +28,8 @@ void ActivationFunctionDestroy(ActivationFunction filter);
 
 void ActivationFunctionApply(ActivationFunction filter, const float *input, float *output);
 
-void ActivationFunctionApplyDerivative(ActivationFunction filter, const float *input, float *output);
+void ActivationFunctionApplyDerivative(ActivationFunction filter, const float *z, const float *a, float *output);
 
-bool ActivationFunctionSupportCachedDerivation(ActivationFunction filter);
-
-void ActivationFunctionApplyCachedDerivative(ActivationFunction filter, const float *input, float *output);
 
 
 #if defined __cplusplus

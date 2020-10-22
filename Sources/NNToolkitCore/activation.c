@@ -41,15 +41,11 @@ ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestr
     return filter;
 }
 
-void ActivationFunctionApplyCachedDerivative(ActivationFunction filter,  const float *a, float *output){
-    filter->cached_derivative(filter->implementer, a, output, filter->input_size);
-}
-
-void ActivationFunctionApplyDerivative(ActivationFunction filter,  const float *a, float *output){
-    filter->derivative(filter->implementer, a, output, filter->input_size);
-}
-
-bool ActivationFunctionSupportCachedDerivation(ActivationFunction filter){
-    return filter->cached_derivative != NULL;
+void ActivationFunctionApplyDerivative(ActivationFunction filter, const float *z, const float *a, float *output){
+    if(filter->cached_derivative == NULL || a == NULL){
+        filter->derivative(filter->implementer, z, output, filter->input_size);
+    } else {
+        filter->cached_derivative(filter->implementer, a, output, filter->input_size);
+    }
 }
 

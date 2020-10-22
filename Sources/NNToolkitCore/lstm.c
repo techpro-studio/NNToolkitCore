@@ -22,7 +22,6 @@ LSTMActivations LSTMActivationsCreate(ActivationFunction inputGateActivation, Ac
     return activations;
 }
 
-
 typedef struct {
     LSTMTrainingConfig config;
     float *input;
@@ -33,7 +32,6 @@ typedef struct {
     float *dC;
 
 } LSTMTrainingData;
-
 
 void LSTMTrainingDataDestroy(LSTMTrainingData *data){
     free(data->input);
@@ -66,7 +64,6 @@ void LSTMActivationsDestroy(LSTMActivations activations){
     ActivationFunctionDestroy(activations.outputGateActivation);
     ActivationFunctionDestroy(activations.outputActivation);
 }
-
 
 LSTMWeights* LSTMFilterGetWeights(LSTMFilter filter){
     return filter->weights;
@@ -143,7 +140,6 @@ LSTMTrainingConfig LSTMTrainingConfigCreate(int mini_batch_size){
     return config;
 }
 
-
 LSTMFilter LSTMFilterCreateForTraining(LSTMConfig config, LSTMTrainingConfig trainingConfig){
     LSTMFilter filter = LSTMFilterCreate(config);
 
@@ -178,8 +174,6 @@ LSTMFilter LSTMFilterCreateForTraining(LSTMConfig config, LSTMTrainingConfig tra
 
     return filter;
 }
-
-
 
 void LSTMFilterDestroy(LSTMFilter filter) {
     free(filter->weights->W);
@@ -262,18 +256,6 @@ void LSTMFilterZeroState(LSTMFilter filter){
     memset(filter->output, 0, size);
 }
 
-
-
-
-
-void ActivationDerivative(ActivationFunction activation, float *z, float *a, float* out){
-    if(ActivationFunctionSupportCachedDerivation(activation)){
-        ActivationFunctionApplyCachedDerivative(activation, a, out);
-    } else {
-        ActivationFunctionApplyDerivative(activation, z, out);
-    }
-}
-
 typedef struct {
     float *zifgo;
     float *x_t;
@@ -291,7 +273,6 @@ typedef struct {
     float *d_bh_t;
     float *d_c_t_prev;
 } CellBackwardGradients;
-
 
 void LSTMCellBackward(
       LSTMWeights *weigths,
@@ -332,12 +313,12 @@ void LSTMCellBackward(
     // d_o_t
     ActivationFunctionApply(activations.outputActivation, cache.c_t, d_o_t);
     float *d_out_gate_act = d_o_t + out;
-    ActivationDerivative(activations.outputGateActivation, z_o_t, o_t, d_out_gate_act);
+    ActivationFunctionApplyDerivative(activations.outputGateActivation, z_o_t, o_t, d_out_gate_act);
     VectorMul(d_o_t, d_out_gate_act, d_o_t, out);
     VectorMul(d_h_t, d_o_t, d_o_t, out);
     // d_c_t
     float *d_c_t = d_out_gate_act + out;
-    ActivationFunctionApplyDerivative(activations.outputActivation, cache.c_t, d_c_t);
+    ActivationFunctionApplyDerivative(activations.outputActivation, cache.c_t, NULL, d_c_t);
     VectorMul(d_c_t, o_t, d_c_t, out);
     VectorMul(d_h_t, d_c_t, d_c_t, out);
     if (d_c_t_init != NULL)
@@ -362,8 +343,7 @@ void LSTMCellBackward(
         d_z_i_t = d_a_i_t * d_input_activation(z_i_t);
         for default sigmoid => d_z_i_t = d_c_t * g_t * a_i_t * (1 - a_i_t);
      */
-
-    ActivationDerivative(activations.inputGateActivation, z_i_t, i_t, d_i_t);
+    ActivationFunctionApplyDerivative(activations.inputGateActivation, z_i_t, i_t, d_i_t);
     VectorMul(d_c_t, d_i_t, d_i_t, out);
     VectorMul(g_t, d_i_t, d_i_t, out);
     /*
@@ -372,7 +352,7 @@ void LSTMCellBackward(
         d_z_f_t = d_a_f_t * d_forget_activation(z_f_t);
         for default sigmoid => d_z_f_t = d_c_t * c_t-1 * a_f_t * (1 - a_f_t);
      */
-    ActivationDerivative(activations.forgetGateActivation, z_f_t, f_t, d_f_t);
+    ActivationFunctionApplyDerivative(activations.forgetGateActivation, z_f_t, f_t, d_f_t);
     VectorMul(d_c_t, d_f_t, d_f_t, out);
     if (cache.c_t_prev == NULL){
         memset(d_f_t, 0, out * sizeof(float));
@@ -385,11 +365,9 @@ void LSTMCellBackward(
         d_z_g_t = d_a_g_t * d_candidate_activation(z_g_t);
         for default tanh => d_z_g_t = d_c_t * i_t * (1 - (g_t^2));
     */
-
-    ActivationDerivative(activations.candidateGateActivation, z_g_t, g_t, d_g_t);
+    ActivationFunctionApplyDerivative(activations.candidateGateActivation, z_g_t, g_t, d_g_t);
     VectorMul(d_c_t, d_g_t, d_g_t, out);
     VectorMul(i_t, d_g_t, d_g_t, out);
-
     /*
        Previous state:
        d_c_t-1 = d_c_t * f_t
@@ -400,7 +378,6 @@ void LSTMCellBackward(
         d_x_t = dgates * WT;
         d_h_t-1 = dgates * UT;
      */
-
     MatMul3(weigths->W, dgates, false, false, gradients.d_x_t, in, 1, 4 * out, 0.0);
     MatMul3(weigths->U, dgates, false, false, gradients.d_h_t_prev, out, 1, 4 * out, 0.0);
     /*
@@ -409,9 +386,7 @@ void LSTMCellBackward(
         d_u_t = d_gates * h_t-1
         d_b = d_gates
     */
-
     MatMul3(cache.x_t, dgates, false, false, gradients.d_W_t, in, 4 * out, 1, 0.0);
-
     if (cache.h_t_prev){
         MatMul3(cache.h_t_prev, dgates, false, false, gradients.d_U_t, out, 4 * out, 1, 0.0);
 
@@ -421,7 +396,6 @@ void LSTMCellBackward(
     memcpy(gradients.d_bi_t, dgates, 4 * out * sizeof(float));
     memcpy(gradients.d_bh_t, dgates, 4 * out * sizeof(float));
 }
-
 
 int LSTMFilterApplyTrainingBatch(LSTMFilter filter, const float *input, float* output){
     if (filter->trainingData == NULL){
@@ -484,12 +458,10 @@ void LSTMGradientsDestroy(LSTMGradient *gradient) {
     free(gradient);
 }
 
-
 void LSTMFilterCalculateGradient(LSTMFilter filter, LSTMGradient *gradient, float *dout) {
     if (filter->trainingData == NULL){
         return;
     }
-
 
     int batch = filter->trainingData->config.mini_batch_size;
     int ts = filter->config.timesteps;
@@ -572,6 +544,3 @@ void LSTMFilterCalculateGradient(LSTMFilter filter, LSTMGradient *gradient, floa
 
     free(dW);
 }
-
-
-
