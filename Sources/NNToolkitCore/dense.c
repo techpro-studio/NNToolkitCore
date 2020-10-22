@@ -19,6 +19,23 @@ typedef struct{
     float *dz;
 } DenseTrainingData;
 
+DenseTrainingData* DenseTrainingDataCreate(DenseConfig config, DenseTrainingConfig training_config){
+    DenseTrainingData *data = malloc(sizeof(DenseTrainingData));
+    data->config = training_config;
+    int x_size = config.inputSize * training_config.mini_batch_size;
+    int z_size = config.outputSize * training_config.mini_batch_size;
+    data->x = malloc((x_size + 3 * z_size) * sizeof(float));
+    data->z = data->x + x_size;
+    data->a = data->z + z_size;
+    data->dz = data->a + z_size;
+    return data;
+}
+
+void DenseTrainingDataDestroy(DenseTrainingData *data){
+    free(data->x);
+    free(data);
+}
+
 struct DenseFilterStruct {
     DenseConfig config;
     DenseTrainingData* traning_data;
@@ -49,6 +66,9 @@ DenseFilter DenseFilterCreateForInference(DenseConfig config) {
 void DenseFilterDestroy(DenseFilter filter) {
     free(filter->weights->W);
     free(filter->weights);
+    if (filter->traning_data){
+        DenseTrainingDataDestroy(filter->traning_data);
+    }
     free(filter);
 }
 
@@ -60,17 +80,19 @@ DenseTrainingConfig DenseTrainingConfigCreate(int batch){
 
 DenseFilter DenseFilterCreateForTraining(DenseConfig config, DenseTrainingConfig training_config) {
     DenseFilter filter = DenseFilterCreateForInference(config);
-    filter->traning_data = malloc()
+    filter->traning_data = DenseTrainingDataCreate(config, training_config);
     return filter;
 }
 
 DenseGradient* DenseGradientCreate(DenseConfig config, DenseTrainingConfig trainingConfig) {
     DenseGradient* grad = malloc(sizeof(DenseGradient));
-    int dWSize = config.inputSize * config.outputSize * trainingConfig.mini_batch_size;
-    int dXSize = config.inputSize * trainingConfig.mini_batch_size;
-    grad->d_W = (float *) malloc((dWSize + dXSize + config.outputSize * trainingConfig.mini_batch_size) * sizeof(float));
-    grad->d_X = grad->d_W + dWSize;
-    grad->d_b = grad->d_X + dXSize;
+    int d_w_size = config.inputSize * config.outputSize * trainingConfig.mini_batch_size;
+    int d_x_size = config.inputSize * trainingConfig.mini_batch_size;
+    int buff_size = (d_w_size + d_x_size + config.outputSize * trainingConfig.mini_batch_size) * sizeof(float);
+    grad->d_W = (float *) malloc(buff_size);
+    grad->d_X = grad->d_W + d_w_size;
+    grad->d_b = grad->d_X + d_x_size;
+    memset(grad->d_W, 0, buff_size);
     return grad;
 }
 
