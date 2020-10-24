@@ -10,7 +10,7 @@
 #include <Accelerate/Accelerate.h>
 #include <simd/simd.h>
 
-float VectorDotDefault(const float *a, const float *b, int size){
+float op_vec_dot_default(const float *a, const float *b, int size){
     float result;
     vDSP_dotpr(a, 1, b, 1, &result, size);
     return result;
@@ -64,9 +64,9 @@ optimal_vector_size get_optimal_vector_size(int size){
 }
 
 
-VectorDotF GetOptimized(int size){
+op_vec_dot_fn op_vec_dot_get_optimized(int size){
     if (size > 4000){
-        return VectorDotDefault;
+        return op_vec_dot_default;
     }
     optimal_vector_size value = get_optimal_vector_size(size);
     switch (value) {
@@ -81,78 +81,74 @@ VectorDotF GetOptimized(int size){
         case sixteen:
             return VectorDot16;
         default:
-            return VectorDotDefault;
+            return op_vec_dot_default;
     }
 }
 
-void MatMul(const float *a, const float *b, float* result, int m, int n, int k, float beta) {
+void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k, float beta) {
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0, a, k, b, n, beta, result, n);
 }
 
-void MatMul3(const float *a, const float *b, bool a_transpose, bool b_transpose, float* result, int m, int n, int k, float beta){
+void op_mat_mul_wt(const float *a, const float *b, bool a_transpose, bool b_transpose, float* result, int m, int n, int k, float beta){
     cblas_sgemm(CblasRowMajor, a_transpose ? CblasTrans : CblasNoTrans, b_transpose ? CblasTrans : CblasNoTrans, m, n, k, 1.0, a, k, b, n, beta, result, n);
 }
 
-void MatMul2(const float *a, const float *b, float* result, int m, int n, int k) {
-    vDSP_mmul(a, 1, b, 1, result, 1, m, n, k);
-}
-
-void MatTrans(const float *a, float *b, int m, int n) {
+void op_mat_transp(const float *a, float *b, int m, int n) {
     vDSP_mtrans(a, 1, b, 1, m, n);
 }
 
-void VectorAdd(const float *a, const float * b,float *result, int size){
+void op_vec_add(const float *a, const float * b, float *result, int size){
     vDSP_vadd(a, 1, b, 1, result, 1, size);
 }
 
-void VectorSum(const float *a, float* result, int size){
+void op_vec_sum(const float *a, float* result, int size){
     vDSP_sve(a, 1, result, size);
 }
 
-void VectorMul(const float *a, const float *b, float* result, int size){
+void op_vec_mul(const float *a, const float *b, float* result, int size){
     vDSP_vmul(a, 1, b, 1, result, 1, size);
 }
 
-void VectorMulS(const float *a, float b, float *c, int size) {
+void op_vec_mul_sc(const float *a, float b, float *c, int size) {
     vDSP_vsmul(a, 1, &b, c, 1, size);
 }
 
-void VectorDivS(const float *a, float b, float *c, int size){
+void op_vec_div_sc(const float *a, float b, float *c, int size){
     vDSP_vsdiv(a, 1, &b, c, 1, size);
 }
 
-void VectorAddS(const float *a, float b, float *c, int size){
+void op_vec_add_sc(const float *a, float b, float *c, int size){
     vDSP_vsadd(a, 1, &b, c, 1, size);
 }
 
-void VectorNeg(const float *a, float *c, int size){
+void op_vec_neg(const float *a, float *c, int size){
     vDSP_vneg(a, 1, c, 1, size);
 }
 
-void VectorSqrt(const float *a, float *c, int size){
+void op_vec_sqrt(const float *a, float *c, int size){
     vvsqrtf(c, a, &size);
 }
 
-void VectorExp(const float *a, float *c, int size) {
+void op_vec_exp(const float *a, float *c, int size) {
     vvexpf(c, a, &size);
 }
 
-void VectorTanh(const float *a, float *c, int size) {
+void op_vec_tanh(const float *a, float *c, int size) {
     vvtanhf(c, a, &size);
 }
 
-void VectorReciprocal(const float *a, float *c, int size) {
+void op_vec_reciprocal(const float *a, float *c, int size) {
     vvrecf(c, a, &size);
 }
 
-void VectorDiv(const float *a, const float *b, float *c, int size) {
+void op_vec_div(const float *a, const float *b, float *c, int size) {
     vDSP_vdiv(b, 1, a, 1, c, 1, size);
 }
 
-void VectorMax(const float *a, const float *b, float *c, int size){
+void op_vec_max(const float *a, const float *b, float *c, int size){
     vDSP_vmax(a, 1, b, 1, c, 1, size);
 }
 
-void VectorMin(const float *a, const float *b, float *c, int size){
+void op_vec_min(const float *a, const float *b, float *c, int size){
     vDSP_vmin(a, 1, b, 1, c, 1, size);
 }

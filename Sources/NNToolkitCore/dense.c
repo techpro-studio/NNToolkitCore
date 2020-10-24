@@ -111,8 +111,8 @@ DenseConfig DenseFilterGetConfig(DenseFilter filter) {
 }
 
 void z(DenseFilter filter, const float *input, float* output){
-    MatMul(input, filter->weights->W, output, 1,  filter->config.outputSize, filter->config.inputSize, 0.0);
-    VectorAdd(output, filter->weights->b, output, filter->config.outputSize);
+    op_mat_mul(input, filter->weights->W, output, 1, filter->config.outputSize, filter->config.inputSize, 0.0);
+    op_vec_add(output, filter->weights->b, output, filter->config.outputSize);
 }
 
 void a(DenseFilter filter, const float *input, float* output){
@@ -157,16 +157,16 @@ void DenseFilterCalculateGradient(DenseFilter filter, DenseGradient *gradient, f
         float *dz = filter->traning_data->dz + b * out;
         if(filter->config.activation){
             ActivationFunctionApplyDerivative(filter->config.activation, filter->traning_data->z + b * out, filter->traning_data->a + b * out, dz);
-            VectorMul(dz, d_out + b * out, dz, out);
+            op_vec_mul(dz, d_out + b * out, dz, out);
         } else {
             memcpy(dz, d_out + b * out, out * sizeof(float));
         }
         //db = dz;
         memcpy(gradient->d_b + b * out, dz, out * sizeof(float));
         // DW = dz * X;
-        MatMul(filter->traning_data->x + b * in, dz, gradient->d_W + b * in * out, in, out, 1, 0.0);
+                op_mat_mul(filter->traning_data->x + b * in, dz, gradient->d_W + b * in * out, in, out, 1, 0.0);
         // DX = dz * W;
-        MatMul(filter->weights->W, dz, gradient->d_X + b * in, in, 1, out, 0.0);
+                op_mat_mul(filter->weights->W, dz, gradient->d_X + b * in, in, 1, out, 0.0);
     P_LOOP_END
 }
 

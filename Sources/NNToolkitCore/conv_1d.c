@@ -40,7 +40,7 @@ Conv1dFilter Conv1dFilterCreate(Conv1dConfig config) {
     filter->weights = malloc(sizeof(Conv1dWeights));
     filter->weights->W = malloc(config.kernelSize * config.inputFeatureChannels * config.outputFeatureChannels * sizeof(float));
     filter->weights->b = malloc(config.outputFeatureChannels * sizeof(float));
-    filter->v_dot = GetOptimized(config.kernelSize);
+    filter->v_dot = op_vec_dot_get_optimized(config.kernelSize);
     filter->buffer = malloc(config.inputSize * config.inputFeatureChannels * sizeof(float));
     return filter;
 }
@@ -55,9 +55,9 @@ void Conv1dFilterDestroy(Conv1dFilter filter){
 
 int Conv1dFilterApply(Conv1dFilter filter, const float *input, float* output){
     float *floatInput = (float*)filter->buffer;
-    MatTrans((float *) input, floatInput, filter->config.inputFeatureChannels, filter->config.inputSize);
+    op_mat_transp((float *) input, floatInput, filter->config.inputFeatureChannels, filter->config.inputSize);
     int kernelSize = filter->config.kernelSize;
-    VectorDotF fn = (VectorDotF) filter->v_dot;
+    op_vec_dot_fn fn = (op_vec_dot_fn) filter->v_dot;
     P_LOOP_START(filter->config.outputFeatureChannels, outFeature)
         for (int x = 0; x < filter->config.outputSize; ++x){
             int weightsOffset = (int)outFeature * filter->config.inputFeatureChannels * kernelSize;

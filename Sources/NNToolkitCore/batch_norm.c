@@ -53,19 +53,19 @@ void BatchNormFilterApplySlice(BatchNormFilter filter, const float *input, float
     int size = filter->config.feature_channels;
     float buffer[size];
     // output = - mean
-    VectorNeg(filter->weights->mean, output, size);
+    op_vec_neg(filter->weights->mean, output, size);
     //  output = input + output
-    VectorAdd(input, output, output, size);
+    op_vec_add(input, output, output, size);
     // output = (input - mean) * gamma
-    VectorMul(output, filter->weights->gamma,output, size);
+    op_vec_mul(output, filter->weights->gamma, output, size);
     // buffer = variance + epsilon
-    VectorAddS(filter->weights->variance, filter->config.epsilon, buffer, size);
+    op_vec_add_sc(filter->weights->variance, filter->config.epsilon, buffer, size);
 //    buffer = sqrt(buffer)
-    VectorSqrt(buffer, buffer, size);
+    op_vec_sqrt(buffer, buffer, size);
     // output = output / buffer
-    VectorDiv(output, buffer, output, size);
+    op_vec_div(output, buffer, output, size);
 //    output = output + beta
-    VectorAdd(output, filter->weights->beta, output, size);
+    op_vec_add(output, filter->weights->beta, output, size);
 }
 
 int BatchNormFilterApply(BatchNormFilter filter, const float *input, float* output) {

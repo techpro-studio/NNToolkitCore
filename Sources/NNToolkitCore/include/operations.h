@@ -26,45 +26,45 @@
 #endif
 
 
-void MatMul(const float *a, const float *b, float* result, int m, int n, int k, float beta);
+void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k, float beta);
 
-void MatMul3(const float *a, const float *b, bool a_transpose, bool b_transpose, float* result, int m, int n, int k, float beta);
+void op_mat_mul_wt(const float *a, const float *b, bool a_transpose, bool b_transpose, float* result, int m, int n, int k, float beta);
 
-void MatTrans(const float *a, float *b, int m, int n);
+void op_mat_transp(const float *a, float *b, int m, int n);
 
-void VectorAdd(const float *a, const float *b, float *result, int size);
+void op_vec_add(const float *a, const float *b, float *result, int size);
 
-void VectorSum(const float *a, float* result,  int size);
+void op_vec_sum(const float *a, float* result, int size);
 
-typedef float (*VectorDotF)(const float *a, const float *b, int size);
+void op_vec_mul(const float *a, const float *b, float* result, int size);
 
-VectorDotF GetOptimized(int size);
+typedef float (*op_vec_dot_fn)(const float *a, const float *b, int size);
 
-float VectorDotDefault(const float *a, const float *b, int size);
+op_vec_dot_fn op_vec_dot_get_optimized(int size);
 
-void VectorMul(const float *a, const float *b, float* result, int size);
+float op_vec_dot_default(const float *a, const float *b, int size);
 
-void VectorAddS(const float *a, float b, float *c, int size);
+void op_vec_add_sc(const float *a, float b, float *c, int size);
 
-void VectorMulS(const float *a, float b, float *c, int size);
+void op_vec_mul_sc(const float *a, float b, float *c, int size);
 
-void VectorDivS(const float *a, float b, float *c, int size);
+void op_vec_div_sc(const float *a, float b, float *c, int size);
 
-void VectorNeg(const float *a, float *c, int size);
+void op_vec_neg(const float *a, float *c, int size);
 
-void VectorDiv(const float *a, const float *b, float *c, int size);
+void op_vec_div(const float *a, const float *b, float *c, int size);
 
-void VectorSqrt(const float *a, float *c, int size);
+void op_vec_sqrt(const float *a, float *c, int size);
 
-void VectorExp(const float *a, float *c, int size);
+void op_vec_exp(const float *a, float *c, int size);
 
-void VectorTanh(const float *a, float *c, int size);
+void op_vec_tanh(const float *a, float *c, int size);
 
-void VectorReciprocal(const float *a, float *c, int size);
+void op_vec_reciprocal(const float *a, float *c, int size);
 
-void VectorMax(const float *a, const float *b, float *c, int size);
+void op_vec_max(const float *a, const float *b, float *c, int size);
 
-void VectorMin(const float *a, const float *b, float *c, int size);
+void op_vec_min(const float *a, const float *b, float *c, int size);
 
 
 

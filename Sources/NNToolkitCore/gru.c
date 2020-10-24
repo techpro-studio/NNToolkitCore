@@ -74,14 +74,14 @@ void GRUFilterDestroy(GRUFilter filter) {
 
 void ComputeGate(int in, int out, ActivationFunction activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, bool useHiddenBias,  float* gate) {
     // out = x * W
-    MatMul(x, W, gate, 1, out, in, 0.0);
+    op_mat_mul(x, W, gate, 1, out, in, 0.0);
 //    out = x * W + b_i
-    VectorAdd(gate, b_i, gate, out);
+    op_vec_add(gate, b_i, gate, out);
     // in_U = h_t * U
-    MatMul(h, U, gate, 1, out, out, 1.0);
+    op_mat_mul(h, U, gate, 1, out, out, 1.0);
     // g = g + b;
     if (useHiddenBias){
-        VectorAdd(gate, b_h, gate, out);
+        op_vec_add(gate, b_h, gate, out);
     }
     // g = activation(g);
     if (activation){
@@ -103,27 +103,27 @@ void GRUCellCompute(GRUFilter filter, const float *x, const float *h_pr, float* 
     // h_tilda = tanh(x * Wh + b_ih +  r <*> (h_prev * Uh + b_ih));
     float* h_tilda = r + out;
     //x * Wh
-    MatMul(x, filter->weights->Wh, h_tilda, 1, out, in, 0.0);
+    op_mat_mul(x, filter->weights->Wh, h_tilda, 1, out, in, 0.0);
     //x * Wh + b_ih
-    VectorAdd(h_tilda, filter->weights->b_ih, h_tilda, out);
+    op_vec_add(h_tilda, filter->weights->b_ih, h_tilda, out);
     
     float *h_prev_Uh = h_tilda + out;
 
     // V2
     if (filter->config.v2) {
 //    h_prev * UH
-        MatMul(h_pr, filter->weights->Uh, h_prev_Uh, 1, out, out, 0.0);
+        op_mat_mul(h_pr, filter->weights->Uh, h_prev_Uh, 1, out, out, 0.0);
     //    (h_prev * UH + b_hh)
-        VectorAdd(h_prev_Uh, filter->weights->b_hh, h_prev_Uh, out);
+        op_vec_add(h_prev_Uh, filter->weights->b_hh, h_prev_Uh, out);
         //(h_prev * UH + b_hh) <*>r
-        VectorMul(r, h_prev_Uh, h_prev_Uh, out);
+        op_vec_mul(r, h_prev_Uh, h_prev_Uh, out);
         //x * Wh + b_ih + h_prev_UH
-        VectorAdd(h_tilda, h_prev_Uh, h_tilda, out);
+        op_vec_add(h_tilda, h_prev_Uh, h_tilda, out);
     } else {
         // (hprev <*> r)
-        VectorMul(r, h_pr, h_prev_Uh, out);
+        op_vec_mul(r, h_pr, h_prev_Uh, out);
         // UH * (hprev <*> r) + h_tida
-        MatMul(h_prev_Uh, filter->weights->Uh, h_tilda, 1, out, out, 1.0);
+        op_mat_mul(h_prev_Uh, filter->weights->Uh, h_tilda, 1, out, out, 1.0);
     }
 
     //tanh(x * Wh + (h_prev <*> r) * Uh + bh);
@@ -132,15 +132,15 @@ void GRUCellCompute(GRUFilter filter, const float *x, const float *h_pr, float* 
     // h_t = (1 - z) <*> h_pr + z <*> h_tilda;
     // ht = -z;
     float * minus_z_pw = h_prev_Uh + out;
-    VectorNeg(z, minus_z_pw, out);
+    op_vec_neg(z, minus_z_pw, out);
     //ht= -z + 1
-    VectorAddS(minus_z_pw, 1, minus_z_pw, out);
+    op_vec_add_sc(minus_z_pw, 1, minus_z_pw, out);
     //ht = (1 - z) <*> h_tilda ? h_pr flip?
-    VectorMul(minus_z_pw, filter->config.flipOutputGates ? h_pr : h_tilda, minus_z_pw, out);
+    op_vec_mul(minus_z_pw, filter->config.flipOutputGates ? h_pr : h_tilda, minus_z_pw, out);
     //h_tilda = z <*> h_tild ? h_pr flip?
     float *z_h_pw = minus_z_pw + out;
-    VectorMul(z, filter->config.flipOutputGates ? h_tilda : h_pr, z_h_pw, out);
-    VectorAdd(minus_z_pw, z_h_pw, ht, out);
+    op_vec_mul(z, filter->config.flipOutputGates ? h_tilda : h_pr, z_h_pw, out);
+    op_vec_add(minus_z_pw, z_h_pw, ht, out);
 }
 
 int GRUFilterApply(GRUFilter filter, const float *input, float* output){

@@ -207,11 +207,11 @@ void LSTMCellForward(
  ){
     float *Z = zifgo;
     // Z = input * W (WI, WF, WG, WO in row) + h * U (UI, UF, UG, UO in row) + bias(BI, BF, BG, BO)
-    MatMul(input, weights->W, Z, 1, 4 * out, in, 0.0);
+    op_mat_mul(input, weights->W, Z, 1, 4 * out, in, 0.0f);
     //out = x * W + b_i
-    VectorAdd(Z, weights->b_i, Z, 4 * out);
+    op_vec_add(Z, weights->b_i, Z, 4 * out);
     // in_U = h_t * U
-    MatMul(h_prev, weights->U, Z, 1, out * 4, out, 1.0);
+    op_mat_mul(h_prev, weights->U, Z, 1, out * 4, out, 1.0f);
     // input Gate =  recurrent_activation(Z[0: out])
     // default sigmoid
     float* i = Z + 4 * out;
@@ -230,16 +230,16 @@ void LSTMCellForward(
     ActivationFunctionApply(activations.outputGateActivation, Z + 3 * out, o);
     // ig = i * g
     float* i_g = buffer;
-    VectorMul(i, g, i_g, out);
+    op_vec_mul(i, g, i_g, out);
     //f_cpr = f * c_pr
     float*  f_c_pr = i_g + out;
-    VectorMul(f, c_prev, f_c_pr, out);
+    op_vec_mul(f, c_prev, f_c_pr, out);
     //c = fc_pr + i_g
-    VectorAdd(f_c_pr, i_g, c, out);
+    op_vec_add(f_c_pr, i_g, c, out);
     // H = o * tanh(c)
     float* c_tanh = f_c_pr + out;
     ActivationFunctionApply(activations.outputActivation, c, c_tanh);
-    VectorMul(o, c_tanh, h, out);
+    op_vec_mul(o, c_tanh, h, out);
 }
 
 int LSTMFilterApply(LSTMFilter filter, const float *input, float* output){
@@ -319,15 +319,15 @@ void LSTMCellBackward(
     ActivationFunctionApply(activations.outputActivation, cache.c_t, d_o_t);
     float *d_out_gate_act = d_o_t + out;
     ActivationFunctionApplyDerivative(activations.outputGateActivation, z_o_t, o_t, d_out_gate_act);
-    VectorMul(d_o_t, d_out_gate_act, d_o_t, out);
-    VectorMul(d_h_t, d_o_t, d_o_t, out);
+    op_vec_mul(d_o_t, d_out_gate_act, d_o_t, out);
+    op_vec_mul(d_h_t, d_o_t, d_o_t, out);
     // d_c_t
     float *d_c_t = d_out_gate_act + out;
     ActivationFunctionApplyDerivative(activations.outputActivation, cache.c_t, NULL, d_c_t);
-    VectorMul(d_c_t, o_t, d_c_t, out);
-    VectorMul(d_h_t, d_c_t, d_c_t, out);
+    op_vec_mul(d_c_t, o_t, d_c_t, out);
+    op_vec_mul(d_h_t, d_c_t, d_c_t, out);
     if (d_c_t_init != NULL)
-        VectorAdd(d_c_t, d_c_t_init, d_c_t, out);
+        op_vec_add(d_c_t, d_c_t_init, d_c_t, out);
     /*
      Backward step 2
         FWD: c_t = i_t * g_t + f_t * c_t-1
@@ -349,8 +349,8 @@ void LSTMCellBackward(
         for default sigmoid => d_z_i_t = d_c_t * g_t * a_i_t * (1 - a_i_t);
      */
     ActivationFunctionApplyDerivative(activations.inputGateActivation, z_i_t, i_t, d_i_t);
-    VectorMul(d_c_t, d_i_t, d_i_t, out);
-    VectorMul(g_t, d_i_t, d_i_t, out);
+    op_vec_mul(d_c_t, d_i_t, d_i_t, out);
+    op_vec_mul(g_t, d_i_t, d_i_t, out);
     /*
         Forget gate:
         d_a_f_t = d_c_t * c_t-1;
@@ -358,11 +358,11 @@ void LSTMCellBackward(
         for default sigmoid => d_z_f_t = d_c_t * c_t-1 * a_f_t * (1 - a_f_t);
      */
     ActivationFunctionApplyDerivative(activations.forgetGateActivation, z_f_t, f_t, d_f_t);
-    VectorMul(d_c_t, d_f_t, d_f_t, out);
+    op_vec_mul(d_c_t, d_f_t, d_f_t, out);
     if (cache.c_t_prev == NULL){
         memset(d_f_t, 0, out * sizeof(float));
     } else {
-        VectorMul(cache.c_t_prev, d_f_t, d_f_t, out);
+        op_vec_mul(cache.c_t_prev, d_f_t, d_f_t, out);
     }
     /*
         Candidate gate:
@@ -371,29 +371,29 @@ void LSTMCellBackward(
         for default tanh => d_z_g_t = d_c_t * i_t * (1 - (g_t^2));
     */
     ActivationFunctionApplyDerivative(activations.candidateGateActivation, z_g_t, g_t, d_g_t);
-    VectorMul(d_c_t, d_g_t, d_g_t, out);
-    VectorMul(i_t, d_g_t, d_g_t, out);
+    op_vec_mul(d_c_t, d_g_t, d_g_t, out);
+    op_vec_mul(i_t, d_g_t, d_g_t, out);
     /*
        Previous state:
        d_c_t-1 = d_c_t * f_t
      */
-    VectorMul(d_c_t, f_t, gradients.d_c_t_prev, out);
+    op_vec_mul(d_c_t, f_t, gradients.d_c_t_prev, out);
     /*
      Backward step 3:
         d_x_t = dgates * WT;
         d_h_t-1 = dgates * UT;
      */
-    MatMul3(weigths->W, dgates, false, false, gradients.d_x_t, in, 1, 4 * out, 0.0);
-    MatMul3(weigths->U, dgates, false, false, gradients.d_h_t_prev, out, 1, 4 * out, 0.0);
+    op_mat_mul_wt(weigths->W, dgates, false, false, gradients.d_x_t, in, 1, 4 * out, 0.0f);
+    op_mat_mul_wt(weigths->U, dgates, false, false, gradients.d_h_t_prev, out, 1, 4 * out, 0.0f);
     /*
      Final backward step:
         d_w_t = d_gates * x_t
         d_u_t = d_gates * h_t-1
         d_b = d_gates
     */
-    MatMul3(cache.x_t, dgates, false, false, gradients.d_W_t, in, 4 * out, 1, 0.0);
+    op_mat_mul_wt(cache.x_t, dgates, false, false, gradients.d_W_t, in, 4 * out, 1, 0.0f);
     if (cache.h_t_prev){
-        MatMul3(cache.h_t_prev, dgates, false, false, gradients.d_U_t, out, 4 * out, 1, 0.0);
+        op_mat_mul_wt(cache.h_t_prev, dgates, false, false, gradients.d_U_t, out, 4 * out, 1, 0.0f);
 
     } else {
         memset(gradients.d_U_t, 0, 4 * out * out * sizeof(float));
@@ -536,15 +536,17 @@ void LSTMFilterCalculateGradient(LSTMFilter filter, LSTMGradient *gradient, floa
             float d_h_t[out];
             memset(d_h_t, 0, out * sizeof(float));
 
-            VectorAdd(d_h_t_init == NULL ? d_h_t : d_h_t_init, d_out_t, d_h_t, out);
+            op_vec_add(d_h_t_init == NULL ? d_h_t : d_h_t_init, d_out_t, d_h_t, out);
 
             LSTMCellBackward(filter->weights, filter->config.activations, in, out, d_h_t, d_c_t_init, cache, currentGradients, computation_buffer);
             memset(computation_buffer, 0, computation_buffer_size);
-            
-            VectorAdd(gradient->d_W + b * sizes.w, currentGradients.d_W_t, gradient->d_W + b * sizes.w, sizes.w);
-            VectorAdd(gradient->d_U + b * sizes.u, currentGradients.d_U_t, gradient->d_U + b * sizes.u, sizes.u);
-            VectorAdd(gradient->d_b_i + b * sizes.b_i, currentGradients.d_bi_t, gradient->d_b_i + b * sizes.b_i, sizes.b_i);
-            VectorAdd(gradient->d_b_h + b * sizes.b_h, currentGradients.d_bh_t, gradient->d_b_h + b * sizes.b_h, sizes.b_h);
+
+            op_vec_add(gradient->d_W + b * sizes.w, currentGradients.d_W_t, gradient->d_W + b * sizes.w, sizes.w);
+            op_vec_add(gradient->d_U + b * sizes.u, currentGradients.d_U_t, gradient->d_U + b * sizes.u, sizes.u);
+            op_vec_add(gradient->d_b_i + b * sizes.b_i, currentGradients.d_bi_t, gradient->d_b_i + b * sizes.b_i,
+                       sizes.b_i);
+            op_vec_add(gradient->d_b_h + b * sizes.b_h, currentGradients.d_bh_t, gradient->d_b_h + b * sizes.b_h,
+                       sizes.b_h);
         }
     S_LOOP_END
 

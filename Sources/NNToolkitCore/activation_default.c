@@ -25,19 +25,19 @@ ActivationFunction ActivationFunctionCreateSimpleWithCached(int size, Activation
 
 // 1 / 1 - exp(-x)
 void activation_sigmoid(void *implementer, const float *input, float *output, int size) {
-    VectorNeg(input, output, size);
-    VectorExp(output, output, size);
-    VectorAddS(output, 1, output, size);
-    VectorReciprocal(output, output, size);
+    op_vec_neg(input, output, size);
+    op_vec_exp(output, output, size);
+    op_vec_add_sc(output, 1, output, size);
+    op_vec_reciprocal(output, output, size);
 }
 
 
 // sigmoid(x)' = sigmoid(x)* (1 * sigmoid(x));
 
 void activation_sigmoid_cached_derivative(void *implementer, const float *input, float *output, int size) {
-    VectorNeg(input, output, size);
-    VectorAddS(output, 1, output, size);
-    VectorMul(input, output, output, size);
+    op_vec_neg(input, output, size);
+    op_vec_add_sc(output, 1, output, size);
+    op_vec_mul(input, output, output, size);
 }
 
 
@@ -59,13 +59,13 @@ ActivationFunction ActivationFunctionCreateSigmoid(int inputSize){
 
 
 void activation_tanh(void *implementer, const float *input, float *output, int size){
-    VectorTanh(input, output, size);
+    op_vec_tanh(input, output, size);
 }
 
 void activation_tanh_cached_derivative(void *implementer, const float *input, float *output, int size) {
-    VectorMul(input, input, output, size);
-    VectorNeg(output, output, size);
-    VectorAddS(output, 1, output, size);
+    op_vec_mul(input, input, output, size);
+    op_vec_neg(output, output, size);
+    op_vec_add_sc(output, 1, output, size);
 }
 
 void activation_tanh_derivative(void *implementer, const float *input, float *output, int size) {
@@ -113,9 +113,9 @@ void activation_relu_derivative(void *implementer, const float *input, float *ou
 
 void activation_relu(void *implementer, const float *input, float *output, int size){
     ReLUImplementer * impl = (ReLUImplementer *) implementer;
-    VectorMax(input, impl->zeros, output, size);
+    op_vec_max(input, impl->zeros, output, size);
     if (impl->a != 1.0){
-        VectorMulS(output, impl->a, output, size);
+        op_vec_mul_sc(output, impl->a, output, size);
     }
 }
 
@@ -146,10 +146,10 @@ typedef struct {
 
 void activation_hard_sigmoid(void *implementer, const float *input, float *output, int size){
     HardSigmoidImplementer* impl = (HardSigmoidImplementer *)implementer;
-    VectorMulS(input, 0.2, output, size);
-    VectorAddS(output, 0.5, output, size);
-    VectorMin(output, impl->ones, output, size);
-    VectorMax(output, impl->zeros, output, size);
+    op_vec_mul_sc(input, 0.2f, output, size);
+    op_vec_add_sc(output, 0.5f, output, size);
+    op_vec_min(output, impl->ones, output, size);
+    op_vec_max(output, impl->zeros, output, size);
 }
 
 void activation_hard_sigmoid_derivative(void *implementer, const float *input, float *output, int size) {
@@ -168,7 +168,7 @@ ActivationFunction ActivationFunctionCreateHardSigmoid(int inputSize){
     implementer->zeros = malloc(2 * inputSize * sizeof(float));
     implementer->ones = implementer->zeros + inputSize;
     memset(implementer->zeros, 0, 2 * inputSize * sizeof(float));
-    VectorAddS(implementer->ones, 1.0f, implementer->ones, inputSize);
+    op_vec_add_sc(implementer->ones, 1.0f, implementer->ones, inputSize);
     return ActivationFunctionCreate(inputSize, HardSigmoidImplementerDestroy, implementer, activation_hard_sigmoid, activation_hard_sigmoid_derivative, NULL);
 }
 
@@ -182,10 +182,10 @@ typedef struct {
 
 
 void softmax(const float *input, float *output, int vector_size){
-    VectorExp(input, output, vector_size);
+    op_vec_exp(input, output, vector_size);
     float sum = 0.0f;
-    VectorSum(output, &sum, vector_size);
-    VectorDivS(output, sum, output, vector_size);
+    op_vec_sum(output, &sum, vector_size);
+    op_vec_div_sc(output, sum, output, vector_size);
 }
 
 void activation_softmax(void *implementer, const float *input, float *output, int size){
