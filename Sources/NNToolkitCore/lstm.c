@@ -144,6 +144,7 @@ LSTMFilter LSTMFilterCreate(LSTMConfig config){
     LSTMWeightsSize sizes = LSTMWeightsSizeFromConfig(config);
     float *buffer = malloc(sizes.buffer);
     memset(buffer, 0, sizes.buffer);
+    
     filter->weights->W = buffer;
     filter->weights->U = filter->weights->W + sizes.w;
     filter->weights->b_i = filter->weights->U + sizes.u;

@@ -10,8 +10,6 @@
 #include "stdlib.h"
 #include "string.h"
 
-
-
 typedef struct  {
     TimeDistributedDenseTrainingConfig config;
     DenseTrainingConfig dense_config;
@@ -100,6 +98,7 @@ int TimeDistributedDenseFilterApplyTrainingBatch(TimeDistributedDense filter, co
 void TimeDistributedDenseFilterCalculateGradient(TimeDistributedDense filter, DenseGradient *gradient, float *d_out){
     DenseGradient *dense_gradient = DenseGradientCreate(filter->config.dense, filter->training_data->dense_config);
     DenseFilterCalculateGradient(filter->dense, dense_gradient, d_out);
+
     int d_W_size = filter->config.dense.inputSize * filter->config.dense.outputSize;
     int d_b_size = filter->config.dense.outputSize;
     int ts = filter->config.ts;

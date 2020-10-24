@@ -61,8 +61,10 @@ DenseFilter DenseFilterCreateForInference(DenseConfig config) {
     filter->config = config;
     filter->traning_data = NULL;
     filter->weights = malloc(sizeof(DenseWeights));
-    filter->weights->W = malloc(config.inputSize * (config.outputSize + 1) * sizeof(float));
+    int weights_buff_size = config.inputSize * (config.outputSize + 1) * sizeof(float);
+    filter->weights->W = malloc(weights_buff_size);
     filter->weights->b = filter->weights->W + config.inputSize * config.outputSize;
+    memset(filter->weights->W, 0, weights_buff_size);
     return filter;
 }
 
@@ -108,7 +110,6 @@ DenseConfig DenseFilterGetConfig(DenseFilter filter) {
     return filter->config;
 }
 
-
 void z(DenseFilter filter, const float *input, float* output){
     MatMul(input, filter->weights->W, output, 1,  filter->config.outputSize, filter->config.inputSize, 0.0);
     VectorAdd(output, filter->weights->b, output, filter->config.outputSize);
@@ -132,15 +133,18 @@ int DenseFilterApplyTrainingBatch(DenseFilter filter, const float *input, float*
     if (filter->traning_data == NULL){
         return -1;
     }
+    
     int in = filter->config.inputSize;
     int batch = filter->traning_data->config.mini_batch_size;
     int out = filter->config.outputSize;
 
     memcpy(filter->traning_data->x, input, in * batch * sizeof(float));
+
     P_LOOP_START(batch, b)
         z(filter, input + b * in, filter->traning_data->z + b * out);
         a(filter, filter->traning_data->z + b * out, filter->traning_data->a + b * out);
     P_LOOP_END
+
     memcpy(output, filter->traning_data->a, out * batch * sizeof(float));
     return 0;
 }
@@ -158,11 +162,11 @@ void DenseFilterCalculateGradient(DenseFilter filter, DenseGradient *gradient, f
             memcpy(dz, d_out + b * out, out * sizeof(float));
         }
         //db = dz;
-        memcpy(dz, gradient->d_b + b * out, out * sizeof(float));
+        memcpy(gradient->d_b + b * out, dz, out * sizeof(float));
         // DW = dz * X;
-        MatMul(filter->traning_data->x + b * in, dz, gradient->d_W, in, out, 1, 0.0);
+        MatMul(filter->traning_data->x + b * in, dz, gradient->d_W + b * in * out, in, out, 1, 0.0);
         // DX = dz * W;
-        MatMul(filter->weights->W, dz, gradient->d_X, in, 1, out, 0.0);
+        MatMul(filter->weights->W, dz, gradient->d_X + b * in, in, 1, out, 0.0);
     P_LOOP_END
 }
 
