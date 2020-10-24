@@ -105,8 +105,8 @@ void TimeDistributedDenseFilterCalculateGradient(TimeDistributedDense filter, De
     int batch = filter->training_data->config.mini_batch_size;
     P_LOOP_START(batch, b)
         for (int t = 0; t < ts; ++t){
-            op_vec_add(gradient->d_W, dense_gradient->d_W + (t * d_W_size + b * ts * d_W_size), gradient->d_W, d_W_size);
-            op_vec_add(gradient->d_b, dense_gradient->d_b + (t * d_b_size + b * ts * d_b_size), gradient->d_b, d_b_size);
+            op_vec_add(gradient->d_W + b * d_W_size, dense_gradient->d_W + (t * d_W_size + b * ts * d_W_size), gradient->d_W + b * d_W_size, d_W_size);
+            op_vec_add(gradient->d_b + b * d_b_size, dense_gradient->d_b + (t * d_b_size + b * ts * d_b_size), gradient->d_b + b * d_b_size, d_b_size);
         }
     P_LOOP_END
     memcpy(gradient->d_X, dense_gradient->d_X, filter->config.dense.inputSize * ts * batch * sizeof(float));
