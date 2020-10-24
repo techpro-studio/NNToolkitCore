@@ -70,11 +70,11 @@ typedef struct {
     float * d_X;
 } LSTMGradient;
 
-LSTMGradient* LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig trainingConfig);
-
 void LSTMGradientDestroy(LSTMGradient *gradients);
 
 typedef struct LSTMFilterStruct* LSTMFilter;
+
+LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig trainingConfig);
 
 LSTMWeights* LSTMFilterGetWeights(LSTMFilter filter);
 

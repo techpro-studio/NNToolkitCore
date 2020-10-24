@@ -26,6 +26,10 @@ TimeDistributedDenseTrainingConfig TimeDistributedDenseTrainingConfigCreate(int 
 
 typedef struct TimeDistributedDenseStruct* TimeDistributedDense;
 
+DenseWeights* TimeDistributedDenseFilterGetWeights(TimeDistributedDense filter);
+
+DenseGradient* TimeDistributedDenseGradientCreate(TimeDistributedDense filter);
+
 TimeDistributedDense TimeDistributedDenseCreateForInference(TimeDistributedDenseConfig config);
 
 TimeDistributedDense TimeDistributedDenseCreateForTraining(TimeDistributedDenseConfig config, TimeDistributedDenseTrainingConfig training_config);
@@ -36,6 +40,6 @@ int TimeDistributedDenseFilterApplyTrainingBatch(TimeDistributedDense filter, co
 
 void TimeDistributedDenseFilterCalculateGradient(TimeDistributedDense filter, DenseGradient *gradient, float *d_out);
 
-void TimeDistributedDestroy(TimeDistributedDense filter);
+void TimeDistributedDenseDestroy(TimeDistributedDense filter);
 
 #endif /* time_distributed_h */

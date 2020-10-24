@@ -24,10 +24,12 @@ DenseTrainingData* DenseTrainingDataCreate(DenseConfig config, DenseTrainingConf
     data->config = training_config;
     int x_size = config.inputSize * training_config.mini_batch_size;
     int z_size = config.outputSize * training_config.mini_batch_size;
-    data->x = malloc((x_size + 3 * z_size) * sizeof(float));
+    int buff_size = (x_size + 3 * z_size) * sizeof(float);
+    data->x = malloc(buff_size);
     data->z = data->x + x_size;
     data->a = data->z + z_size;
     data->dz = data->a + z_size;
+    memset(data->x, 0, buff_size);
     return data;
 }
 
@@ -57,6 +59,7 @@ DenseConfig DenseConfigCreate(int inputSize, int outputSize, ActivationFunction 
 DenseFilter DenseFilterCreateForInference(DenseConfig config) {
     DenseFilter filter = malloc(sizeof(struct DenseFilterStruct));
     filter->config = config;
+    filter->traning_data = NULL;
     filter->weights = malloc(sizeof(DenseWeights));
     filter->weights->W = malloc(config.inputSize * (config.outputSize + 1) * sizeof(float));
     filter->weights->b = filter->weights->W + config.inputSize * config.outputSize;
@@ -121,7 +124,7 @@ void a(DenseFilter filter, const float *input, float* output){
 
 int DenseFilterApply(DenseFilter filter, const float *input, float* output) {
     z(filter, input, output);
-    a(filter, input, output);
+    a(filter, output, output);
     return 0;
 }
 
@@ -129,12 +132,16 @@ int DenseFilterApplyTrainingBatch(DenseFilter filter, const float *input, float*
     if (filter->traning_data == NULL){
         return -1;
     }
-    memcpy(filter->traning_data->x, input, filter->config.inputSize * filter->traning_data->config.mini_batch_size);
-    P_LOOP_START(filter->traning_data->config.mini_batch_size, b)
-        z(filter, input + b * filter->config.inputSize, filter->traning_data->z + b * filter->config.outputSize);
-        a(filter, filter->traning_data->z + b * filter->config.outputSize, filter->traning_data->a + b * filter->config.outputSize);
-        memcpy(output+ b * filter->config.outputSize, filter->traning_data->a + b * filter->config.outputSize, filter->config.outputSize * sizeof(float));
+    int in = filter->config.inputSize;
+    int batch = filter->traning_data->config.mini_batch_size;
+    int out = filter->config.outputSize;
+
+    memcpy(filter->traning_data->x, input, in * batch * sizeof(float));
+    P_LOOP_START(batch, b)
+        z(filter, input + b * in, filter->traning_data->z + b * out);
+        a(filter, filter->traning_data->z + b * out, filter->traning_data->a + b * out);
     P_LOOP_END
+    memcpy(output, filter->traning_data->a, out * batch * sizeof(float));
     return 0;
 }
 
@@ -148,10 +155,10 @@ void DenseFilterCalculateGradient(DenseFilter filter, DenseGradient *gradient, f
             ActivationFunctionApplyDerivative(filter->config.activation, filter->traning_data->z + b * out, filter->traning_data->a + b * out, dz);
             VectorMul(dz, d_out + b * out, dz, out);
         } else {
-            memcpy(dz, d_out + b * out, out);
+            memcpy(dz, d_out + b * out, out * sizeof(float));
         }
         //db = dz;
-        memcpy(dz, gradient->d_b + b * out, out);
+        memcpy(dz, gradient->d_b + b * out, out * sizeof(float));
         // DW = dz * X;
         MatMul(filter->traning_data->x + b * in, dz, gradient->d_W, in, out, 1, 0.0);
         // DX = dz * W;

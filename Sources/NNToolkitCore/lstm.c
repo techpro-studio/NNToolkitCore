@@ -61,6 +61,7 @@ LSTMTrainingData* LSTMTrainingDataCreate(LSTMConfig config,  LSTMTrainingConfig 
     trainingData->dC = trainingData->dH + batch * out;
 
     memset(trainingData->input, 0, trainingCacheSize);
+    return trainingData;
 }
 
 struct LSTMFilterStruct {
@@ -156,6 +157,7 @@ LSTMFilter LSTMFilterCreateForInference(LSTMConfig config){
     int computationBufferSize = 11 * config.outputFeatureChannels * sizeof(float);
     filter->forwardComputationBuffer = malloc(computationBufferSize);
     memset(filter->forwardComputationBuffer, 0, computationBufferSize);
+    filter->trainingData = NULL;
     return filter;
 }
 
@@ -441,6 +443,7 @@ int LSTMFilterApplyTrainingBatch(LSTMFilter filter, const float *input, float* o
     return 0;
 }
 
+
 LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig trainingConfig) {
     LSTMGradient * gradients = malloc(sizeof(LSTMGradient));
     LSTMWeightsSize sizes = LSTMWeightsSizeFromConfig(config);
@@ -455,7 +458,7 @@ LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig training
     return gradients;
 }
 
-void LSTMGradientsDestroy(LSTMGradient *gradient) {
+void LSTMGradientDestroy(LSTMGradient *gradient) {
     free(gradient->d_W);
     free(gradient);
 }
