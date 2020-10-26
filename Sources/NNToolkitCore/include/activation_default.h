@@ -26,7 +26,6 @@ ActivationFunction ActivationFunctionCreateReLU(int input_size, float a);
 
 ActivationFunction ActivationFunctionCreateTanh(int input_size);
 
-ActivationFunction ActivationFunctionCreateHardSigmoid(int input_size);
 
 #if defined __cplusplus
 }

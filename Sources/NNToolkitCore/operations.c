@@ -49,6 +49,13 @@ simd_float2 var = simd_make_float2(*(simd_float2 *)(var##arr));\
     return sum;\
 }
 
+vector_dot_(2)
+vector_dot_(3)
+vector_dot_(4)
+vector_dot_(8)
+vector_dot_(16)
+
+
 #define op_vec_clamp_(NUM)  void op_vec_clamp_##NUM(const float* a, float* c, float min, float max, int size)\
 {\
     int iterations = size / NUM;\
@@ -65,17 +72,33 @@ simd_float2 var = simd_make_float2(*(simd_float2 *)(var##arr));\
     }\
 }
 
-vector_dot_(2)
-vector_dot_(3)
-vector_dot_(4)
-vector_dot_(8)
-vector_dot_(16)
-
 op_vec_clamp_(2)
 op_vec_clamp_(3)
 op_vec_clamp_(4)
 op_vec_clamp_(8)
 op_vec_clamp_(16)
+
+
+#define op_vec_max_sc_(NUM)  void op_vec_max_sc_##NUM(const float* a, float b, float *c, int size)\
+{\
+    int iterations = size / NUM;\
+    for (int i = 0; i < iterations; ++i)\
+    {\
+    simd_float_##NUM##_init(s_b, b)\
+        ((simd_float##NUM*) c)[i] = simd_max(((simd_float##NUM*) a)[i], s_b);\
+    }\
+    int left = size % NUM;\
+    for (int i = 0; i < left; ++i)\
+    {\
+        c[iterations * NUM + i] = simd_max(a[iterations * NUM + i], b);\
+    }\
+}
+
+op_vec_max_sc_(2)
+op_vec_max_sc_(3)
+op_vec_max_sc_(4)
+op_vec_max_sc_(8)
+op_vec_max_sc_(16)
 
 typedef enum {
     two = 2, three = 3, four = 4, eight = 8, sixteen = 16
@@ -97,6 +120,7 @@ optimal_vector_size get_optimal_vector_size(int size){
             optimalIndex = i;
         }
     }
+
     return values[optimalIndex];
 }
 
@@ -128,12 +152,18 @@ float op_vec_dot_default(const float *a, const float *b, int size){
 }
 
 
+void op_vec_clamp_default(const float *a, float *c, float min, float max, int size){
+    op_vec_clamp_16(a, c, min, max, size);
+}
+
+void op_vec_max_sc_default(const float *a, float b, float *c, int size){
+    op_vec_max_sc_16(a, b, c, size);
+}
+
 get_optimized(op_vec_dot)
 get_optimized(op_vec_clamp)
+get_optimized(op_vec_max_sc)
 
-void op_vec_clamp_default(const float *a, float *c, float min, float max, int size){
-    op_vec_clamp_get_optimized(size)(a, c, min, max, size);
-}
 
 void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k, float beta) {
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, a, k, b, n, beta, result, n);

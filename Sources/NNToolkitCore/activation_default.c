@@ -102,33 +102,33 @@ ActivationFunction ActivationFunctionCreateIdentity(int inputSize) {
 
 
 typedef struct {
-    float *zeros;
+    op_vec_max_sc_fn max_fn;
     float a;
+    op_vec_clamp_fn clamp_fn;
 } ReLUImplementer;
 
 void activation_relu_derivative(void *implementer, const float *input, float *output, int size) {
-    
+    ReLUImplementer * impl = (ReLUImplementer *) implementer;
+    impl->clamp_fn(input, output, 0, 1, size);
 }
 
 void activation_relu(void *implementer, const float *input, float *output, int size){
     ReLUImplementer * impl = (ReLUImplementer *) implementer;
-    op_vec_max(input, impl->zeros, output, size);
+    impl->max_fn(input, 0, output, size);
     if (impl->a != 1.0){
         op_vec_mul_sc(output, impl->a, output, size);
     }
 }
 
 void ReLUImplementerDestroy(void * ptr){
-    ReLUImplementer* impl = (ReLUImplementer *) ptr;
-    free(impl->zeros);
     free(ptr);
 }
 
 ActivationFunction ActivationFunctionCreateReLU(int inputSize, float a) {
     ReLUImplementer* implementer = malloc(sizeof(ReLUImplementer));
-    implementer->zeros = malloc(inputSize * sizeof(float));
+    implementer->max_fn = op_vec_max_sc_get_optimized(inputSize);
     implementer->a = a;
-    memset(implementer->zeros, 0, inputSize * sizeof(float));
+    implementer->clamp_fn = op_vec_clamp_get_optimized(inputSize);
     return ActivationFunctionCreate(inputSize, ReLUImplementerDestroy, implementer, activation_relu, activation_relu_derivative, NULL);
 }
 
@@ -138,38 +138,31 @@ ActivationFunction ActivationFunctionCreateReLU(int inputSize, float a) {
 
 
 
-typedef struct {
-    float *zeros;
-    float *ones;
-} HardSigmoidImplementer;
-
-void activation_hard_sigmoid(void *implementer, const float *input, float *output, int size){
-    HardSigmoidImplementer* impl = (HardSigmoidImplementer *)implementer;
-    op_vec_mul_sc(input, 0.2f, output, size);
-    op_vec_add_sc(output, 0.5f, output, size);
-    op_vec_min(output, impl->ones, output, size);
-    op_vec_max(output, impl->zeros, output, size);
-}
-
-void activation_hard_sigmoid_derivative(void *implementer, const float *input, float *output, int size) {
-#warning implement this;
-    memcpy(output, input, size * sizeof(float));
-}
-
-void HardSigmoidImplementerDestroy(void * ptr){
-    HardSigmoidImplementer* impl = (HardSigmoidImplementer *) ptr;
-    free(impl->zeros);
-    free(ptr);
-}
-
-ActivationFunction ActivationFunctionCreateHardSigmoid(int inputSize){
-    HardSigmoidImplementer* implementer = malloc(sizeof(HardSigmoidImplementer));
-    implementer->zeros = malloc(2 * inputSize * sizeof(float));
-    implementer->ones = implementer->zeros + inputSize;
-    memset(implementer->zeros, 0, 2 * inputSize * sizeof(float));
-    op_vec_add_sc(implementer->ones, 1.0f, implementer->ones, inputSize);
-    return ActivationFunctionCreate(inputSize, HardSigmoidImplementerDestroy, implementer, activation_hard_sigmoid, activation_hard_sigmoid_derivative, NULL);
-}
+//typedef struct {
+//    op_vec_clamp_fn clamp_fn;
+//} HardSigmoidImplementer;
+//
+//void activation_hard_sigmoid(void *implementer, const float *input, float *output, int size){
+//    HardSigmoidImplementer* impl = (HardSigmoidImplementer *)implementer;
+//    op_vec_mul_sc(input, 0.2f, output, size);
+//    op_vec_add_sc(output, 0.5f, output, size);
+//    impl->clamp_fn(output, output, 0, 1, size);
+//}
+//
+//void activation_hard_sigmoid_derivative(void *implementer, const float *input, float *output, int size) {
+//#warning implement this;
+//    memcpy(output, input, size * sizeof(float));
+//}
+//
+//void HardSigmoidImplementerDestroy(void * ptr){
+//    free(ptr);
+//}
+//
+//ActivationFunction ActivationFunctionCreateHardSigmoid(int inputSize){
+//    HardSigmoidImplementer* implementer = malloc(sizeof(HardSigmoidImplementer));
+//    implementer->clamp_fn = op_vec_clamp_get_optimized(inputSize);
+//    return ActivationFunctionCreate(inputSize, HardSigmoidImplementerDestroy, implementer, activation_hard_sigmoid, activation_hard_sigmoid_derivative, NULL);
+//}
 
 
 // SOFTMAX

@@ -47,13 +47,19 @@ typedef float (*op_vec_dot_fn)(const float *a, const float *b, int size);
 
 typedef void (*op_vec_clamp_fn)(const float *a, float *c, float min, float max, int size);
 
+typedef void (*op_vec_max_sc_fn)(const float *a, float b, float *c, int size);
+
 op_vec_dot_fn op_vec_dot_get_optimized(int size);
 
 op_vec_clamp_fn op_vec_clamp_get_optimized(int size);
 
+op_vec_max_sc_fn op_vec_max_sc_get_optimized(int size);
+
 float op_vec_dot_default(const float *a, const float *b, int size);
 
 void op_vec_clamp_default(const float *a, float *c, float min, float max, int size);
+
+void op_vec_max_sc_defaut(const float *a, float b, float *c, int size);
 
 void op_vec_add_sc(const float *a, float b, float *c, int size);
 
