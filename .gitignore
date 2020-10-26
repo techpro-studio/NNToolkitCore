@@ -3,6 +3,11 @@
 .swiftpm/
 Tests/
 
+cmake-build-debug/
+*.cmake
+
+*.txt
+*.cbp
 # Object files
 *.o
 *.ko
