@@ -6,8 +6,13 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#ifndef helpers_h
-#define helpers_h
+#ifndef ops_h
+#define ops_h
+
+
+#if defined __cplusplus
+extern "C" {
+#endif
 
 #include <stdio.h>
 #include "stdbool.h"
@@ -72,6 +77,8 @@ void op_vec_max(const float *a, const float *b, float *c, int size);
 
 void op_vec_min(const float *a, const float *b, float *c, int size);
 
+#if defined __cplusplus
+}
+#endif
 
-
-#endif /* helpers_h */
+#endif /* ops_h */

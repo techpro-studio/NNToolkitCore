@@ -9,6 +9,28 @@
 #include <Accelerate/Accelerate.h>
 #include <simd/simd.h>
 
+
+#define simd_float_16_init(var, value) \
+float var##arr[16] = { value, value, value, value, value, value, value, value, value, value, value, value, value, value, value, value };\
+simd_float16 var = simd_make_float16(*(simd_float16 *)(var##arr));\
+
+#define simd_float_8_init(var, value) \
+float var##arr[8] = { value, value, value, value, value, value, value, value };\
+simd_float8 var = simd_make_float8(*(simd_float8 *)(var##arr));\
+
+#define simd_float_4_init(var, value) \
+float var##arr[4] = { value, value, value, value };\
+simd_float4 var = simd_make_float4(*(simd_float4 *)(var##arr));\
+
+#define simd_float_3_init(var, value) \
+float var##arr[3] = { value, value, value };\
+simd_float3 var = simd_make_float3(*(simd_float3 *)(var##arr));\
+
+#define simd_float_2_init(var, value) \
+float var##arr[2] = { value, value };\
+simd_float2 var = simd_make_float2(*(simd_float2 *)(var##arr));\
+
+
 #define vector_dot_(NUM)  float op_vec_dot_##NUM(const float* a, const float *b, int size)\
 {\
     float sum = 0.0f;\
@@ -32,7 +54,9 @@
     int iterations = size / NUM;\
     for (int i = 0; i < iterations; ++i)\
     {\
-        ((simd_float##NUM*) c)[i] = simd_clamp(((simd_float##NUM*) a)[i], simd_make_float##NUM(min), simd_make_float##NUM(max));\
+    simd_float_##NUM##_init(s_min, min)\
+    simd_float_##NUM##_init(s_max, max)\
+        ((simd_float##NUM*) c)[i] = simd_clamp(((simd_float##NUM*) a)[i], s_min, s_max);\
     }\
     int left = size % NUM;\
     for (int i = 0; i < left; ++i)\
@@ -103,13 +127,13 @@ float op_vec_dot_default(const float *a, const float *b, int size){
     return result;
 }
 
-void op_vec_clamp_default(const float *a, float *c, float min, float max, int size){
-    op_vec_clamp_get_optimized(size)(a, c, min, max, size);
-}
 
 get_optimized(op_vec_dot)
 get_optimized(op_vec_clamp)
 
+void op_vec_clamp_default(const float *a, float *c, float min, float max, int size){
+    op_vec_clamp_get_optimized(size)(a, c, min, max, size);
+}
 
 void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k, float beta) {
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, a, k, b, n, beta, result, n);
