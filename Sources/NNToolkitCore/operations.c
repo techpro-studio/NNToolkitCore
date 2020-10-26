@@ -1,6 +1,5 @@
 //
-//  helpers.c
-//  audio_test
+//  ops.c
 //
 //  Created by Alex on 24.09.2020.
 //  Copyright © 2020 Alex. All rights reserved.
@@ -10,13 +9,7 @@
 #include <Accelerate/Accelerate.h>
 #include <simd/simd.h>
 
-float op_vec_dot_default(const float *a, const float *b, int size){
-    float result;
-    vDSP_dotpr(a, 1, b, 1, &result, size);
-    return result;
-}
-
-#define vector_dot_(NUM)  float VectorDot##NUM(const float* a, const float *b, int size)\
+#define vector_dot_(NUM)  float op_vec_dot_##NUM(const float* a, const float *b, int size)\
 {\
     float sum = 0.0f;\
     int iterations = size / NUM;\
@@ -34,11 +27,31 @@ float op_vec_dot_default(const float *a, const float *b, int size){
     return sum;\
 }
 
+#define op_vec_clamp_(NUM)  void op_vec_clamp_##NUM(const float* a, float* c, float min, float max, int size)\
+{\
+    int iterations = size / NUM;\
+    for (int i = 0; i < iterations; ++i)\
+    {\
+        ((simd_float##NUM*) c)[i] = simd_clamp(((simd_float##NUM*) a)[i], simd_make_float##NUM(min), simd_make_float##NUM(max));\
+    }\
+    int left = size % NUM;\
+    for (int i = 0; i < left; ++i)\
+    {\
+        c[iterations * NUM + i] = simd_clamp(a[iterations * NUM + i], min, max);\
+    }\
+}
+
 vector_dot_(2)
 vector_dot_(3)
 vector_dot_(4)
 vector_dot_(8)
 vector_dot_(16)
+
+op_vec_clamp_(2)
+op_vec_clamp_(3)
+op_vec_clamp_(4)
+op_vec_clamp_(8)
+op_vec_clamp_(16)
 
 typedef enum {
     two = 2, three = 3, four = 4, eight = 8, sixteen = 16
@@ -63,34 +76,47 @@ optimal_vector_size get_optimal_vector_size(int size){
     return values[optimalIndex];
 }
 
-
-op_vec_dot_fn op_vec_dot_get_optimized(int size){
-    if (size > 4000){
-        return op_vec_dot_default;
-    }
-    optimal_vector_size value = get_optimal_vector_size(size);
-    switch (value) {
-        case two:
-            return VectorDot2;
-        case three:
-            return VectorDot3;
-        case four:
-            return VectorDot4;
-        case eight:
-            return VectorDot8;
-        case sixteen:
-            return VectorDot16;
-        default:
-            return op_vec_dot_default;
-    }
+#define get_optimized(func) func##_fn func##_get_optimized(int size){\
+    if (size > 4000){\
+        return func##_default;\
+    }\
+    optimal_vector_size value = get_optimal_vector_size(size);\
+    switch (value) {\
+        case two:\
+            return func##_2;\
+        case three:\
+            return func##_3;\
+        case four:\
+            return func##_4;\
+        case eight:\
+            return func##_8;\
+        case sixteen:\
+            return func##_16;\
+        default:\
+            return func##_default;\
+    }\
 }
 
+float op_vec_dot_default(const float *a, const float *b, int size){
+    float result;
+    vDSP_dotpr(a, 1, b, 1, &result, size);
+    return result;
+}
+
+void op_vec_clamp_default(const float *a, float *c, float min, float max, int size){
+    op_vec_clamp_get_optimized(size)(a, c, min, max, size);
+}
+
+get_optimized(op_vec_dot)
+get_optimized(op_vec_clamp)
+
+
 void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k, float beta) {
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0, a, k, b, n, beta, result, n);
+    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, a, k, b, n, beta, result, n);
 }
 
 void op_mat_mul_wt(const float *a, const float *b, bool a_transpose, bool b_transpose, float* result, int m, int n, int k, float beta){
-    cblas_sgemm(CblasRowMajor, a_transpose ? CblasTrans : CblasNoTrans, b_transpose ? CblasTrans : CblasNoTrans, m, n, k, 1.0, a, k, b, n, beta, result, n);
+    cblas_sgemm(CblasRowMajor, a_transpose ? CblasTrans : CblasNoTrans, b_transpose ? CblasTrans : CblasNoTrans, m, n, k, 1.0f, a, k, b, n, beta, result, n);
 }
 
 void op_mat_transp(const float *a, float *b, int m, int n) {

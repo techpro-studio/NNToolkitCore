@@ -107,8 +107,7 @@ typedef struct {
 } ReLUImplementer;
 
 void activation_relu_derivative(void *implementer, const float *input, float *output, int size) {
-#warning implement this;
-    memcpy(output, input, size * sizeof(float));
+    
 }
 
 void activation_relu(void *implementer, const float *input, float *output, int size){
