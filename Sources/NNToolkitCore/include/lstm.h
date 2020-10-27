@@ -12,42 +12,46 @@
 #include "stdbool.h"
 #import "activation.h"
 
-
 #if defined __cplusplus
 extern "C" {
 #endif
 
-
 typedef struct {
-    ActivationFunction candidateGateActivation;
-    ActivationFunction inputGateActivation;
-    ActivationFunction forgetGateActivation;
-    ActivationFunction outputGateActivation;
-    ActivationFunction outputActivation;
+    ActivationFunction candidate_gate_activation;
+    ActivationFunction input_gate_activation;
+    ActivationFunction forget_gate_activation;
+    ActivationFunction output_gate_activation;
+    ActivationFunction output_activation;
 } LSTMActivations;
 
-LSTMActivations LSTMActivationsCreate(ActivationFunction inputGateActivation, ActivationFunction forgetGateActivation, ActivationFunction candidateGateActivation, ActivationFunction outputGateActivation, ActivationFunction outputActivation);
+LSTMActivations LSTMActivationsCreate(
+    ActivationFunction input_gate_activation,
+    ActivationFunction forget_gate_activation,
+    ActivationFunction candidate_gate_activation,
+    ActivationFunction output_gate_activation,
+    ActivationFunction output_activation
+);
 
 LSTMActivations LSTMActivationsCreateDefault(int size);
 
 void LSTMActivationsDestroy(LSTMActivations activations);
 
 typedef struct {
-    int inputFeatureChannels;
-
-    int outputFeatureChannels;
-
+    int input_feature_channels;
+    int output_feature_channels;
     bool v2;
-
-    bool returnSequences;
-
+    bool return_sequences;
     int timesteps;
-
     LSTMActivations activations;
-
 } LSTMConfig;
 
-LSTMConfig LSTMConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool v2, bool returnSequences, int timesteps, LSTMActivations lstmActivations);
+LSTMConfig LSTMConfigCreate(
+    int input_feature_channels,
+    int output_feature_channels,
+    bool v2, bool return_sequences,
+    int timesteps,
+    LSTMActivations activations
+);
 
 typedef struct {
     float *W;
@@ -60,7 +64,7 @@ typedef struct {
     int mini_batch_size;
 } LSTMTrainingConfig;
 
-LSTMTrainingConfig LSTMTrainingConfigCreate(int miniBatchSize);
+LSTMTrainingConfig LSTMTrainingConfigCreate(int mini_batch_size);
 
 typedef struct {
     float * d_W;
@@ -72,30 +76,26 @@ typedef struct {
 
 void LSTMGradientDestroy(LSTMGradient *gradients);
 
-typedef struct LSTMFilterStruct* LSTMFilter;
+typedef struct LSTMStruct* LSTM;
 
-LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig trainingConfig);
+LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig training_config);
 
-LSTMWeights* LSTMFilterGetWeights(LSTMFilter filter);
+LSTMWeights* LSTMGetWeights(LSTM filter);
 
-LSTMFilter LSTMFilterCreateForInference(LSTMConfig config);
+LSTM LSTMCreateForInference(LSTMConfig config);
 
-LSTMFilter LSTMFilterCreateForTraining(LSTMConfig config, LSTMTrainingConfig training_config);
+LSTM LSTMCreateForTraining(LSTMConfig config, LSTMTrainingConfig training_config);
 
-//feature channels in row, row major pointer
+int LSTMApplyInference(LSTM filter, const float *input, float* output);
 
-int LSTMFilterApply(LSTMFilter filter, const float *input, float* output);
+int LSTMApplyTrainingBatch(LSTM filter, const float *input, float* output);
 
-int LSTMFilterApplyTrainingBatch(LSTMFilter filter, const float *input, float* output);
+void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out);
 
-void LSTMFilterCalculateGradient(LSTMFilter filter, LSTMGradient *gradients, float *d_out);
-
-void LSTMFilterDestroy(LSTMFilter filter);
-
+void LSTMDestroy(LSTM filter);
 
 #if defined __cplusplus
 }
 #endif
-
 
 #endif /* Header_h */

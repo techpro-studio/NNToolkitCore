@@ -18,49 +18,49 @@
 extern "C" {
 #endif
 
-
-
 typedef struct {
-    int inputFeatureChannels;
-
-    int outputFeatureChannels;
+    int input_feature_channels;
+    int output_feature_channels;
     /*
      if true:
      h_t = (1 - z) * h_t_previous + z * h_tilda.
      else:
      h_t = (1 - z) * h_tilda + z * h_t_previous
      */
-    bool flipOutputGates;
-
+    bool flip_output_gates;
     bool v2;
-
-    bool returnSequences;
-
+    bool return_sequences;
     int timesteps;
-
-    ActivationFunction reccurrentActivation;
-
+    ActivationFunction reccurrent_activation;
     ActivationFunction activation;
 } GRUConfig;
 
-GRUConfig GRUConfigCreate(int inputFeatureChannels, int outputFeatureChannels, bool flipOutputGates, bool v2, bool returnSequences, int batchSize, ActivationFunction reccurrentActivation, ActivationFunction activation);
-
+GRUConfig GRUConfigCreate(
+    int input_feature_channels,
+    int output_feature_channels,
+    bool flip_output_gates,
+    bool v2,
+    bool returnSequences,
+    int batchSize,
+    ActivationFunction reccurrent_activation,
+    ActivationFunction activation
+);
 
 typedef struct {
-    float *Wz;
-    float *Uz;
+    float *W_z;
+    float *U_z;
 
     float *b_iz;
     float *b_hz;
 
-    float *Wr;
-    float *Ur;
+    float *W_r;
+    float *U_r;
 
     float *b_ir;
     float *b_hr;
 
-    float *Wh;
-    float *Uh;
+    float *W_h;
+    float *U_h;
     
     float *b_ih;
     float *b_hh;
@@ -68,17 +68,17 @@ typedef struct {
 } GRUWeights;
 
 
-typedef struct GRUFilterStruct * GRUFilter;
+typedef struct GRUStruct * GRU;
 
-GRUWeights* GRUFilterGetWeights(GRUFilter filter);
+GRUWeights* GRUGetWeights(GRU filter);
 
-GRUFilter GRUFilterCreate(GRUConfig config);
+GRU GRUCreateForInference(GRUConfig config);
 
 //feature channels in row
 
-int GRUFilterApply(GRUFilter filter, const float *input, float* output);
+int GRUApplyInference(GRU filter, const float *input, float* output);
 
-void GRUFilterDestroy(GRUFilter filter);
+void GRUDestroy(GRU filter);
 
 
 #if defined __cplusplus

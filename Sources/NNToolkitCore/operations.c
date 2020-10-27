@@ -181,6 +181,10 @@ void op_vec_add(const float *a, const float * b, float *result, int size){
     vDSP_vadd(a, 1, b, 1, result, 1, size);
 }
 
+void op_vec_sub(const float *a, const float *b, float *result, int size){
+    vDSP_vsub(b, 1, a, 1, result, 1, size);
+}
+
 void op_vec_sum(const float *a, float* result, int size){
     vDSP_sve(a, 1, result, size);
 }

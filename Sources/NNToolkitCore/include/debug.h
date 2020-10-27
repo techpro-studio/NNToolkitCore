@@ -14,11 +14,11 @@
 extern "C" {
 #endif
 
-void printVector(const float *vector, int size);
+void print_vector(const float *vector, int size);
 
-void printMatrix(const float *matrix, int rows, int columns);
+void print_matrix(const float *matrix, int rows, int columns);
 
-void printTensor(const float *tensor, int *shape, int shapeSize);
+void print_tensor(const float *tensor, int *shape, int shapeSize);
 
 #if defined __cplusplus
 }

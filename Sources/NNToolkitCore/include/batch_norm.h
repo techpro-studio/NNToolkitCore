@@ -25,22 +25,32 @@ typedef struct {
 
 
 typedef struct {
+    float momentum;
+    int mini_batch_size;
+} BatchNormTrainingConfig;
+
+typedef struct {
+    float *d_gamma;
+    float *d_beta;
+} BatchNormGradient;
+
+typedef struct {
     int feature_channels;
     float epsilon;
-    int batch_size;
+    int count;
 } BatchNormConfig;
 
-typedef struct BatchNormFilterStruct* BatchNormFilter;
+typedef struct BatchNormFilterStruct* BatchNorm;
 
-BatchNormWeights* BatchNormFilterGetWeights(BatchNormFilter filter);
+BatchNormWeights* BatchNormGetWeights(BatchNorm filter);
 
-BatchNormConfig BatchNormConfigCreate(int featureChannels, float epsilon, int batchSize);
+BatchNormConfig BatchNormConfigCreate(int feature_channels, float epsilon, int count);
 
-BatchNormFilter BatchNormFilterCreate(BatchNormConfig config);
+BatchNorm BatchNormCreateForInference(BatchNormConfig config);
 
-int BatchNormFilterApply(BatchNormFilter filter, const float *input, float* output);
+int BatchNormApplyInference(BatchNorm filter, const float *input, float* output);
 
-void BatchNormFilterDestroy(BatchNormFilter filter);
+void BatchNormDestroy(BatchNorm filter);
 
 
 #if defined __cplusplus

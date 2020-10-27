@@ -19,30 +19,30 @@ extern "C" {
 
 
 typedef struct {
-    int inputFeatureChannels;
-    int outputFeatureChannels;
-    int kernelSize;
+    int input_feature_channels;
+    int output_feature_channels;
+    int kernel_size;
     int stride;
-    int inputSize;
-    int outputSize;
+    int input_size;
+    int output_size;
 } Conv1dConfig;
 
-Conv1dConfig Conv1dConfigCreate(int inputFeatureChannels, int outputFeatureChannels, int kernelSize, int stride, int inputSize);
+Conv1dConfig Conv1dConfigCreate(int input_feature_channels, int output_feature_channels, int kernel_size, int stride, int inputSize);
 
 typedef struct {
     float *W;
     float *b;
 } Conv1dWeights;
 
-typedef struct Conv1dFilterStruct* Conv1dFilter;
+typedef struct Conv1dFilterStruct* Conv1d;
 
-Conv1dWeights* Conv1dFilterGetWeights(Conv1dFilter filter);
+Conv1dWeights* Conv1dGetWeights(Conv1d filter);
 
-Conv1dFilter Conv1dFilterCreate(Conv1dConfig config);
+Conv1d Conv1dCreateForInference(Conv1dConfig config);
 
-int Conv1dFilterApply(Conv1dFilter filter, const float *input, float* output);
+int Conv1dApplyInference(Conv1d filter, const float *input, float* output);
 
-void Conv1dFilterDestroy(Conv1dFilter filter);
+void Conv1dDestroy(Conv1d filter);
 
 #if defined __cplusplus
 }

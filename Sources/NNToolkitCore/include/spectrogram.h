@@ -21,25 +21,24 @@ typedef struct {
     int nfft;
     int noverlap;
     int step;
-    int inputSize;
+    int input_size;
     int nfreq;
-    int ntimeSeries;
-    float fftNormalizationFactor;
+    int ntime_series;
+    float fft_normalization_factor;
     bool complex;
 } SpectrogramConfig;
 
-SpectrogramConfig SpectrogramConfigCreate(int nfft, int noverlap, int inputSize, bool complex, float fftNormalizationFactor);
+SpectrogramConfig SpectrogramConfigCreate(int nfft, int noverlap, int input_size, bool complex, float fft_normalization_factor);
 
+typedef struct SpectrogramStruct* Spectrogram;
 
-typedef struct SpectrogramFilterStruct* SpectrogramFilter;
+Spectrogram SpectrogramCreate(SpectrogramConfig config);
 
-SpectrogramFilter SpectrogramFilterCreate(SpectrogramConfig config);
+void SpectrogramSetWindowFunc(Spectrogram filter, window_fn fn);
 
-void SpectrogramFilterApplyWindowFunc(SpectrogramFilter filter, window_fn fn);
+void SpectrogramApply(Spectrogram filter, const float *input, float* output);
 
-void SpectrogramFilterApply(SpectrogramFilter filter, const float *input, float* output);
-
-void SpectrogramFilterDestroy(SpectrogramFilter filter);
+void SpectrogramDestroy(Spectrogram filter);
 
 #if defined __cplusplus
 }

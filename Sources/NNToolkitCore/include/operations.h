@@ -39,6 +39,9 @@ void op_mat_transp(const float *a, float *b, int m, int n);
 
 void op_vec_add(const float *a, const float *b, float *result, int size);
 
+// a - b
+void op_vec_sub(const float *a, const float *b, float *result, int size);
+
 void op_vec_sum(const float *a, float* result, int size);
 
 void op_vec_mul(const float *a, const float *b, float* result, int size);

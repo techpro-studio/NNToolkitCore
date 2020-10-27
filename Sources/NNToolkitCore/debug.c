@@ -9,17 +9,17 @@
 #include "debug.h"
 #include <CoreFoundation/CoreFoundation.h>
 
-void printVector(const float *vector, int size)
+void print_vector(const float *vector, int size)
 {
     for(int i = 0; i < size; ++i)
         printf("%f ", vector[i]);
 }
 
-void printMatrix(const float *matrix, int rows, int columns) {
+void print_matrix(const float *matrix, int rows, int columns) {
     printf("\n start matrix");
     for (int r = 0; r < rows; ++r){
         printf("\n row %d ", r);
-        printVector(matrix + r * columns, columns);
+        print_vector(matrix + r * columns, columns);
     }
     printf("\n end matrix");
 }
@@ -40,7 +40,7 @@ void getTensorIndexOfFlatten(const int*shape, int shapeSize, int flattenIndex, i
     }
 }
 
-void printTensor(const float *tensor, int*shape, int shapeSize) {
+void print_tensor(const float *tensor, int*shape, int shapeSize) {
     int sum = 1;
     for (int i = 0; i < shapeSize - 1; ++i)
         sum *= shape[i];
@@ -52,6 +52,6 @@ void printTensor(const float *tensor, int*shape, int shapeSize) {
         printf("\n Index: ");
         for (int j = 0; j < shapeSize - 1; ++j)
             printf("%d ", indices[j]);
-        printVector(tensor + vectorSize * i, vectorSize);
+        print_vector(tensor + vectorSize * i, vectorSize);
     }
 }

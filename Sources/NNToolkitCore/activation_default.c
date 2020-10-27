@@ -158,10 +158,10 @@ ActivationFunction ActivationFunctionCreateReLU(int inputSize, float a) {
 //    free(ptr);
 //}
 //
-//ActivationFunction ActivationFunctionCreateHardSigmoid(int inputSize){
+//ActivationFunction ActivationFunctionCreateHardSigmoid(int input_size){
 //    HardSigmoidImplementer* implementer = malloc(sizeof(HardSigmoidImplementer));
-//    implementer->clamp_fn = op_vec_clamp_get_optimized(inputSize);
-//    return ActivationFunctionCreate(inputSize, HardSigmoidImplementerDestroy, implementer, activation_hard_sigmoid, activation_hard_sigmoid_derivative, NULL);
+//    implementer->clamp_fn = op_vec_clamp_get_optimized(input_size);
+//    return ActivationFunctionCreate(input_size, HardSigmoidImplementerDestroy, implementer, activation_hard_sigmoid, activation_hard_sigmoid_derivative, NULL);
 //}
 
 

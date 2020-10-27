@@ -22,8 +22,8 @@ typedef struct{
 DenseTrainingData* DenseTrainingDataCreate(DenseConfig config, DenseTrainingConfig training_config){
     DenseTrainingData *data = malloc(sizeof(DenseTrainingData));
     data->config = training_config;
-    int x_size = config.inputSize * training_config.mini_batch_size;
-    int z_size = config.outputSize * training_config.mini_batch_size;
+    int x_size = config.input_size * training_config.mini_batch_size;
+    int z_size = config.output_size * training_config.mini_batch_size;
     int buff_size = (x_size + 3 * z_size) * sizeof(float);
     data->x = malloc(buff_size);
     data->z = data->x + x_size;
@@ -38,37 +38,37 @@ void DenseTrainingDataDestroy(DenseTrainingData *data){
     free(data);
 }
 
-struct DenseFilterStruct {
+struct DenseStruct {
     DenseConfig config;
     DenseTrainingData* traning_data;
     DenseWeights* weights;
 };
 
-DenseWeights* DenseFilterGetWeights(DenseFilter filter){
+DenseWeights* DenseGetWeights(Dense filter){
     return filter->weights;
 }
 
-DenseConfig DenseConfigCreate(int inputSize, int outputSize, ActivationFunction activation){
+DenseConfig DenseConfigCreate(int input_size, int output_size, ActivationFunction activation){
     DenseConfig config;
-    config.inputSize = inputSize;
-    config.outputSize = outputSize;
+    config.input_size = input_size;
+    config.output_size = output_size;
     config.activation = activation;
     return config;
 }
 
-DenseFilter DenseFilterCreateForInference(DenseConfig config) {
-    DenseFilter filter = malloc(sizeof(struct DenseFilterStruct));
+Dense DenseCreateForInference(DenseConfig config) {
+    Dense filter = malloc(sizeof(struct DenseStruct));
     filter->config = config;
     filter->traning_data = NULL;
     filter->weights = malloc(sizeof(DenseWeights));
-    int weights_buff_size = config.inputSize * (config.outputSize + 1) * sizeof(float);
+    int weights_buff_size = config.input_size * (config.output_size + 1) * sizeof(float);
     filter->weights->W = malloc(weights_buff_size);
-    filter->weights->b = filter->weights->W + config.inputSize * config.outputSize;
+    filter->weights->b = filter->weights->W + config.input_size * config.output_size;
     memset(filter->weights->W, 0, weights_buff_size);
     return filter;
 }
 
-void DenseFilterDestroy(DenseFilter filter) {
+void DenseDestroy(Dense filter) {
     free(filter->weights->W);
     free(filter->weights);
     if (filter->traning_data){
@@ -83,17 +83,17 @@ DenseTrainingConfig DenseTrainingConfigCreate(int batch){
     return config;
 }
 
-DenseFilter DenseFilterCreateForTraining(DenseConfig config, DenseTrainingConfig training_config) {
-    DenseFilter filter = DenseFilterCreateForInference(config);
+Dense DenseCreateForTraining(DenseConfig config, DenseTrainingConfig training_config) {
+    Dense filter = DenseCreateForInference(config);
     filter->traning_data = DenseTrainingDataCreate(config, training_config);
     return filter;
 }
 
-DenseGradient* DenseGradientCreate(DenseConfig config, DenseTrainingConfig trainingConfig) {
+DenseGradient* DenseGradientCreate(DenseConfig config, DenseTrainingConfig training_config) {
     DenseGradient* grad = malloc(sizeof(DenseGradient));
-    int d_w_size = config.inputSize * config.outputSize * trainingConfig.mini_batch_size;
-    int d_x_size = config.inputSize * trainingConfig.mini_batch_size;
-    int buff_size = (d_w_size + d_x_size + config.outputSize * trainingConfig.mini_batch_size) * sizeof(float);
+    int d_w_size = config.input_size * config.output_size * training_config.mini_batch_size;
+    int d_x_size = config.input_size * training_config.mini_batch_size;
+    int buff_size = (d_w_size + d_x_size + config.output_size * training_config.mini_batch_size) * sizeof(float);
     grad->d_W = (float *) malloc(buff_size);
     grad->d_X = grad->d_W + d_w_size;
     grad->d_b = grad->d_X + d_x_size;
@@ -106,37 +106,37 @@ void DenseGradientDestroy(DenseGradient *gradient){
     free(gradient);
 }
 
-DenseConfig DenseFilterGetConfig(DenseFilter filter) {
+DenseConfig DenseGetConfig(Dense filter) {
     return filter->config;
 }
 
-void z(DenseFilter filter, const float *input, float* output){
-    op_mat_mul(input, filter->weights->W, output, 1, filter->config.outputSize, filter->config.inputSize, 0.0);
-    op_vec_add(output, filter->weights->b, output, filter->config.outputSize);
+void z(Dense filter, const float *input, float* output){
+    op_mat_mul(input, filter->weights->W, output, 1, filter->config.output_size, filter->config.input_size, 0.0);
+    op_vec_add(output, filter->weights->b, output, filter->config.output_size);
 }
 
-void a(DenseFilter filter, const float *input, float* output){
+void a(Dense filter, const float *input, float* output){
     if (filter->config.activation) {
         ActivationFunctionApply(filter->config.activation, input, output);
     } else if (input != output){
-        memcpy(output, input, filter->config.outputSize * sizeof(float));
+        memcpy(output, input, filter->config.output_size * sizeof(float));
     }
 }
 
-int DenseFilterApply(DenseFilter filter, const float *input, float* output) {
+int DenseApplyInference(Dense filter, const float *input, float* output) {
     z(filter, input, output);
     a(filter, output, output);
     return 0;
 }
 
-int DenseFilterApplyTrainingBatch(DenseFilter filter, const float *input, float* output) {
+int DenseApplyTrainingBatch(Dense filter, const float *input, float* output) {
     if (filter->traning_data == NULL){
         return -1;
     }
     
-    int in = filter->config.inputSize;
+    int in = filter->config.input_size;
     int batch = filter->traning_data->config.mini_batch_size;
-    int out = filter->config.outputSize;
+    int out = filter->config.output_size;
 
     memcpy(filter->traning_data->x, input, in * batch * sizeof(float));
 
@@ -149,9 +149,9 @@ int DenseFilterApplyTrainingBatch(DenseFilter filter, const float *input, float*
     return 0;
 }
 
-void DenseFilterCalculateGradient(DenseFilter filter, DenseGradient *gradient, float *d_out) {
-    int out = filter->config.outputSize;
-    int in = filter->config.inputSize;
+void DenseCalculateGradient(Dense filter, DenseGradient *gradient, float *d_out) {
+    int out = filter->config.output_size;
+    int in = filter->config.input_size;
     P_LOOP_START(filter->traning_data->config.mini_batch_size, b)
         // dz = d_out * d_activation ?? 1;
         float *dz = filter->traning_data->dz + b * out;
