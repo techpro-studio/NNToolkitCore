@@ -35,6 +35,7 @@ BatchNormConfig BatchNormConfigCreate(int feature_channels, float epsilon, int c
 BatchNorm BatchNormCreateForInference(BatchNormConfig config) {
     BatchNorm filter = malloc(sizeof(struct BatchNormFilterStruct));
     filter->config = config;
+    filter->training_data = NULL;
     int chan = config.feature_channels;
     filter->weights = malloc(sizeof(BatchNormWeights));
     float *weights = malloc(4 * chan * sizeof(float));

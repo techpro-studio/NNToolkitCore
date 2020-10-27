@@ -138,28 +138,28 @@ int DenseApplyTrainingBatch(Dense filter, const float *input, float* output) {
     }
     
     int in = filter->config.input_size;
-    int batch = filter->traning_data->config.mini_batch_size;
+    int batch = filter->training_data->config.mini_batch_size;
     int out = filter->config.output_size;
 
-    memcpy(filter->traning_data->x, input, in * batch * sizeof(float));
+    memcpy(filter->training_data->x, input, in * batch * sizeof(float));
 
     P_LOOP_START(batch, b)
-        z(filter, input + b * in, filter->traning_data->z + b * out);
-        a(filter, filter->traning_data->z + b * out, filter->traning_data->a + b * out);
+        z(filter, input + b * in, filter->training_data->z + b * out);
+        a(filter, filter->training_data->z + b * out, filter->training_data->a + b * out);
     P_LOOP_END
 
-    memcpy(output, filter->traning_data->a, out * batch * sizeof(float));
+    memcpy(output, filter->training_data->a, out * batch * sizeof(float));
     return 0;
 }
 
 void DenseCalculateGradient(Dense filter, DenseGradient *gradient, float *d_out) {
     int out = filter->config.output_size;
     int in = filter->config.input_size;
-    P_LOOP_START(filter->traning_data->config.mini_batch_size, b)
+    P_LOOP_START(filter->training_data->config.mini_batch_size, b)
         // dz = d_out * d_activation ?? 1;
-        float *dz = filter->traning_data->dz + b * out;
+        float *dz = filter->training_data->dz + b * out;
         if(filter->config.activation){
-            ActivationFunctionApplyDerivative(filter->config.activation, filter->traning_data->z + b * out, filter->traning_data->a + b * out, dz);
+            ActivationFunctionApplyDerivative(filter->config.activation, filter->training_data->z + b * out, filter->training_data->a + b * out, dz);
             op_vec_mul(dz, d_out + b * out, dz, out);
         } else {
             memcpy(dz, d_out + b * out, out * sizeof(float));
@@ -167,9 +167,9 @@ void DenseCalculateGradient(Dense filter, DenseGradient *gradient, float *d_out)
         //db = dz;
         memcpy(gradient->d_b + b * out, dz, out * sizeof(float));
         // DW = dz * X;
-                op_mat_mul(filter->traning_data->x + b * in, dz, gradient->d_W + b * in * out, in, out, 1, 0.0);
+        op_mat_mul(filter->training_data->x + b * in, dz, gradient->d_W + b * in * out, in, out, 1, 0.0f);
         // DX = dz * W;
-                op_mat_mul(filter->weights->W, dz, gradient->d_X + b * in, in, 1, out, 0.0);
+        op_mat_mul(filter->weights->W, dz, gradient->d_X + b * in, in, 1, out, 0.0f);
     P_LOOP_END
 }
 

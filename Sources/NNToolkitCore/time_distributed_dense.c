@@ -42,6 +42,7 @@ TimeDistributedDense TimeDistributedDenseCreate(TimeDistributedDenseConfig confi
 TimeDistributedDense TimeDistributedDenseCreateForInference(TimeDistributedDenseConfig config){
     TimeDistributedDense ts_filter = TimeDistributedDenseCreate(config);
     ts_filter->dense = DenseCreateForInference(config.dense);
+    ts_filter->training_data = NULL;
     return ts_filter;
 }
 
