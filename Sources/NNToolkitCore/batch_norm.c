@@ -11,10 +11,11 @@
 #include "stdlib.h"
 
 typedef struct {
-
-} TrainingData;
+    BatchNormTrainingConfig config;
+} BatchNormTrainingData;
 
 struct BatchNormFilterStruct{
+    BatchNormTrainingData *training_data;
     BatchNormConfig config;
     BatchNormWeights* weights;
 };
@@ -71,11 +72,13 @@ void BatchNormFilterApplySlice(BatchNorm filter, const float *input, float* outp
 }
 
 int BatchNormApplyInference(BatchNorm filter, const float *input, float* output) {
+    if(filter->training_data != NULL){
+        return -1;
+    }
     if (filter->config.count == 1){
         BatchNormFilterApplySlice(filter, input, output);
         return 0;
     }
-
     P_LOOP_START(filter->config.count, index)
         size_t offset = index * filter->config.feature_channels;
         BatchNormFilterApplySlice(filter, input + offset, output + offset);

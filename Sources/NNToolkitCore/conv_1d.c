@@ -54,6 +54,9 @@ void Conv1dDestroy(Conv1d filter){
 }
 
 int Conv1dApplyInference(Conv1d filter, const float *input, float* output){
+//    if(filter->training_data != NULL){
+//        return -1;
+//    }
     float *floatInput = (float*)filter->buffer;
     op_mat_transp((float *) input, floatInput, filter->config.input_feature_channels, filter->config.input_size);
     int kernelSize = filter->config.kernel_size;

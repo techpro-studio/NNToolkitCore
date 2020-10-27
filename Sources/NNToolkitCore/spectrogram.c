@@ -32,12 +32,12 @@ SpectrogramConfig SpectrogramConfigCreate(int nfft, int noverlap, int input_size
     return config;
 }
 
-inline static void Magnitude(DSPSplitComplex *split, float *freqsPtr, const int vectorSize)
+inline static void magnitude(DSPSplitComplex *split, float *freqsPtr, const int vectorSize)
 {
     vDSP_zvmags(split, 1, freqsPtr, 1, vectorSize);
     vvsqrtf(freqsPtr, freqsPtr, &vectorSize);
-    const Float32 kAdjust0DB = 1.5849e-13;
-    vDSP_vsadd(freqsPtr, 1, &kAdjust0DB, freqsPtr, 1, vectorSize);
+    const float k_adjust_0DB = 1.5849e-13f;
+    vDSP_vsadd(freqsPtr, 1, &k_adjust_0DB, freqsPtr, 1, vectorSize);
     Float32 one = 1;
     vDSP_vdbcon(freqsPtr, 1, &one, freqsPtr, 1, vectorSize, 0);
 }
@@ -47,17 +47,17 @@ static void real_spectrogram(Spectrogram filter, const float* input, float* outp
     P_LOOP_START(filter->config.ntime_series, timed)
         int nfft = filter->config.nfft;
         int nfreq = filter->config.nfreq;
-        float normFactor = filter->config.fft_normalization_factor;
-        float inputReIm[nfft * 2];
-        memset(inputReIm, 0, nfft * 2 * sizeof(float));
-        float outputMemory[2 * nfft];
-        DSPSplitComplex outputSplit = {outputMemory, outputMemory + nfft};
-        vDSP_vmul(filter->window, 1, input + timed * filter->config.step, 1, inputReIm, 1, nfft);
+        float norm_factor = filter->config.fft_normalization_factor;
+        float input_re_im[nfft * 2];
+        memset(input_re_im, 0, nfft * 2 * sizeof(float));
+        float output_memory[2 * nfft];
+        DSPSplitComplex output_split = {output_memory, output_memory + nfft};
+        vDSP_vmul(filter->window, 1, input + timed * filter->config.step, 1, input_re_im, 1, nfft);
         vDSP_DFT_Execute(filter->fft_setup,
-                         inputReIm, inputReIm + nfft,
-                         outputSplit.realp, outputSplit.imagp);
-        vDSP_vsmul(outputMemory, 1, &normFactor, outputMemory, 1, nfft * 2);
-        Magnitude(&outputSplit, output + timed * nfreq, nfreq);
+                         input_re_im, input_re_im + nfft,
+                         output_split.realp, output_split.imagp);
+        vDSP_vsmul(output_memory, 1, &norm_factor, output_memory, 1, nfft * 2);
+                magnitude(&output_split, output + timed * nfreq, nfreq);
     P_LOOP_END
 }
 
@@ -78,17 +78,17 @@ void complex_spectrogram(Spectrogram filter, const float* input, float* output) 
     dispatch_apply(filter->config.ntime_series, DISPATCH_APPLY_AUTO, ^(size_t timed) {
         int nfft = filter->config.nfft;
         int nfreq = filter->config.nfreq;
-        float outputMemory[nfft * 2];
-        float inputMemory[nfft * 2];
-        DSPSplitComplex inputSplit = {inputMemory, inputMemory + nfft};
-        DSPSplitComplex outputSplit = {outputMemory, outputMemory + nfft};
-        vDSP_ctoz(((DSPComplex *)input) + timed * filter->config.step, 2, &inputSplit, 1, nfft);
-        vDSP_vmul(filter->window, 1, inputSplit.realp, 1, inputSplit.realp, 1, nfft);
-        vDSP_vmul(filter->window, 1, inputSplit.imagp, 1, inputSplit.imagp, 1, nfft);
+        float output_memory[nfft * 2];
+        float input_memory[nfft * 2];
+        DSPSplitComplex input_split = {input_memory, input_memory + nfft};
+        DSPSplitComplex output_split = {output_memory, output_memory + nfft};
+        vDSP_ctoz(((DSPComplex *)input) + timed * filter->config.step, 2, &input_split, 1, nfft);
+        vDSP_vmul(filter->window, 1, input_split.realp, 1, input_split.realp, 1, nfft);
+        vDSP_vmul(filter->window, 1, input_split.imagp, 1, input_split.imagp, 1, nfft);
         vDSP_DFT_Execute(filter->fft_setup,
-                         inputSplit.realp, inputSplit.imagp,
-                         outputSplit.realp, outputSplit.imagp);
-        Magnitude(&outputSplit, output + timed * nfreq, nfreq);
+                         input_split.realp, input_split.imagp,
+                         output_split.realp, output_split.imagp);
+        magnitude(&output_split, output + timed * nfreq, nfreq);
     });
 }
 

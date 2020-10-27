@@ -42,9 +42,9 @@ GRU GRUCreateForInference(GRUConfig config) {
     filter->weights = malloc(sizeof(GRUWeights));
     int in = config.input_feature_channels;
     int out = config.output_feature_channels;
-    int buffStateLength = 7 * out * sizeof(float);
-    filter->state = malloc(buffStateLength);
-    memset(filter->state, 0, buffStateLength);
+    int buff_state_length = 7 * out * sizeof(float);
+    filter->state = malloc(buff_state_length);
+    memset(filter->state, 0, buff_state_length);
     filter->buffer = filter->state + out;
     int length = (3 * in * out + 3 * out * out + 6 * out) * sizeof(float);
     float *weights = malloc(length);
@@ -144,12 +144,15 @@ void GRUCellCompute(GRU filter, const float *x, const float *h_pr, float* ht, fl
 }
 
 int GRUApplyInference(GRU filter, const float *input, float* output){
+//    if(filter->training_data != NULL){
+//        return -1;
+//    }
     int out = filter->config.output_feature_channels;
     int in = filter->config.input_feature_channels;
     for (int i = 0; i < filter->config.timesteps; ++i){
-        int outputIndex = filter->config.return_sequences ? i * out : 0;
-        GRUCellCompute(filter, input + i * in, filter->state, output + outputIndex, filter->buffer);
-        memcpy(filter->state, output + outputIndex, out * sizeof(float));
+        int output_offset = filter->config.return_sequences ? i * out : 0;
+        GRUCellCompute(filter, input + i * in, filter->state, output + output_offset, filter->buffer);
+        memcpy(filter->state, output + output_offset, out * sizeof(float));
     }
     return 0;
 }

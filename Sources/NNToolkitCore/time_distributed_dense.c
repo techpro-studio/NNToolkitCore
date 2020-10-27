@@ -80,6 +80,9 @@ DenseGradient* TimeDistributedDenseGradientCreate(TimeDistributedDense filter){
 
 
 int TimeDistributedDenseApplyInference(TimeDistributedDense filter, const float *input, float* output){
+    if(filter->training_data != NULL){
+        return -1;
+    }
     P_LOOP_START(filter->config.ts, ts)
                         DenseApplyInference(filter->dense, input + ts * filter->config.dense.input_size,
                                             output + ts * filter->config.dense.output_size);

@@ -19,7 +19,7 @@ typedef struct{
     float *dz;
 } DenseTrainingData;
 
-DenseTrainingData* DenseTrainingDataCreate(DenseConfig config, DenseTrainingConfig training_config){
+DenseTrainingData* dense_training_data_create(DenseConfig config, DenseTrainingConfig training_config){
     DenseTrainingData *data = malloc(sizeof(DenseTrainingData));
     data->config = training_config;
     int x_size = config.input_size * training_config.mini_batch_size;
@@ -33,14 +33,14 @@ DenseTrainingData* DenseTrainingDataCreate(DenseConfig config, DenseTrainingConf
     return data;
 }
 
-void DenseTrainingDataDestroy(DenseTrainingData *data){
+void dense_training_data_destroy(DenseTrainingData *data){
     free(data->x);
     free(data);
 }
 
 struct DenseStruct {
     DenseConfig config;
-    DenseTrainingData* traning_data;
+    DenseTrainingData* training_data;
     DenseWeights* weights;
 };
 
@@ -59,7 +59,7 @@ DenseConfig DenseConfigCreate(int input_size, int output_size, ActivationFunctio
 Dense DenseCreateForInference(DenseConfig config) {
     Dense filter = malloc(sizeof(struct DenseStruct));
     filter->config = config;
-    filter->traning_data = NULL;
+    filter->training_data = NULL;
     filter->weights = malloc(sizeof(DenseWeights));
     int weights_buff_size = config.input_size * (config.output_size + 1) * sizeof(float);
     filter->weights->W = malloc(weights_buff_size);
@@ -71,8 +71,8 @@ Dense DenseCreateForInference(DenseConfig config) {
 void DenseDestroy(Dense filter) {
     free(filter->weights->W);
     free(filter->weights);
-    if (filter->traning_data){
-        DenseTrainingDataDestroy(filter->traning_data);
+    if (filter->training_data){
+        dense_training_data_destroy(filter->training_data);
     }
     free(filter);
 }
@@ -85,7 +85,7 @@ DenseTrainingConfig DenseTrainingConfigCreate(int batch){
 
 Dense DenseCreateForTraining(DenseConfig config, DenseTrainingConfig training_config) {
     Dense filter = DenseCreateForInference(config);
-    filter->traning_data = DenseTrainingDataCreate(config, training_config);
+    filter->training_data = dense_training_data_create(config, training_config);
     return filter;
 }
 
@@ -124,13 +124,16 @@ void a(Dense filter, const float *input, float* output){
 }
 
 int DenseApplyInference(Dense filter, const float *input, float* output) {
+    if(filter->training_data != NULL){
+        return -1;
+    }
     z(filter, input, output);
     a(filter, output, output);
     return 0;
 }
 
 int DenseApplyTrainingBatch(Dense filter, const float *input, float* output) {
-    if (filter->traning_data == NULL){
+    if (filter->training_data == NULL){
         return -1;
     }
     
