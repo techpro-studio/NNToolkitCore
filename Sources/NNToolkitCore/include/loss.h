@@ -10,8 +10,11 @@
 
 #include <stdio.h>
 
+typedef struct LossFunctionStruct *LossFunction;
 
 
+
+LossFunction LossFunctionCreate();
 
 
 #endif /* File_h */
