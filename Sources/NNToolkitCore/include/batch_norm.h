@@ -46,9 +46,17 @@ BatchNormWeights* BatchNormGetWeights(BatchNorm filter);
 
 BatchNormConfig BatchNormConfigCreate(int feature_channels, float epsilon, int count);
 
+BatchNormTrainingConfig BatchNormTrainingConfigCreate(float momentum, int mini_batch_size);
+
 BatchNorm BatchNormCreateForInference(BatchNormConfig config);
 
+BatchNorm BatchNormCreateForTraining(BatchNormConfig config, BatchNormTrainingConfig training_config);
+
+BatchNormGradient* BatchNormGradientCreate(BatchNormConfig config, BatchNormTrainingConfig training_config);
+
 int BatchNormApplyInference(BatchNorm filter, const float *input, float* output);
+
+int BatchNormApplyTrainingBatch(BatchNorm filter, const float *input, float* output);
 
 void BatchNormDestroy(BatchNorm filter);
 

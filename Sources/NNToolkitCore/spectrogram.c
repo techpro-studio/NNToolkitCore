@@ -15,7 +15,7 @@ typedef void (*spectrogram_implementer)(Spectrogram filter, const float* input, 
 
 struct SpectrogramStruct{
     SpectrogramConfig config;
-    void* fftSetup;
+    void* fft_setup;
     float *window;
 };
 
@@ -53,7 +53,7 @@ static void real_spectrogram(Spectrogram filter, const float* input, float* outp
         float outputMemory[2 * nfft];
         DSPSplitComplex outputSplit = {outputMemory, outputMemory + nfft};
         vDSP_vmul(filter->window, 1, input + timed * filter->config.step, 1, inputReIm, 1, nfft);
-        vDSP_DFT_Execute(filter->fftSetup,
+        vDSP_DFT_Execute(filter->fft_setup,
                          inputReIm, inputReIm + nfft,
                          outputSplit.realp, outputSplit.imagp);
         vDSP_vsmul(outputMemory, 1, &normFactor, outputMemory, 1, nfft * 2);
@@ -64,7 +64,7 @@ static void real_spectrogram(Spectrogram filter, const float* input, float* outp
 Spectrogram SpectrogramCreate(SpectrogramConfig config){
     Spectrogram filter = malloc(sizeof(struct SpectrogramStruct));
     filter->config = config;
-    filter->fftSetup = vDSP_DFT_zop_CreateSetup(NULL, config.nfft, vDSP_DFT_FORWARD);
+    filter->fft_setup = vDSP_DFT_zop_CreateSetup(NULL, config.nfft, vDSP_DFT_FORWARD);
     filter->window = malloc(config.nfft * sizeof(float));
     for (int i = 0; i < config.nfft; ++i)
         filter->window[i] = 1.0;
@@ -85,7 +85,7 @@ void complex_spectrogram(Spectrogram filter, const float* input, float* output) 
         vDSP_ctoz(((DSPComplex *)input) + timed * filter->config.step, 2, &inputSplit, 1, nfft);
         vDSP_vmul(filter->window, 1, inputSplit.realp, 1, inputSplit.realp, 1, nfft);
         vDSP_vmul(filter->window, 1, inputSplit.imagp, 1, inputSplit.imagp, 1, nfft);
-        vDSP_DFT_Execute(filter->fftSetup,
+        vDSP_DFT_Execute(filter->fft_setup,
                          inputSplit.realp, inputSplit.imagp,
                          outputSplit.realp, outputSplit.imagp);
         Magnitude(&outputSplit, output + timed * nfreq, nfreq);
@@ -98,7 +98,7 @@ void SpectrogramApply(Spectrogram filter, const float *input, float* output){
 }
 
 void SpectrogramDestroy(Spectrogram filter){
-    vDSP_DFT_DestroySetup(filter->fftSetup);
+    vDSP_DFT_DestroySetup(filter->fft_setup);
     free(filter);
 }
 

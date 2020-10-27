@@ -10,6 +10,10 @@
 #import "operations.h"
 #include "stdlib.h"
 
+typedef struct {
+
+} TrainingData;
+
 struct BatchNormFilterStruct{
     BatchNormConfig config;
     BatchNormWeights* weights;
@@ -77,6 +81,25 @@ int BatchNormApplyInference(BatchNorm filter, const float *input, float* output)
         BatchNormFilterApplySlice(filter, input + offset, output + offset);
     P_LOOP_END
     return 0;
+}
+
+int BatchNormApplyTrainingBatch(BatchNorm filter, const float *input, float *output) {
+    return 0;
+}
+
+BatchNormGradient *BatchNormGradientCreate(BatchNormConfig config, BatchNormTrainingConfig training_config) {
+    return NULL;
+}
+
+BatchNorm BatchNormCreateForTraining(BatchNormConfig config, BatchNormTrainingConfig training_config) {
+    return NULL;
+}
+
+BatchNormTrainingConfig BatchNormTrainingConfigCreate(float momentum, int mini_batch_size) {
+    BatchNormTrainingConfig result;
+    result.mini_batch_size = mini_batch_size;
+    result.momentum = momentum;
+    return result;
 }
 
 
