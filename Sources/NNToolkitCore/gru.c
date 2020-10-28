@@ -134,7 +134,7 @@ void GRUCellCompute(GRU filter, const float *x, const float *h_pr, float* ht, fl
     float * minus_z_pw = h_prev_Uh + out;
     op_vec_neg(z, minus_z_pw, out);
     //ht= -z + 1
-    op_vec_add_sc(minus_z_pw, 1, minus_z_pw, out);
+    op_vec_add_sc(minus_z_pw,  1, minus_z_pw, out);
     //ht = (1 - z) <*> h_tilda ? h_pr flip?
     op_vec_mul(minus_z_pw, filter->config.flip_output_gates ? h_pr : h_tilda, minus_z_pw, out);
     //h_tilda = z <*> h_tild ? h_pr flip?

@@ -19,8 +19,8 @@ extern "C" {
 typedef struct {
     float *gamma;
     float *beta;
-    float *mean;
-    float *variance;
+    float *moving_mean;
+    float *moving_variance;
 } BatchNormWeights;
 
 
@@ -32,6 +32,7 @@ typedef struct {
 typedef struct {
     float *d_gamma;
     float *d_beta;
+    float *d_x;
 } BatchNormGradient;
 
 typedef struct {
@@ -57,6 +58,8 @@ BatchNormGradient* BatchNormGradientCreate(BatchNormConfig config, BatchNormTrai
 int BatchNormApplyInference(BatchNorm filter, const float *input, float* output);
 
 int BatchNormApplyTrainingBatch(BatchNorm filter, const float *input, float* output);
+
+void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, float *d_out);
 
 void BatchNormDestroy(BatchNorm filter);
 

@@ -66,6 +66,8 @@ void op_vec_max_sc_defaut(const float *a, float b, float *c, int size);
 
 void op_vec_add_sc(const float *a, float b, float *c, int size);
 
+void op_vec_sub_sc(const float *a, float b, float *c, int size);
+
 void op_vec_mul_sc(const float *a, float b, float *c, int size);
 
 void op_vec_div_sc(const float *a, float b, float *c, int size);

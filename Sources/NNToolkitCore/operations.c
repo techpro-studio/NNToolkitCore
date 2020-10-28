@@ -236,3 +236,4 @@ void op_vec_max(const float *a, const float *b, float *c, int size){
 void op_vec_min(const float *a, const float *b, float *c, int size){
     vDSP_vmin(a, 1, b, 1, c, 1, size);
 }
+
