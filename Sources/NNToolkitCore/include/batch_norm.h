@@ -55,6 +55,8 @@ BatchNorm BatchNormCreateForTraining(BatchNormConfig config, BatchNormTrainingCo
 
 BatchNormGradient* BatchNormGradientCreate(BatchNormConfig config, BatchNormTrainingConfig training_config);
 
+void BatchNormGradientDestroy(BatchNormGradient *grad);
+
 int BatchNormApplyInference(BatchNorm filter, const float *input, float* output);
 
 int BatchNormApplyTrainingBatch(BatchNorm filter, const float *input, float* output);
