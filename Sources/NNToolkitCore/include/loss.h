@@ -10,11 +10,10 @@
 
 #include <stdio.h>
 
-typedef struct LossFunctionStruct *LossFunction;
 
+float mean_squared_error(float* y, float * y_pred, int size);
 
-
-LossFunction LossFunctionCreate();
+void mean_squared_error_derivative(float* y, float * y_pred, float *d_y_pred, int size);
 
 
 #endif /* File_h */
