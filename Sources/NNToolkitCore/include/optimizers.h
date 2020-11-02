@@ -1,0 +1,10 @@
+//
+// Created by Alex on 02.11.2020.
+//
+
+#ifndef NNTOOLKITCORE_OPTIMIZERS_H
+#define NNTOOLKITCORE_OPTIMIZERS_H
+
+
+
+#endif //NNTOOLKITCORE_OPTIMIZERS_H

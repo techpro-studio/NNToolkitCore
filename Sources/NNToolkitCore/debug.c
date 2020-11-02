@@ -12,7 +12,7 @@
 void print_vector(const float *vector, int size)
 {
     for(int i = 0; i < size; ++i)
-        printf("%e ", vector[i]);
+        printf("%f ", vector[i]);
 }
 
 void print_matrix(const float *matrix, int rows, int columns) {
