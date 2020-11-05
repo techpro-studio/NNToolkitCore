@@ -562,8 +562,9 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
                        sizes.b_i);
             op_vec_add(gradients->d_b_h + b * sizes.b_h, current_gradients.d_bh_t, gradients->d_b_h + b * sizes.b_h,
                        sizes.b_h);
+
         }
     S_LOOP_END
-
+    memcpy(gradients->d_X, dx, in * ts * batch * sizeof(float));
     free(dW);
 }

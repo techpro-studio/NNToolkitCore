@@ -98,10 +98,10 @@ void BatchNormDestroy(BatchNorm filter) {
 BatchNormGradient *BatchNormGradientCreate(BatchNormConfig config, BatchNormTrainingConfig training_config) {
     BatchNormGradient *grad = malloc(sizeof(BatchNormGradient));
     int feat = config.feature_channels;
-    int buff = (2 * feat + feat * config.count * training_config.mini_batch_size) * sizeof(float);
+    int buff = (2 * feat * training_config.mini_batch_size + feat * config.count * training_config.mini_batch_size) * sizeof(float);
     grad->d_beta = malloc(buff);
-    grad->d_gamma = grad->d_beta + feat;
-    grad->d_x = grad->d_gamma + feat;
+    grad->d_gamma = grad->d_beta + feat * training_config.mini_batch_size;
+    grad->d_x = grad->d_gamma + feat * training_config.mini_batch_size;
     memset(grad->d_beta, 0, buff);
     return grad;
 }
@@ -260,6 +260,8 @@ int BatchNormApplyTrainingBatch(BatchNorm filter, const float *input, float *out
     return 0;
 }
 
+#define PRINT 1
+
 void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, float *d_out) {
     int feat = filter->config.feature_channels;
     int N = filter->config.count * filter->training_data->config.mini_batch_size;
@@ -275,6 +277,7 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
     int buffer_size = (4 * feat + 12 * N * feat) * sizeof(float);
 
     float* buffer = malloc(buffer_size);
+    memset(buffer, 0, buffer_size);
 
     float *transposed_d_out = buffer; //  N * feat
     //d_beta:
@@ -298,6 +301,7 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
      * d_x_norm = d_out * gamma
      *
      */
+
     float* d_x_norm = d_out_x_norm_transposed + feat * N;
     P_LOOP_START(N, n)
         op_vec_mul(d_out + n * feat, filter->weights->gamma, d_x_norm + n * feat, feat);
@@ -310,7 +314,6 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
      */
     float *d_x_mu_1 = d_x_norm + feat * N;
     op_vec_div(d_x_norm, filter->training_data->sqrt_var, d_x_mu_1, feat * N);
-
     /*
      * ivar = 1 / sqrt_var
      * d_ivar =  Sum(d_x_norm * x_mu)
@@ -326,7 +329,7 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
     float *d_ivar = d_x_norm_mu + feat * N;
 
     P_LOOP_START(feat, f)
-        op_vec_sum(d_out_x_norm_transposed + f * N,d_ivar + f,N);
+        op_vec_sum(d_x_norm_mu_transp + f * N,d_ivar + f, N);
     P_LOOP_END
 
     /*
@@ -337,7 +340,6 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
 
     op_vec_mul_sc(d_ivar, -1.0f, d_sqrt_var, feat);
     op_vec_div(d_sqrt_var, filter->training_data->var_eps, d_sqrt_var, feat);
-
     /*
      * d_var = dsqrt_var / 2 * sqrtvar
      */
@@ -349,7 +351,6 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
 
     // d_var = d_var / N; for the next step
     op_vec_div_sc(d_var, (float)N, d_var, feat);
-
     /*
      * d_x_mu_2 = 2 * x_m * (d_var / N)
      */
@@ -383,17 +384,12 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
     P_LOOP_START(feat, f)
         op_vec_sum(d_x_mu_transposed + f * N,d_mu + f, N);
     P_LOOP_END
-
     op_vec_mul_sc(d_mu, (-1.0f / (float )N), d_mu, feat);
-
     float *d_x_2 = d_mu + feat;
-
-    P_LOOP_START(N, n)
-        memcpy(d_x_2 + n * feat, d_mu, feat);
-    P_LOOP_END
-
+    S_LOOP_START(N, n)
+        memcpy(d_x_2 + n * feat, d_mu, feat * sizeof(float));
+    S_LOOP_END
     op_vec_add(d_x_1, d_x_2, gradient->d_x, N * feat);
-
     free(buffer);
 }
 
