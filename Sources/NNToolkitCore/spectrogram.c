@@ -1,6 +1,5 @@
 //
 //  spectrogram.c
-//  mac_test
 //
 //  Created by Alex on 25.09.2020.
 //  Copyright © 2020 Alex. All rights reserved.

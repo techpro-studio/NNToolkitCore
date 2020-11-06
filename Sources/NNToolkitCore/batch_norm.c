@@ -296,12 +296,9 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
     P_LOOP_START(feat, f)
         op_vec_sum(d_out_x_norm_transposed + f * N, gradient->d_gamma + f, N);
     P_LOOP_END
-
     /*
      * d_x_norm = d_out * gamma
-     *
      */
-
     float* d_x_norm = d_out_x_norm_transposed + feat * N;
     P_LOOP_START(N, n)
         op_vec_mul(d_out + n * feat, filter->weights->gamma, d_x_norm + n * feat, feat);
@@ -323,9 +320,7 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
     op_vec_mul(d_x_norm, filter->training_data->x_mu, d_x_norm_mu, feat * N);
 
     float *d_x_norm_mu_transp = d_x_norm_mu + feat * N;
-
     op_mat_transp(d_x_norm_mu, d_x_norm_mu_transp, feat, N);
-
     float *d_ivar = d_x_norm_mu + feat * N;
 
     P_LOOP_START(feat, f)
@@ -376,9 +371,7 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
      */
 
     float *d_x_mu_transposed = d_x_1 + N * feat;
-
     op_mat_transp(d_x_mu, d_x_mu_transposed, feat, N);
-
     float *d_mu = d_x_mu_transposed + N * feat;
 
     P_LOOP_START(feat, f)

@@ -11,15 +11,15 @@
 #include "stdlib.h"
 #include "string.h"
 
-GRUConfig GRUConfigCreate(int input_feature_channels, int output_feature_channels, bool flip_output_gates, bool v2, bool returnSequences, int batchSize, ActivationFunction reccurrent_activation, ActivationFunction activation){
+GRUConfig GRUConfigCreate(int input_feature_channels, int output_feature_channels, bool flip_output_gates, bool v2, bool return_sequences, int batchSize, ActivationFunction recurrent_activation, ActivationFunction activation){
     GRUConfig config;
     config.input_feature_channels = input_feature_channels;
     config.timesteps = batchSize;
     config.v2 = v2;
-    config.return_sequences = returnSequences;
+    config.return_sequences = return_sequences;
     config.output_feature_channels = output_feature_channels;
     config.flip_output_gates = flip_output_gates;
-    config.reccurrent_activation = reccurrent_activation;
+    config.recurrent_activation = recurrent_activation;
     config.activation = activation;
     return config;
 }
@@ -28,13 +28,12 @@ struct GRUStruct {
     GRUConfig config;
     float *buffer;
     float *state;
-    GRUWeights* weights;
+    GRUWeights * weights;
 };
 
-GRUWeights* GRUGetWeights(GRU filter){
+GRUWeights * GRUGetWeights(GRU filter){
     return filter->weights;
 }
-
 
 GRU GRUCreateForInference(GRUConfig config) {
     GRU filter = malloc(sizeof(struct GRUStruct));
@@ -72,15 +71,15 @@ void GRUDestroy(GRU filter) {
     free(filter);
 }
 
-void ComputeGate(int in, int out, ActivationFunction activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, bool useHiddenBias,  float* gate) {
+void ComputeGate(int in, int out, ActivationFunction activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, bool use_hidden_bias, float* gate) {
     // out = x * W
-    op_mat_mul(x, W, gate, 1, out, in, 0.0);
+    op_mat_mul(x, W, gate, 1, out, in, 0.0f);
 //    out = x * W + b_i
     op_vec_add(gate, b_i, gate, out);
     // in_U = h_t * U
-    op_mat_mul(h, U, gate, 1, out, out, 1.0);
+    op_mat_mul(h, U, gate, 1, out, out, 1.0f);
     // g = g + b;
-    if (useHiddenBias){
+    if (use_hidden_bias){
         op_vec_add(gate, b_h, gate, out);
     }
     // g = activation(g);
@@ -89,21 +88,20 @@ void ComputeGate(int in, int out, ActivationFunction activation, const float *x,
     }
 }
 
-
-void GRUCellCompute(GRU filter, const float *x, const float *h_pr, float* ht, float *buffer) {
+static void GRUCellCompute(GRU filter, const float *x, const float *h_pr, float* ht, float *buffer) {
     int out = filter->config.output_feature_channels;
     int in = filter->config.input_feature_channels;
     // z = sigmoid(x * W_z + h_pr * U_z + bz)
     float* z = buffer;
-    ComputeGate(in, out, filter->config.reccurrent_activation, x, h_pr, filter->weights->W_z, filter->weights->U_z, filter->weights->b_iz, filter->weights->b_hz, filter->config.v2, z);
+    ComputeGate(in, out, filter->config.recurrent_activation, x, h_pr, filter->weights->W_z, filter->weights->U_z, filter->weights->b_iz, filter->weights->b_hz, filter->config.v2, z);
     // r = sigmoid(x * W_r + h_pr * U_r + br)
     float* r = z + out;
-    ComputeGate(in, out, filter->config.reccurrent_activation, x, h_pr, filter->weights->W_r, filter->weights->U_r, filter->weights->b_ir, filter->weights->b_hr, filter->config.v2, r);
+    ComputeGate(in, out, filter->config.recurrent_activation, x, h_pr, filter->weights->W_r, filter->weights->U_r, filter->weights->b_ir, filter->weights->b_hr, filter->config.v2, r);
     //
     // h_tilda = tanh(x * W_h + b_ih +  r <*> (h_prev * U_h + b_ih));
     float* h_tilda = r + out;
     //x * W_h
-    op_mat_mul(x, filter->weights->W_h, h_tilda, 1, out, in, 0.0);
+    op_mat_mul(x, filter->weights->W_h, h_tilda, 1, out, in, 0.0f);
     //x * W_h + b_ih
     op_vec_add(h_tilda, filter->weights->b_ih, h_tilda, out);
     
@@ -112,7 +110,7 @@ void GRUCellCompute(GRU filter, const float *x, const float *h_pr, float* ht, fl
     // V2
     if (filter->config.v2) {
 //    h_prev * UH
-        op_mat_mul(h_pr, filter->weights->U_h, h_prev_Uh, 1, out, out, 0.0);
+        op_mat_mul(h_pr, filter->weights->U_h, h_prev_Uh, 1, out, out, 0.0f);
     //    (h_prev * UH + b_hh)
         op_vec_add(h_prev_Uh, filter->weights->b_hh, h_prev_Uh, out);
         //(h_prev * UH + b_hh) <*>r
@@ -123,7 +121,7 @@ void GRUCellCompute(GRU filter, const float *x, const float *h_pr, float* ht, fl
         // (hprev <*> r)
         op_vec_mul(r, h_pr, h_prev_Uh, out);
         // UH * (hprev <*> r) + h_tida
-        op_mat_mul(h_prev_Uh, filter->weights->U_h, h_tilda, 1, out, out, 1.0);
+        op_mat_mul(h_prev_Uh, filter->weights->U_h, h_tilda, 1, out, out, 1.0f);
     }
 
     //tanh(x * W_h + (h_prev <*> r) * U_h + bh);

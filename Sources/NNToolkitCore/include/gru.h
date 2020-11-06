@@ -31,7 +31,7 @@ typedef struct {
     bool v2;
     bool return_sequences;
     int timesteps;
-    ActivationFunction reccurrent_activation;
+    ActivationFunction recurrent_activation;
     ActivationFunction activation;
 } GRUConfig;
 
@@ -40,9 +40,9 @@ GRUConfig GRUConfigCreate(
     int output_feature_channels,
     bool flip_output_gates,
     bool v2,
-    bool returnSequences,
+    bool return_sequences,
     int batchSize,
-    ActivationFunction reccurrent_activation,
+    ActivationFunction recurrent_activation,
     ActivationFunction activation
 );
 
@@ -70,7 +70,7 @@ typedef struct {
 
 typedef struct GRUStruct * GRU;
 
-GRUWeights* GRUGetWeights(GRU filter);
+GRUWeights * GRUGetWeights(GRU filter);
 
 GRU GRUCreateForInference(GRUConfig config);
 

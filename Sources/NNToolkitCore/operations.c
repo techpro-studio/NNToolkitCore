@@ -8,6 +8,7 @@
 #include "operations.h"
 #include <Accelerate/Accelerate.h>
 #include <simd/simd.h>
+//#include <arm_neon.h>
 
 
 #define simd_float_16_init(var, value) \
