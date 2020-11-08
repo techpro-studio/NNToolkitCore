@@ -29,7 +29,8 @@
 #define c_cephes_exp_p4 1.6666665459E-1
 #define c_cephes_exp_p5 5.0000001201E-1
 /* exp() computed for 4 float at once */
-float32x4_t exp_neon(float32x4_t x) {
+static float32x4_t exp_neon(float32x4_t x) {
+#warning this one needs optimization
   float32x4_t tmp, fx;
 
   float32x4_t one = vdupq_n_f32(1);
@@ -88,7 +89,14 @@ float32x4_t exp_neon(float32x4_t x) {
   y = vmulq_f32(y, pow2n);
   return y;
 }
+
+//static float32x4_t exp_neon_2(float32x4_t x) {
+//    return x;
+//}
+
 #endif
+
+
 
 
 static inline float op_vec_dot_c(const float *a, const float *b, int size){
@@ -250,6 +258,234 @@ void op_vec_tanh_n(const float *a, float *c, int size){
     op_vec_tanh_c(a, c, size);
 #endif
 }
+
+
+static inline void op_vec_clamp_c(const float *a, float *c, float min, float max, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = fmax(fminf(a[i], max), min);
+    }
+}
+
+void op_vec_clamp_n(const float *a, float *c, float min, float max, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    float32x4_t min_4 = vdupq_n_f32(min);
+    float32x4_t max_4 = vdupq_n_f32(max);
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vmaxq_f32(vminq_f32(vld1q_f32(a + 4 * i), max_4), min_4));
+    }
+    op_vec_clamp_c(a + parts * 4, c + parts * 4, min, max, remaining);
+#else
+    op_vec_clamp_c(a, c, min, max, size);
+#endif
+}
+
+static void op_vec_max_sc_c(const float *a, float b, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = fmax(a[i], b);
+    }
+}
+
+void op_vec_max_sc_n(const float *a, float b, float *c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    float32x4_t max_4 = vdupq_n_f32(b);
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vmaxq_f32(vld1q_f32(a + 4 * i), max_4));
+    }
+    op_vec_max_sc_c(a + parts * 4, b, c + parts * 4, remaining);
+#else
+    op_vec_max_sc_c(a, b, c, size);
+#endif
+}
+
+static void op_vec_add_sc_c(const float *a, float b, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = a[i] + b;
+    }
+}
+
+void op_vec_add_sc_n(const float *a, float b, float *c, int size) {
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    float32x4_t b_4 = vdupq_n_f32(b);
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vaddq_f32(vld1q_f32(a + 4 * i), b_4));
+    }
+    op_vec_add_sc_c(a + parts * 4, b, c + parts * 4, remaining);
+#else
+    op_vec_add_sc_c(a, b, c, size);
+#endif
+}
+
+static void op_vec_sub_sc_c(const float *a, float b, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = a[i] + b;
+    }
+}
+
+void op_vec_sub_sc_n(const float *a, float b, float *c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    float32x4_t b_4 = vdupq_n_f32(b);
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vsubq_f32(vld1q_f32(a + 4 * i), b_4));
+    }
+    op_vec_sub_sc_c(a + parts * 4, b, c + parts * 4, remaining);
+#else
+    op_vec_sub_sc_c(a, b, c, size);
+#endif
+}
+
+static void op_vec_mul_sc_c(const float *a, float b, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = a[i] * b;
+    }
+}
+
+void op_vec_mul_sc_n(const float *a, float b, float *c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    float32x4_t b_4 = vdupq_n_f32(b);
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vmulq_f32(vld1q_f32(a + 4 * i), b_4));
+    }
+    op_vec_mul_sc_c(a + parts * 4, b, c + parts * 4, remaining);
+#else
+    op_vec_mul_sc_c(a, b, c, size);
+#endif
+}
+
+static void op_vec_div_sc_c(const float *a, float b, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = a[i] / b;
+    }
+}
+
+void op_vec_div_sc_n(const float *a, float b, float *c, int size) {
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    float32x4_t b_4 = vdupq_n_f32(b);
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vdivq_f32(vld1q_f32(a + 4 * i), b_4));
+    }
+    op_vec_div_sc_c(a + parts * 4, b, c + parts * 4, remaining);
+#else
+    op_vec_div_sc_c(a, b, c, size);
+#endif
+}
+
+static void op_vec_neg_c(const float *a, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = -a[i];
+    }
+}
+
+void op_vec_neg_n(const float *a, float *c, int size) {
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vnegq_f32(vld1q_f32(a + 4 * i)));
+    }
+    op_vec_neg_c(a + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_neg_c(a, c, size);
+#endif
+}
+
+static void op_vec_div_c(const float *a, const float *b, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = a[i] / b[i];
+    }
+}
+
+void op_vec_div_n(const float *a, const float *b, float *c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vdivq_f32(vld1q_f32(a + 4 * i), vld1q_f32(b + 4 * i)));
+    }
+    op_vec_div_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_div_c(a, b, c, size);
+#endif
+}
+
+static void op_vec_mul_c(const float *a, const float *b, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = a[i] * b[i];
+    }
+}
+
+void op_vec_mul_n(const float *a, const float *b, float* c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vmulq_f32(vld1q_f32(a + 4 * i), vld1q_f32(b + 4 * i)));
+    }
+    op_vec_mul_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_mul_c(a, b, c, size);
+#endif
+}
+
+static void op_vec_sub_c(const float *a, const float *b, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = a[i] - b[i];
+    }
+}
+
+void op_vec_sub_n(const float *a, const float *b, float *c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vsubq_f32(vld1q_f32(a + 4 * i), vld1q_f32(b + 4 * i)));
+    }
+    op_vec_sub_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_sub_c(a, b, c, size);
+#endif
+}
+
+static void op_vec_sum_c(const float *a, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        *c += a[i];
+    }
+}
+
+void op_vec_sum_n(const float *a, float* c, int size) {
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    float32x4_t sum = vdupq_n_f32(0);
+    for (short i = 0; i < parts; ++i){
+        sum = vaddq_f32(sum, vld1q_f32(a + 4 * i));
+    }
+    float sum4[4];
+    vst1q_f32(sum4, sum);
+    *c = sum4[0] + sum4[1] + sum4[2] + sum4[3];
+    op_vec_sum_c(a + parts * 4, c, remaining);
+#else
+    op_vec_sum_c(a, c, size);
+#endif
+}
+
+
+void op_mat_mul_c(const float *a, const float *b, float *c, int m, int n, int k, float beta) {
+    
+}
+
+void op_mat_mul_n(const float *a, const float *b, float *c, int m, int n, int k, float beta) {
+
+}
+
+void op_mat_transp_n(const float *a, float *b, int m, int n) {
+
+}
+
+
+
+
+
 
 
 

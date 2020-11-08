@@ -22,13 +22,14 @@ void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int
 
 void op_mat_transp(const float *a, float *b, int m, int n);
 
-void op_vec_add(const float *a, const float *b, float *result, int size);
-
 void op_vec_sub(const float *a, const float *b, float *result, int size);
 
 void op_vec_sum(const float *a, float* result, int size);
 
 void op_vec_mul(const float *a, const float *b, float* result, int size);
+
+
+void op_vec_add(const float *a, const float *b, float *result, int size);
 
 float op_vec_dot(const float *a, const float *b, int size);
 
