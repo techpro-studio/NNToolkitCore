@@ -126,9 +126,6 @@ optimal_vector_size get_optimal_vector_size(int size){
 }
 
 #define get_optimized(func) func##_fn func##_get_optimized(int size){\
-    if (size > 4000){\
-        return func##_default;\
-    }\
     optimal_vector_size value = get_optimal_vector_size(size);\
     switch (value) {\
         case two:\
@@ -142,29 +139,37 @@ optimal_vector_size get_optimal_vector_size(int size){
         case sixteen:\
             return func##_16;\
         default:\
-            return func##_default;\
+            return func##_4;\
     }\
 }
 
-float op_vec_dot_default(const float *a, const float *b, int size){
-    float result;
-    vDSP_dotpr(a, 1, b, 1, &result, size);
-    return result;
-}
+typedef float (*op_vec_dot_fn)(const float *a, const float *b, int size);
 
+typedef void (*op_vec_clamp_fn)(const float *a, float *c, float min, float max, int size);
 
-void op_vec_clamp_default(const float *a, float *c, float min, float max, int size){
-    op_vec_clamp_16(a, c, min, max, size);
-}
+typedef void (*op_vec_max_sc_fn)(const float *a, float b, float *c, int size);
 
-void op_vec_max_sc_default(const float *a, float b, float *c, int size){
-    op_vec_max_sc_16(a, b, c, size);
-}
+op_vec_dot_fn op_vec_dot_get_optimized(int size);
+
+op_vec_clamp_fn op_vec_clamp_get_optimized(int size);
+
+op_vec_max_sc_fn op_vec_max_sc_get_optimized(int size);
 
 get_optimized(op_vec_dot)
 get_optimized(op_vec_clamp)
 get_optimized(op_vec_max_sc)
 
+float op_vec_dot(const float *a, const float *b, int size) {
+    return op_vec_dot_4(a, b, size);
+}
+
+void op_vec_clamp(const float *a, float *c, float min, float max, int size){
+    op_vec_clamp_4(a, c, min, max, size);
+}
+
+void op_vec_max_sc(const float *a, float b, float *c, int size){
+    op_vec_max_sc_4(a, b, c, size);
+}
 
 void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k, float beta) {
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, a, k, b, n, beta, result, n);
@@ -173,6 +178,7 @@ void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int
 void op_mat_transp(const float *a, float *b, int m, int n) {
     vDSP_mtrans(a, 1, b, 1, m, n);
 }
+
 
 void op_vec_add(const float *a, const float * b, float *result, int size){
     vDSP_vadd(a, 1, b, 1, result, 1, size);

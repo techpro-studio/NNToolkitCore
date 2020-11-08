@@ -68,7 +68,7 @@ Conv1d conv1d_create(Conv1dConfig config){
     filter->weights->W = malloc(weights_size);
     filter->weights->b = filter->weights->W + W_size;
     memset(filter->weights->W, 0, weights_size);
-    filter->v_dot = op_vec_dot_get_optimized(config.kernel_size);
+    filter->v_dot = op_vec_dot;
     filter->training_data = NULL;
     filter->buffer = NULL;
     return filter;
@@ -104,7 +104,6 @@ static void conv_1d_one(const struct Conv1dFilterStruct *filter, const float *in
     float *float_input = input_transposed_buffer;
     op_mat_transp((float *) input, float_input, filter->config.input_feature_channels, filter->config.input_size);
     int k_size = filter->config.kernel_size;
-    op_vec_dot_fn fn = (op_vec_dot_fn) filter->v_dot;
     P_LOOP_START(filter->config.output_feature_channels, out_feature)
         for (int x = 0; x < filter->config.output_size; ++x) {
             int weights_offset = (int) out_feature * filter->config.input_feature_channels * k_size;
@@ -117,7 +116,7 @@ static void conv_1d_one(const struct Conv1dFilterStruct *filter, const float *in
             for (int i = 0; i < filter->config.input_feature_channels; ++i) {
                 const float *row_ptr = float_input + i * filter->config.input_size + input_row_offset;
                 const float *weights_ptr = output_feature_weights + (i * k_size);
-                result += fn(row_ptr, weights_ptr, k_size);
+                result += op_vec_dot(row_ptr, weights_ptr, k_size);
             }
 
             result += filter->weights->b[out_feature];

@@ -2,10 +2,14 @@
 // Created by Alex on 07.11.2020.
 //
 
-#include "operations.h"
+#include "arm_neon_ops.h"
 #include <arm_neon.h>
 #include "stdlib.h"
 #include "math.h"
+
+
+
+#define NEON __ARM_NEON__
 
 #define c_exp_hi 88.3762626647949f
 #define c_exp_lo -88.3762626647949f
@@ -20,6 +24,8 @@
 #define c_cephes_exp_p3 4.1665795894E-2
 #define c_cephes_exp_p4 1.6666665459E-1
 #define c_cephes_exp_p5 5.0000001201E-1
+
+
 
 /* exp() computed for 4 float at once */
 float32x4_t exp_neon(float32x4_t x) {
@@ -83,7 +89,7 @@ float32x4_t exp_neon(float32x4_t x) {
 }
 
 
-static inline float op_vec_dot_default_c(const float *a, const float *b, int size){
+static inline float op_vec_dot_c(const float *a, const float *b, int size){
     float sum = 0.0f;
     for (int i = 0; i < size; ++i)
     {
@@ -93,45 +99,155 @@ static inline float op_vec_dot_default_c(const float *a, const float *b, int siz
 }
 
 
-float op_vec_dot_default_n(const float *a, const float *b, int size) {
-#ifdef __ARMNEON__
-    int parts = size / 4, remaining = size % 4;
+float op_vec_dot_n(const float *a, const float *b, int size) {
+#ifdef NEON
+    int n = 4;
+    int parts = size / n, remaining = size % n;
     float32x4_t sum_4 = vdupq_n_f32(0);
 
-    for (short i = 0; i < parts; ++i){
-        vmlaq_f32(sum_4, vld1q_f32(a + 4 * i), vld1q_f32(b + 4 * i));
+    for (int i = 0; i < parts; ++i){
+        sum_4 = vmlaq_f32(sum_4, vld1q_f32(a + n * i), vld1q_f32(b + n * i));
     }
 
     float sum_4_arm[4];
     vst1q_f32(sum_4_arm, sum_4);
-    return op_vec_dot_default_c(a + 4 * parts, b + 4 * parts, remaining) + sum_4_arm[0] + sum_4_arm[1] + sum_4_arm[2] + sum_4_arm[3];
+    return op_vec_dot_c(a + 4 * parts, b + 4 * parts, remaining) + sum_4_arm[0] + sum_4_arm[1] + sum_4_arm[2] + sum_4_arm[3];
 #else
-    return op_vec_dot_default_c(a, b, size);
+    return op_vec_dot_c(a, b, size);
 #endif
 }
 
-op_vec_dot_fn op_vec_dot_get_optimized_n(int size){
-    return op_vec_dot_default;
-}
-
-static inline void op_vec_add_c(const float *a, const float * b, float *result, int size) {
+static inline void op_vec_add_c(const float *a, const float * b, float *c, int size) {
     for (int i = 0; i < size; ++i){
-        result[i] = a[i] + b[i];
+        c[i] = a[i] + b[i];
     }
 }
 
-void op_vec_add_n(const float *a, const float * b, float *result, int size){
-#ifdef __ARMNEON__
+void op_vec_add_n(const float *a, const float * b, float *c, int size){
+#ifdef NEON
     int parts = size / 4, remaining = size % 4;
     for (short i = 0; i < parts; ++i){
-        vst1q_f32(result + i * 4, vaddq_f32(vld1q_f32(a + 4 * i), vld1q_f32(b + 4 * i)));
+        vst1q_f32(c + i * 4, vaddq_f32(vld1q_f32(a + 4 * i), vld1q_f32(b + 4 * i)));
     }
-    op_vec_add_c(a + parts * 4, b + parts * 4, result + parts * 4, remaining);
+    op_vec_add_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
 #else
-    op_vec_add_c(a, b, result, size);
+    op_vec_add_c(a, b, c, size);
 #endif
 }
 
+
+static inline void op_vec_sqrt_c(const float *a, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = sqrtf(a[i]);
+    }
+}
+
+void op_vec_sqrt_n(const float *a, float *c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vsqrtq_f32(vld1q_f32(a + 4 * i)));
+    }
+    op_vec_sqrt_c(a + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_sqrt_c(a, c, size);
+#endif
+}
+
+static inline void op_vec_exp_c(const float *a, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = exp(a[i]);
+    }
+}
+
+void op_vec_exp_n(const float *a, float *c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, exp_neon(vld1q_f32(a + 4 * i)));
+    }
+    op_vec_exp_c(a + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_exp_c(a, c, size);
+#endif
+}
+
+static inline void op_vec_reciprocal_c(const float *a, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = 1 / a[i];
+    }
+}
+
+void op_vec_reciprocal_n(const float *a, float *c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vrecpeq_f32(vld1q_f32(a + 4 * i)));
+    }
+    op_vec_reciprocal_c(a + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_reciprocal_c(a, c, size);
+#endif
+}
+
+static inline void op_vec_max_c(const float *a, const float *b, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = fmaxf(a[i], b[i]);
+    }
+}
+
+void op_vec_max_n(const float *a, const float *b, float *c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vmaxq_f32(vld1q_f32(a + 4 * i), vld1q_f32(b + 4 * i)));
+    }
+    op_vec_max_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_max_c(a, b, c, size);
+#endif
+}
+
+static inline void op_vec_min_c(const float *a, const float *b, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = fminf(a[i], b[i]);
+    }
+}
+
+void op_vec_min_n(const float *a, const float *b, float *c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    for (short i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, vminq_f32(vld1q_f32(a + 4 * i), vld1q_f32(b + 4 * i)));
+    }
+    op_vec_min_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_min_c(a, b, c, size);
+#endif
+}
+
+static inline void op_vec_tanh_c(const float *a, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = tanhf(a[i]);
+    }
+}
+
+
+void op_vec_tanh_n(const float *a, float *c, int size){
+#ifdef NEON
+    int parts = size / 4, remaining = size % 4;
+    float32x4_t minus_one = vdupq_n_f32(-1.0f);
+    for (short i = 0; i < parts; ++i){
+        float32x4_t x = vld1q_f32(a + 4 * i);
+        float32x4_t e_x = exp_neon(x);
+        float32x4_t e_minus_x = exp_neon(vmulq_f32(x, minus_one));
+        vst1q_f32(c + i * 4, vmulq_f32(vsubq_f32(e_x, e_minus_x), vrecpeq_f32(vaddq_f32(e_x, e_minus_x))));
+    }
+    op_vec_tanh_c(a + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_tanh_c(a, c, size);
+#endif
+}
 
 
 

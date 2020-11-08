@@ -103,19 +103,16 @@ ActivationFunction ActivationFunctionCreateIdentity(int inputSize) {
 
 
 typedef struct {
-    op_vec_max_sc_fn max_fn;
     float a;
-    op_vec_clamp_fn clamp_fn;
 } ReLUImplementer;
 
 void activation_relu_derivative(void *implementer, const float *input, float *output, int size) {
-    ReLUImplementer * impl = (ReLUImplementer *) implementer;
-    impl->clamp_fn(input, output, 0, 1, size);
+    op_vec_clamp(input, output, 0, 1, size);
 }
 
 void activation_relu(void *implementer, const float *input, float *output, int size){
     ReLUImplementer * impl = (ReLUImplementer *) implementer;
-    impl->max_fn(input, 0, output, size);
+    op_vec_max_sc(input, 0, output, size);
     if (impl->a != 1.0){
         op_vec_mul_sc(output, impl->a, output, size);
     }
@@ -127,9 +124,9 @@ void ReLUImplementerDestroy(void * ptr){
 
 ActivationFunction ActivationFunctionCreateReLU(int inputSize, float a) {
     ReLUImplementer* implementer = malloc(sizeof(ReLUImplementer));
-    implementer->max_fn = op_vec_max_sc_get_optimized(inputSize);
+//    implementer->max_fn = op_vec_max_sc_get_optimized(inputSize);
     implementer->a = a;
-    implementer->clamp_fn = op_vec_clamp_get_optimized(inputSize);
+//    implementer->clamp_fn = op_vec_clamp_get_optimized(inputSize);
     return ActivationFunctionCreate(inputSize, ReLUImplementerDestroy, implementer, activation_relu, activation_relu_derivative, NULL);
 }
 
@@ -195,7 +192,6 @@ void activation_softmax(void *implementer, const float *input, float *output, in
 
 void activation_softmax_derivative(void *implementer, const float *input, float *output, int size) {
 #warning implement this;
-    memcpy(output, input, size * sizeof(float));
 }
 
 
