@@ -10,9 +10,9 @@
 void sum_batch_gradient(float * gradients, float* gradient, int size, int batch){
     float* buffer = malloc(size * sizeof(float));
     memset(buffer, 0, size * sizeof(float));
-    S_LOOP_START(batch, b)
+    for (int b = 0; b < batch; ++b) {
         op_vec_add(gradient, gradients + b * size, gradient, size);
-    S_LOOP_END
+    }
     free(buffer);
 }
 

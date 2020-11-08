@@ -10,6 +10,8 @@
 #include "operations.h"
 #include "stdlib.h"
 #include "string.h"
+#include "loops.h"
+
 
 typedef struct{
     DenseTrainingConfig config;

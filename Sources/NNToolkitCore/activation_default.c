@@ -9,6 +9,7 @@
 #include "activation_default.h"
 #include "operations.h"
 #include "string.h"
+#include "loops.h"
 #include "stdlib.h"
 
 

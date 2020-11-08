@@ -7,9 +7,10 @@
 //
 
 #include "batch_norm.h"
-#import "operations.h"
+#include "operations.h"
 #include "stdlib.h"
 #include "string.h"
+#include "loops.h"
 
 typedef struct {
     BatchNormTrainingConfig config;
@@ -223,27 +224,26 @@ int BatchNormApplyTrainingBatch(BatchNorm filter, const float *input, float *out
     op_vec_div_sc(variance, (float)N, variance, N);
 
     //BATCH_NORM
-    S_LOOP_START(N, n)
+    for (int n = 0; n < N; ++n) {
         batch_norm_buff buffer = {
-            filter->training_data->x_mu + n * feat,
-            filter->training_data->var_eps + n * feat,
-            filter->training_data->sqrt_var + n * feat,
-            filter->training_data->x_norm + n * feat,
-            filter->training_data->gamma_x_norm + n * feat,
+                filter->training_data->x_mu + n * feat,
+                filter->training_data->var_eps + n * feat,
+                filter->training_data->sqrt_var + n * feat,
+                filter->training_data->x_norm + n * feat,
+                filter->training_data->gamma_x_norm + n * feat,
         };
         batch_norm(
-            input + n * feat,
-            mean,
-            variance,
-            filter->weights->gamma,
-            filter->weights->beta,
-            output + n * feat,
-            buffer,
-            filter->config.epsilon,
-            feat
+                input + n * feat,
+                mean,
+                variance,
+                filter->weights->gamma,
+                filter->weights->beta,
+                output + n * feat,
+                buffer,
+                filter->config.epsilon,
+                feat
         );
-
-    S_LOOP_END
+    }
 
     //moving mean calculation
     float buffer[feat];
@@ -379,9 +379,9 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
     P_LOOP_END
     op_vec_mul_sc(d_mu, (-1.0f / (float )N), d_mu, feat);
     float *d_x_2 = d_mu + feat;
-    S_LOOP_START(N, n)
+    P_LOOP_START(N, n)
         memcpy(d_x_2 + n * feat, d_mu, feat * sizeof(float));
-    S_LOOP_END
+    P_LOOP_END
     op_vec_add(d_x_1, d_x_2, gradient->d_x, N * feat);
     free(buffer);
 }

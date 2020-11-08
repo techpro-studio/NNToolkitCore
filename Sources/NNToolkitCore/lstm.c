@@ -513,8 +513,8 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
     float *computation_buffer = (float *) malloc(computation_buffer_size);
     memset(computation_buffer, 0, computation_buffer_size);
 
-    S_LOOP_START(batch, b)
-        for(int t = ts - 1; t >= 0; --t){
+    for (int b = 0; b < batch; ++b) {
+        for (int t = ts - 1; t >= 0; --t) {
             size_t tOutOffset = t * out + b * ts * out;
 
             CellBackwardCache cache;
@@ -542,9 +542,9 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
 
             float d_out_t[out];
             memset(d_out_t, 0, out * sizeof(float));
-            if (seq){
+            if (seq) {
                 memcpy(d_out_t, d_out + b * ts * out + t * out, out * sizeof(float));
-            } else if (t == ts - 1){
+            } else if (t == ts - 1) {
                 memcpy(d_out_t, d_out + b * out, out * sizeof(float));
             }
 
@@ -553,7 +553,8 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
 
             op_vec_add(d_h_t_init == NULL ? d_h_t : d_h_t_init, d_out_t, d_h_t, out);
 
-            LSTMCellBackward(filter->weights, filter->config.activations, in, out, d_h_t, d_c_t_init, cache, current_gradients, computation_buffer);
+            LSTMCellBackward(filter->weights, filter->config.activations, in, out, d_h_t, d_c_t_init, cache,
+                             current_gradients, computation_buffer);
             memset(computation_buffer, 0, computation_buffer_size);
 
             op_vec_add(gradients->d_W + b * sizes.w, current_gradients.d_W_t, gradients->d_W + b * sizes.w, sizes.w);
@@ -564,7 +565,7 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
                        sizes.b_h);
 
         }
-    S_LOOP_END
+    }
     memcpy(gradients->d_X, dx, in * ts * batch * sizeof(float));
     free(dW);
 }

@@ -10,7 +10,7 @@
 #include "stdlib.h"
 #include "operations.h"
 #include "string.h"
-
+#include "loops.h"
 
 typedef struct {
     ConvTrainingConfig config;
@@ -158,14 +158,15 @@ int Conv1dApplyTrainingBatch(Conv1d filter, const float *input, float *output) {
     }
     int input_one_size = filter->config.input_size * filter->config.input_feature_channels;
     int output_one_size = filter->config.output_feature_channels * filter->config.output_size;
-    S_LOOP_START(filter->training_data->config.mini_batch_size, b)
+    int batch = filter->training_data->config.mini_batch_size;
+    for (int b = 0; b < batch; ++b) {
         conv_1d_one(
             filter,
             input + b * input_one_size,
             output + b * output_one_size,
             filter->training_data->input_transposed + b * input_one_size
         );
-    S_LOOP_END
+    }
     return 0;
 }
 

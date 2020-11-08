@@ -8,6 +8,8 @@
 #include "spectrogram.h"
 #include <Accelerate/Accelerate.h>
 #include "operations.h"
+#include "loops.h"
+
 
 typedef void (*spectrogram_implementer)(Spectrogram filter, const float* input, float* output);
 

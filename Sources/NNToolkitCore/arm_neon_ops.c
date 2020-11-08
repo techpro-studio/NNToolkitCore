@@ -93,7 +93,7 @@ static inline float op_vec_dot_default_c(const float *a, const float *b, int siz
 }
 
 
-float op_vec_dot_default(const float *a, const float *b, int size) {
+float op_vec_dot_default_n(const float *a, const float *b, int size) {
 #ifdef __ARMNEON__
     int parts = size / 4, remaining = size % 4;
     float32x4_t sum_4 = vdupq_n_f32(0);
@@ -110,7 +110,7 @@ float op_vec_dot_default(const float *a, const float *b, int size) {
 #endif
 }
 
-op_vec_dot_fn op_vec_dot_get_optimized(int size){
+op_vec_dot_fn op_vec_dot_get_optimized_n(int size){
     return op_vec_dot_default;
 }
 
@@ -120,7 +120,7 @@ static inline void op_vec_add_c(const float *a, const float * b, float *result, 
     }
 }
 
-void op_vec_add(const float *a, const float * b, float *result, int size){
+void op_vec_add_n(const float *a, const float * b, float *result, int size){
 #ifdef __ARMNEON__
     int parts = size / 4, remaining = size % 4;
     for (short i = 0; i < parts; ++i){

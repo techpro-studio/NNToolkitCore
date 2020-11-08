@@ -16,19 +16,7 @@ extern "C" {
 
 #include <stdio.h>
 #include "stdbool.h"
-#include <TargetConditionals.h>
 
-#define S_LOOP_START(size, var) for (int var = 0; var < size; ++var) {
-#define S_LOOP_END }
-
-#if TARGET_OS_MAC
-    #include <dispatch/dispatch.h>
-    #define P_LOOP_START(size, var) dispatch_apply(size, DISPATCH_APPLY_AUTO, ^(size_t var) {
-    #define P_LOOP_END });
-#else
-    #define P_LOOP_START S_LOOP_START
-    #define P_LOOP_END S_LOOP_END
-#endif
 
 
 void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k, float beta);
