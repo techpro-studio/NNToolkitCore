@@ -3,13 +3,17 @@
 //
 
 #include "arm_neon_ops.h"
-#include <arm_neon.h>
 #include "stdlib.h"
 #include "math.h"
 
-
-
 #define NEON __ARM_NEON__
+
+#ifdef NEON
+    #include <arm_neon.h>
+#endif
+
+
+#if NEON
 
 #define c_exp_hi 88.3762626647949f
 #define c_exp_lo -88.3762626647949f
@@ -24,9 +28,6 @@
 #define c_cephes_exp_p3 4.1665795894E-2
 #define c_cephes_exp_p4 1.6666665459E-1
 #define c_cephes_exp_p5 5.0000001201E-1
-
-
-
 /* exp() computed for 4 float at once */
 float32x4_t exp_neon(float32x4_t x) {
   float32x4_t tmp, fx;
@@ -87,6 +88,7 @@ float32x4_t exp_neon(float32x4_t x) {
   y = vmulq_f32(y, pow2n);
   return y;
 }
+#endif
 
 
 static inline float op_vec_dot_c(const float *a, const float *b, int size){

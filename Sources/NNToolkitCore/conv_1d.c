@@ -94,7 +94,6 @@ void Conv1dDestroy(Conv1d filter) {
         conv_training_data_destroy(filter->training_data);
     }
     free(filter->weights->W);
-    free(filter->weights->b);
     free(filter->weights);
     free(filter);
 }
