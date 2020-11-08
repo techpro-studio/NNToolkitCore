@@ -137,7 +137,7 @@ typedef struct {
     float *gamma_x_norm;
 } batch_norm_buff;
 
-//buffer [x_mu, var_eps, sqrt_var, x_norm, gamma_x_norm]
+//input_transposed [x_mu, var_eps, sqrt_var, x_norm, gamma_x_norm]
 
 void batch_norm(
         const float *input,
@@ -152,11 +152,11 @@ void batch_norm(
 ) {
     // output = input - moving_mean
     op_vec_sub(input, mean, buffer.x_mu, size);
-    // buffer = moving_variance + epsilon
+    // input_transposed = moving_variance + epsilon
     op_vec_add_sc(variance, epsilon, buffer.var_eps, size);
-//    buffer = sqrt(buffer)
+//    input_transposed = sqrt(input_transposed)
     op_vec_sqrt(buffer.var_eps, buffer.sqrt_var, size);
-    // output = output / buffer
+    // output = output / input_transposed
     op_vec_div(buffer.x_mu, buffer.sqrt_var, buffer.x_norm, size);
     // output = input * gamma
     op_vec_mul(buffer.x_norm, gamma, buffer.gamma_x_norm, size);

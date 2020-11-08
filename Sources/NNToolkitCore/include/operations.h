@@ -33,8 +33,6 @@ extern "C" {
 
 void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k, float beta);
 
-void op_mat_mul_wt(const float *a, const float *b, bool a_transpose, bool b_transpose, float* result, int m, int n, int k, float beta);
-
 void op_mat_transp(const float *a, float *b, int m, int n);
 
 void op_vec_add(const float *a, const float *b, float *result, int size);

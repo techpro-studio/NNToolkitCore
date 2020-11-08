@@ -7,7 +7,6 @@
 #include "string.h"
 #include "stdlib.h"
 
-
 void sum_batch_gradient(float * gradients, float* gradient, int size, int batch){
     float* buffer = malloc(size * sizeof(float));
     memset(buffer, 0, size * sizeof(float));
@@ -19,7 +18,6 @@ void sum_batch_gradient(float * gradients, float* gradient, int size, int batch)
 
 int sgd_optimize(SGD optimizer, float *gradient, float *weights, int size) {
     float* buffer = malloc(size * sizeof(float));
-//    op_vec_div_sc(buffer, (float) batch, buffer, size);
     op_vec_mul_sc(buffer, optimizer.learning_rate, buffer, size);
     op_vec_sub(weights, buffer, weights, size);
     free(buffer);

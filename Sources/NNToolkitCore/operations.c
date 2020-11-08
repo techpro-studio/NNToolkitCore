@@ -170,10 +170,6 @@ void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, a, k, b, n, beta, result, n);
 }
 
-void op_mat_mul_wt(const float *a, const float *b, bool a_transpose, bool b_transpose, float* result, int m, int n, int k, float beta){
-    cblas_sgemm(CblasRowMajor, a_transpose ? CblasTrans : CblasNoTrans, b_transpose ? CblasTrans : CblasNoTrans, m, n, k, 1.0f, a, k, b, n, beta, result, n);
-}
-
 void op_mat_transp(const float *a, float *b, int m, int n) {
     vDSP_mtrans(a, 1, b, 1, m, n);
 }

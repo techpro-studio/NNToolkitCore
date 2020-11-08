@@ -6,6 +6,7 @@ Tests/
 cmake-build-debug/
 *.cmake
 
+
 *.txt
 *.cbp
 # Object files

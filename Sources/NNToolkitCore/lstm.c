@@ -398,17 +398,17 @@ void LSTMCellBackward(
         d_x_t = dgates * WT;
         d_h_t-1 = dgates * UT;
      */
-    op_mat_mul_wt(weigths->W, dgates, false, false, gradients.d_x_t, in, 1, 4 * out, 0.0f);
-    op_mat_mul_wt(weigths->U, dgates, false, false, gradients.d_h_t_prev, out, 1, 4 * out, 0.0f);
+    op_mat_mul(weigths->W, dgates, gradients.d_x_t, in, 1, 4 * out, 0.0f);
+    op_mat_mul(weigths->U, dgates,  gradients.d_h_t_prev, out, 1, 4 * out, 0.0f);
     /*
      Final backward step:
         d_w_t = d_gates * x_t
         d_u_t = d_gates * h_t-1
         d_b = d_gates
     */
-    op_mat_mul_wt(cache.x_t, dgates, false, false, gradients.d_W_t, in, 4 * out, 1, 0.0f);
+    op_mat_mul(cache.x_t, dgates, gradients.d_W_t, in, 4 * out, 1, 0.0f);
     if (cache.h_t_prev){
-        op_mat_mul_wt(cache.h_t_prev, dgates, false, false, gradients.d_U_t, out, 4 * out, 1, 0.0f);
+        op_mat_mul(cache.h_t_prev, dgates, gradients.d_U_t, out, 4 * out, 1, 0.0f);
 
     } else {
         memset(gradients.d_U_t, 0, 4 * out * out * sizeof(float));
