@@ -155,7 +155,7 @@ LSTM LSTMFilterCreate(LSTMConfig config){
 
 LSTM LSTMCreateForInference(LSTMConfig config){
     LSTM filter = LSTMFilterCreate(config);
-    int computation_buffer_size = 11 * config.output_feature_channels * sizeof(float);
+    int computation_buffer_size = 15 * config.output_feature_channels * sizeof(float);
     filter->forward_computation_buffer = malloc(computation_buffer_size);
     memset(filter->forward_computation_buffer, 0, computation_buffer_size);
     filter->training_data = NULL;
@@ -212,7 +212,7 @@ void LSTMCellForward(
     op_vec_add(Z, weights->b_i, Z, 4 * out);
     // in_U = h_t * U
     float* u_H = buffer;
-    op_mat_mul(h_prev, weights->U, u_H, 1, out * 4, out);
+    op_mat_mul(h_prev, weights->U, u_H, 1, 4 * out, out);
     op_vec_add(Z, u_H, Z, 4 * out);
     // input Gate =  recurrent_activation(Z[0: out])
     // default sigmoid
@@ -264,7 +264,7 @@ int LSTMApplyInference(LSTM filter, const float *input, float* output){
             state,
             output + output_offset,
             filter->forward_computation_buffer,
-            filter->forward_computation_buffer + 8
+            filter->forward_computation_buffer + 8 * out
         );
         memcpy(filter->output, output + output_offset, out * sizeof(float));
         memcpy(filter->state, state, out * sizeof(float));
