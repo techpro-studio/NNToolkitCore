@@ -171,7 +171,7 @@ LSTMTrainingConfig LSTMTrainingConfigCreate(int mini_batch_size){
 LSTM LSTMCreateForTraining(LSTMConfig config, LSTMTrainingConfig training_config){
     LSTM filter = LSTMFilterCreate(config);
 
-    int computation_buffer_size = 3 * config.output_feature_channels * sizeof(float);
+    int computation_buffer_size = 7 * config.output_feature_channels * sizeof(float);
     filter->forward_computation_buffer = malloc(computation_buffer_size);
     memset(filter->forward_computation_buffer, 0, computation_buffer_size);
 
@@ -207,11 +207,13 @@ void LSTMCellForward(
  ){
     float *Z = zifgo;
     // Z = input * W (WI, WF, WG, WO in row) + h * U (UI, UF, UG, UO in row) + bias(BI, BF, BG, BO)
-    op_mat_mul(input, weights->W, Z, 1, 4 * out, in, 0.0f);
+    op_mat_mul(input, weights->W, Z, 1, 4 * out, in);
     //out = x * W + b_i
     op_vec_add(Z, weights->b_i, Z, 4 * out);
     // in_U = h_t * U
-    op_mat_mul(h_prev, weights->U, Z, 1, out * 4, out, 1.0f);
+    float* u_H = buffer;
+    op_mat_mul(h_prev, weights->U, u_H, 1, out * 4, out);
+    op_vec_add(Z, u_H, Z, 4 * out);
     // input Gate =  recurrent_activation(Z[0: out])
     // default sigmoid
     float* i = Z + 4 * out;
@@ -229,7 +231,7 @@ void LSTMCellForward(
     float *o = g + out;
     ActivationFunctionApply(activations.output_gate_activation, Z + 3 * out, o);
     // ig = i * g
-    float* i_g = buffer;
+    float* i_g = u_H + 4 * out;
     op_vec_mul(i, g, i_g, out);
     //f_cpr = f * c_pr
     float*  f_c_pr = i_g + out;
@@ -398,17 +400,17 @@ void LSTMCellBackward(
         d_x_t = dgates * WT;
         d_h_t-1 = dgates * UT;
      */
-    op_mat_mul(weigths->W, dgates, gradients.d_x_t, in, 1, 4 * out, 0.0f);
-    op_mat_mul(weigths->U, dgates,  gradients.d_h_t_prev, out, 1, 4 * out, 0.0f);
+    op_mat_mul(weigths->W, dgates, gradients.d_x_t, in, 1, 4 * out);
+    op_mat_mul(weigths->U, dgates,  gradients.d_h_t_prev, out, 1, 4 * out);
     /*
      Final backward step:
         d_w_t = d_gates * x_t
         d_u_t = d_gates * h_t-1
         d_b = d_gates
     */
-    op_mat_mul(cache.x_t, dgates, gradients.d_W_t, in, 4 * out, 1, 0.0f);
+    op_mat_mul(cache.x_t, dgates, gradients.d_W_t, in, 4 * out, 1);
     if (cache.h_t_prev){
-        op_mat_mul(cache.h_t_prev, dgates, gradients.d_U_t, out, 4 * out, 1, 0.0f);
+        op_mat_mul(cache.h_t_prev, dgates, gradients.d_U_t, out, 4 * out, 1);
 
     } else {
         memset(gradients.d_U_t, 0, 4 * out * out * sizeof(float));

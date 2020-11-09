@@ -65,12 +65,12 @@ static void GRUCellCompute(GRU2 filter, const float *x, const float *h_pr, float
     // U = [Uz, Ur, Uh]
     // x_W = x * W
     float* x_W = buffer;
-    op_mat_mul(x, filter->weights->W, x_W, 1, 3 * out, in, 0.0f);
+    op_mat_mul(x, filter->weights->W, x_W, 1, 3 * out, in);
     // b = [bz, br, bh]
     // x_W += bi
     op_vec_add(x_W, filter->weights->b_i, x_W, 3 * out);
     float* h_pr_U = x_W + 3 * out;
-    op_mat_mul(h_pr, filter->weights->U, h_pr_U, 1, 3 * out, out, 0.0f);
+    op_mat_mul(h_pr, filter->weights->U, h_pr_U, 1, 3 * out, out);
     op_vec_add(h_pr_U, filter->weights->b_h, h_pr_U, 3 * out);
     // Z_zr = x_W[0: 2 * out] + h_pr_U[0: 2 * out]
     float* Z_zr = h_pr_U + 3 * out;

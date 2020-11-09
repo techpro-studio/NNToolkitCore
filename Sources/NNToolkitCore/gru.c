@@ -41,7 +41,7 @@ GRU GRUCreateForInference(GRUConfig config) {
     filter->weights = malloc(sizeof(GRUWeights));
     int in = config.input_feature_channels;
     int out = config.output_feature_channels;
-    int buff_state_length = 7 * out * sizeof(float);
+    int buff_state_length = 10 * out * sizeof(float);
     filter->state = malloc(buff_state_length);
     memset(filter->state, 0, buff_state_length);
     filter->buffer = filter->state + out;
@@ -71,13 +71,14 @@ void GRUDestroy(GRU filter) {
     free(filter);
 }
 
-void ComputeGate(int in, int out, ActivationFunction activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, bool use_hidden_bias, float* gate) {
+void ComputeGate(int in, int out, ActivationFunction activation, const float *x, const float*h, const float *W, const float *U, const float* b_i, const float* b_h, bool use_hidden_bias, float* gate, float* u_H_buffer) {
     // out = x * W
-    op_mat_mul(x, W, gate, 1, out, in, 0.0f);
+    op_mat_mul(x, W, gate, 1, out, in);
 //    out = x * W + b_i
     op_vec_add(gate, b_i, gate, out);
     // in_U = h_t * U
-    op_mat_mul(h, U, gate, 1, out, out, 1.0f);
+    op_mat_mul(h, U, u_H_buffer, 1, out, out);
+    op_vec_add(u_H_buffer, gate, gate, out);
     // g = g + b;
     if (use_hidden_bias){
         op_vec_add(gate, b_h, gate, out);
@@ -93,24 +94,38 @@ static void GRUCellCompute(GRU filter, const float *x, const float *h_pr, float*
     int in = filter->config.input_feature_channels;
     // z = sigmoid(x * W_z + h_pr * U_z + bz)
     float* z = buffer;
-    ComputeGate(in, out, filter->config.recurrent_activation, x, h_pr, filter->weights->W_z, filter->weights->U_z, filter->weights->b_iz, filter->weights->b_hz, filter->config.v2, z);
+    float* uz_H = z + out;
+    ComputeGate(in, out,
+            filter->config.recurrent_activation,
+            x, h_pr,
+            filter->weights->W_z,
+            filter->weights->U_z,
+            filter->weights->b_iz,
+            filter->weights->b_hz,
+            filter->config.v2, z, uz_H);
     // r = sigmoid(x * W_r + h_pr * U_r + br)
-    float* r = z + out;
-    ComputeGate(in, out, filter->config.recurrent_activation, x, h_pr, filter->weights->W_r, filter->weights->U_r, filter->weights->b_ir, filter->weights->b_hr, filter->config.v2, r);
-    //
+    float* r = uz_H + out;
+    float* ur_H = r + out;
+    ComputeGate(in, out,
+                filter->config.recurrent_activation,
+                x, h_pr,
+                filter->weights->W_r,
+                filter->weights->U_r,
+                filter->weights->b_ir,
+                filter->weights->b_hr, filter->config.v2, r, ur_H);
     // h_tilda = tanh(x * W_h + b_ih +  r <*> (h_prev * U_h + b_ih));
-    float* h_tilda = r + out;
+    float* h_tilda = ur_H + out;
     //x * W_h
-    op_mat_mul(x, filter->weights->W_h, h_tilda, 1, out, in, 0.0f);
+    op_mat_mul(x, filter->weights->W_h, h_tilda, 1, out, in);
     //x * W_h + b_ih
     op_vec_add(h_tilda, filter->weights->b_ih, h_tilda, out);
     
     float *h_prev_Uh = h_tilda + out;
-
+    float *h_prev_UHR = h_prev_Uh + out;
     // V2
     if (filter->config.v2) {
 //    h_prev * UH
-        op_mat_mul(h_pr, filter->weights->U_h, h_prev_Uh, 1, out, out, 0.0f);
+        op_mat_mul(h_pr, filter->weights->U_h, h_prev_Uh, 1, out, out);
     //    (h_prev * UH + b_hh)
         op_vec_add(h_prev_Uh, filter->weights->b_hh, h_prev_Uh, out);
         //(h_prev * UH + b_hh) <*>r
@@ -121,7 +136,8 @@ static void GRUCellCompute(GRU filter, const float *x, const float *h_pr, float*
         // (hprev <*> r)
         op_vec_mul(r, h_pr, h_prev_Uh, out);
         // UH * (hprev <*> r) + h_tida
-        op_mat_mul(h_prev_Uh, filter->weights->U_h, h_tilda, 1, out, out, 1.0f);
+        op_mat_mul(h_prev_Uh, filter->weights->U_h, h_prev_UHR, 1, out, out);
+        op_vec_add(h_prev_UHR, h_tilda, h_tilda, out);
     }
 
     //tanh(x * W_h + (h_prev <*> r) * U_h + bh);
@@ -129,7 +145,7 @@ static void GRUCellCompute(GRU filter, const float *x, const float *h_pr, float*
 //    filter->config.activation(h_tilda, h_tilda, out);
     // h_t = (1 - z) <*> h_pr + z <*> h_tilda;
     // ht = -z;
-    float * minus_z_pw = h_prev_Uh + out;
+    float * minus_z_pw = h_prev_UHR + out;
     op_vec_neg(z, minus_z_pw, out);
     //ht= -z + 1
     op_vec_add_sc(minus_z_pw,  1, minus_z_pw, out);

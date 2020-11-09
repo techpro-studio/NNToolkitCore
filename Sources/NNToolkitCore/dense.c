@@ -113,7 +113,7 @@ DenseConfig DenseGetConfig(Dense filter) {
 }
 
 void z(Dense filter, const float *input, float* output){
-    op_mat_mul(input, filter->weights->W, output, 1, filter->config.output_size, filter->config.input_size, 0.0);
+    op_mat_mul(input, filter->weights->W, output, 1, filter->config.output_size, filter->config.input_size);
     op_vec_add(output, filter->weights->b, output, filter->config.output_size);
 }
 
@@ -169,9 +169,9 @@ void DenseCalculateGradient(Dense filter, DenseGradient *gradient, float *d_out)
         //db = dz;
         memcpy(gradient->d_b + b * out, dz, out * sizeof(float));
         // DW = dz * X;
-        op_mat_mul(filter->training_data->x + b * in, dz, gradient->d_W + b * in * out, in, out, 1, 0.0f);
+        op_mat_mul(filter->training_data->x + b * in, dz, gradient->d_W + b * in * out, in, out, 1);
         // DX = dz * W;
-        op_mat_mul(filter->weights->W, dz, gradient->d_X + b * in, in, 1, out, 0.0f);
+        op_mat_mul(filter->weights->W, dz, gradient->d_X + b * in, in, 1, out);
     P_LOOP_END
 }
 

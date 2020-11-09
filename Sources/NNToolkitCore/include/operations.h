@@ -18,7 +18,7 @@ extern "C" {
 #include "stdbool.h"
 
 
-void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k, float beta);
+void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k);
 
 void op_mat_transp(const float *a, float *b, int m, int n);
 

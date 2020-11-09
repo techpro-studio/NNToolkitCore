@@ -171,8 +171,9 @@ void op_vec_max_sc(const float *a, float b, float *c, int size){
     op_vec_max_sc_4(a, b, c, size);
 }
 
-void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k, float beta) {
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, a, k, b, n, beta, result, n);
+void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k) {
+    vDSP_mmul(a, 1, b, 1, result, 1, m, n, k);
+//    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0f, a, k, b, n, 0.0f, result, n);
 }
 
 void op_mat_transp(const float *a, float *b, int m, int n) {
