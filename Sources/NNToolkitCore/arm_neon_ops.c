@@ -464,19 +464,23 @@ void op_vec_sum_n(const float *a, float* c, int size) {
 }
 
 
-void op_mat_mul_c(const float *a, const float *b, float *c, int m, int n, int k, float beta) {
-    for (int i = 0; i < m; ++i){
-        for (int j = 0; j < n; ++j){
+//A[(m*P+p)]
+//B[(p*N+n)*IB]
+//C[(m*N+n)*IC]
+
+void op_mat_mul_c(const float *a, const float *b, float *c, int M, int N, int K) {
+    for (int m = 0; m < M; ++m){
+        for (int n = 0; n < N; ++n){
             float c_mn = 0.0f;
-            for (int _k = 0; _k < k; ++_k){
-                c_mn += a[i * n + _k] * b [j + _k * m];
+            for (int k = 0; k < K; ++k){
+                c_mn += a[m * K + k] * b [k * N + n];
             }
-            c[i * n + j] = c_mn +  beta * c[i * n + j];
+            c[m * N + n] = c_mn;
         }
     }
 }
 
-void op_mat_mul_n(const float *a, const float *b, float *c, int m, int n, int k, float beta) {
+void op_mat_mul_n(const float *a, const float *b, float *c, int m, int n, int k) {
 #if 0
     for (int i = 0; i < m; ++i){
         for (int j = 0; j < n; ++j){
@@ -496,7 +500,7 @@ void op_mat_mul_n(const float *a, const float *b, float *c, int m, int n, int k,
         }
     }
 #else
-    op_mat_mul_c(a, b, c, m, n, k, beta);
+    op_mat_mul_c(a, b, c, m, n, k);
 #endif
 }
 
