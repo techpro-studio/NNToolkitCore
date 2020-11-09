@@ -480,29 +480,43 @@ void op_mat_mul_c(const float *a, const float *b, float *c, int M, int N, int K)
     }
 }
 
-void op_mat_mul_n(const float *a, const float *b, float *c, int m, int n, int k) {
-#if 0
-    for (int i = 0; i < m; ++i){
-        for (int j = 0; j < n; ++j){
-            int parts = size / 4, remaining = size % 4;
+
+
+void mat_mul_neon_slow(const float *a, const float *b, float *c, int M, int N, int K){
+    for (int m = 0; m < M; ++m){
+        for (int n = 0; n < N; ++n){
+            int parts = K / 4, remaining = K % 4;
             float32x4_t sum_4 = vdupq_n_f32(0);
-            for (int _k = 0; _k < parts; ++_k){
-                float32x4_t a_4 = vld1q_f32(a[i * n + _k]);
-                float b_arr_4 [4] = {};
-                sum_4 = vmlaq_f32(sum, a_4, vld1q_f32(b_arr_4));
+            for (int k = 0; k < parts; ++k){
+                float32x4_t a_4 = vld1q_f32(a + (m * K + 4 * k));
+                float b_arr_4 [4] = { b[4 * k * N + n], b[(4 * k + 1) * N + n],
+                    b[(4 * k + 2) * N + n], b[(4 * k + 3) * N + n] };
+                sum_4 = vmlaq_f32(sum_4, a_4, vld1q_f32(b_arr_4));
             }
             float sum[4];
-            vstq_f32(sum_4, sum);
-            float remaming = 0.0f;
-            for (short r = 0; r < remaming; ++r)
-                remaming += a[i * n + 4 * parts + r] * b[j * m ]
-            c[i * n + j] = (sum[0] + sum[1] + sum[2] + sum[3]) +  beta * c[i * n + j];
+            vst1q_f32(sum, sum_4);
+            float remaining_sum = 0.0f;
+            for (short r = 0; r < remaining; ++r){
+                remaining_sum += a[m * K + 4 * parts + r] * b[((r + 4 * parts) * N) + n];
+            }
+            c[m * N + n] = sum[0] + sum[1] + sum[2] + sum[3] + remaining_sum;
         }
     }
+}
+
+
+
+void op_mat_mul_n(const float *a, const float *b, float *c, int M, int N, int K) {
+#if NEON
+    mat_mul_neon_slow(a, b, c, M, N, K);
 #else
-    op_mat_mul_c(a, b, c, m, n, k);
+    op_mat_mul_c(a, b, c, M, N, K);
 #endif
 }
+
+
+
+
 
 void op_mat_transp_n(const float *a, float *b, int m, int n) {
     for (int i = 0; i < m; ++i){
