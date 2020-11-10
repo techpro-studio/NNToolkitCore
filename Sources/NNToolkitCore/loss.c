@@ -7,7 +7,7 @@
 
 #include "loss.h"
 #include "ops.h"
-#include "loops.h"
+#include "loop.h"
 
 float mean_squared_error(float* y, float * y_pred, int size, int batch) {
     float loss = 0.0f;

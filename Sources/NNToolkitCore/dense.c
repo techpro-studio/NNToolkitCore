@@ -10,7 +10,7 @@
 #include "ops.h"
 #include "stdlib.h"
 #include "string.h"
-#include "loops.h"
+#include "loop.h"
 
 
 typedef struct{

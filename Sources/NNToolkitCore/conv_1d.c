@@ -10,7 +10,7 @@
 #include "stdlib.h"
 #include "ops.h"
 #include "string.h"
-#include "loops.h"
+#include "loop.h"
 
 typedef struct {
     ConvTrainingConfig config;

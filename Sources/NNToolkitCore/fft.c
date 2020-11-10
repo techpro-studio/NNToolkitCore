@@ -3,6 +3,7 @@
 //
 
 #include "fft.h"
+#include "stdlib.h"
 
 #define APPLE 1
 
@@ -14,11 +15,11 @@
 
 
 struct DFTSetupStruct{
-    FFTConfig config;
+    DFTConfig config;
     void *implementer;
 };
 
-DFTSetup DFTSetupCreate(FFTConfig config) {
+DFTSetup DFTSetupCreate(DFTConfig config) {
     DFTSetup setup = malloc(sizeof(struct DFTSetupStruct));
     setup->config = config;
 #if APPLE
@@ -29,10 +30,29 @@ DFTSetup DFTSetupCreate(FFTConfig config) {
     return setup;
 }
 
-void DFTPerform(DFTSetup setup, float *input, float *output) {
-    
+void DFTPerform(DFTSetup setup, complex_float_spl* input, complex_float_spl* output){
+#if APPLE
+    vDSP_DFT_Execute(setup->implementer,
+                     input->real_p, input->imag_p,
+                     output->real_p, output->imag_p);
+#else
+
+#endif
 }
 
 void DFTSetupDestroy(DFTSetup setup) {
+#if APPLE
+    vDSP_DFT_DestroySetup(setup->implementer);
+    free(setup);
+#else
 
+#endif
+}
+
+DFTConfig DFTConfigCreate(int nfft, bool forward, bool complex) {
+    DFTConfig result;
+    result.nfft = nfft;
+    result.complex = complex;
+    result.forward = forward;
+    return result;
 }

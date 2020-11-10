@@ -16,6 +16,7 @@ extern "C" {
 
 #include <stdio.h>
 #include "stdbool.h"
+#include "types.h"
 
 
 void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k);
@@ -56,6 +57,9 @@ void op_vec_reciprocal(const float *a, float *c, int size);
 
 void op_vec_magnitudes(float *a, float *b, float *c, int size);
 
+void op_vec_db(float *a, float *c, int size);
+
+void op_split_complex_fill(complex_float_spl*split, complex_float *complex, int size);
 #if defined __cplusplus
 }
 #endif

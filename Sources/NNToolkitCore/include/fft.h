@@ -6,6 +6,8 @@
 #define fft_h
 
 #include "stdbool.h"
+#include "loop.h"
+#include "types.h"
 
 typedef struct DFTSetupStruct* DFTSetup;
 
@@ -13,18 +15,16 @@ typedef struct {
     int nfft;
     bool forward;
     bool complex;
-} FFTConfig;
+} DFTConfig;
 
-typedef struct {
-    float *real_p;
-    float *imag_p;
-} SplitComplex;
 
-DFTSetup FFTSetupCreate(FFTConfig config);
+DFTConfig DFTConfigCreate(int nfft, bool forward, bool complex);
 
-void FFTPerform(DFTSetup setup, float *input, float *output);
+DFTSetup DFTSetupCreate(DFTConfig config);
 
-void FFTSetupDestroy(DFTSetup setup);
+void DFTPerform(DFTSetup setup, complex_float_spl* input, complex_float_spl* output);
+
+void DFTSetupDestroy(DFTSetup setup);
 
 
 #endif //fft_h

@@ -7,9 +7,10 @@
 
 #include "spectrogram.h"
 #include "fft.h"
-#include <Accelerate/Accelerate.h>
 #include "ops.h"
-#include "loops.h"
+#include "loop.h"
+#include "stdlib.h"
+#include "string.h"
 
 
 typedef void (*spectrogram_implementer)(Spectrogram filter, const float* input, float* output);
@@ -17,7 +18,7 @@ typedef void (*spectrogram_implementer)(Spectrogram filter, const float* input, 
 
 struct SpectrogramStruct{
     SpectrogramConfig config;
-    void * fft_setup;
+    DFTSetup dft_setup;
     float *window;
 };
 
@@ -39,8 +40,7 @@ inline static void magnitude(float* real_p, float* imag_p, float *freqs, const i
     op_vec_magnitudes(real_p, imag_p, freqs, size);
     op_vec_sqrt(freqs, freqs, size);
     op_vec_add_sc(freqs, 1.5849e-13f, freqs, size);
-    Float32 one = 1;
-    vDSP_vdbcon(freqs, 1, &one, freqs, 1, size, 0);
+    op_vec_db(freqs, freqs, size);
 }
 
 
@@ -53,9 +53,9 @@ static void real_spectrogram(Spectrogram filter, const float* input, float* outp
         memset(input_re_im, 0, nfft * 2 * sizeof(float));
         float output_memory[2 * nfft];
         op_vec_mul(filter->window, input + timed * filter->config.step, input_re_im, nfft);
-        vDSP_DFT_Execute(filter->fft_setup,
-                         input_re_im, input_re_im + nfft,
-                         output_memory, output_memory + nfft);
+        complex_float_spl input_split = { input_re_im, input_re_im + nfft};
+        complex_float_spl output_split = { output_memory, output_memory + nfft};
+        DFTPerform(filter->dft_setup, &input_split , &output_split);
         op_vec_mul_sc(output_memory, norm_factor, output_memory, nfft * 2);
         magnitude(output_memory, output_memory + nfft, output + timed * nfreq, nfreq);
     P_LOOP_END
@@ -64,7 +64,7 @@ static void real_spectrogram(Spectrogram filter, const float* input, float* outp
 Spectrogram SpectrogramCreate(SpectrogramConfig config){
     Spectrogram filter = malloc(sizeof(struct SpectrogramStruct));
     filter->config = config;
-    filter->fft_setup = vDSP_DFT_zop_CreateSetup(NULL, config.nfft, vDSP_DFT_FORWARD);
+    filter->dft_setup = DFTSetupCreate(DFTConfigCreate(config.nfft, true, false));
     filter->window = malloc(config.nfft * sizeof(float));
     for (int i = 0; i < config.nfft; ++i)
         filter->window[i] = 1.0f;
@@ -75,20 +75,19 @@ void SpectrogramSetWindowFunc(Spectrogram filter, window_fn fn) {
 }
 
 void complex_spectrogram(Spectrogram filter, const float* input, float* output) {
-    dispatch_apply(filter->config.ntime_series, DISPATCH_APPLY_AUTO, ^(size_t timed) {
+    P_LOOP_START(filter->config.ntime_series, timed)
         int nfft = filter->config.nfft;
         int nfreq = filter->config.nfreq;
         float output_memory[nfft * 2];
         float input_memory[nfft * 2];
-        DSPSplitComplex input_split = {input_memory, input_memory + nfft};
-        vDSP_ctoz(((DSPComplex *)input) + timed * filter->config.step, 2, &input_split, 1, nfft);
-        op_vec_mul(filter->window, input_split.realp, input_split.realp, nfft);
-        op_vec_mul(filter->window, input_split.imagp, input_split.imagp, nfft);
-        vDSP_DFT_Execute(filter->fft_setup,
-                         input_split.realp, input_split.imagp,
-                         output_memory, output_memory + nfft);
+        complex_float_spl input_split = {input_memory, input_memory + nfft};
+        op_split_complex_fill(&input_split, ((complex_float *)input) + timed * filter->config.step, nfft);
+        complex_float_spl output_split = { output_memory, output_memory + nfft};
+        op_vec_mul(filter->window, input_split.real_p, input_split.real_p, nfft);
+        op_vec_mul(filter->window, input_split.imag_p, input_split.imag_p, nfft);
+        DFTPerform(filter->dft_setup, &input_split , &output_split);
         magnitude(output_memory, output_memory + nfft, output + timed * nfreq, nfreq);
-    });
+    P_LOOP_END
 }
 
 void SpectrogramApply(Spectrogram filter, const float *input, float* output){
@@ -97,7 +96,7 @@ void SpectrogramApply(Spectrogram filter, const float *input, float* output){
 }
 
 void SpectrogramDestroy(Spectrogram filter){
-    vDSP_DFT_DestroySetup(filter->fft_setup);
+    DFTSetupDestroy(filter->dft_setup);
     free(filter);
 }
 

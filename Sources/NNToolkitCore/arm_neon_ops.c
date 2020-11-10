@@ -540,7 +540,7 @@ static void op_vec_magnitudes_c(const float *a, const float *b, float *c, int si
     }
 }
 
-void op_vec_magnitudes(const float *a, const float *b, float *c, int size) {
+void op_vec_magnitudes(float *a, float *b, float *c, int size) {
 #if NEON
     int parts = size / 4, remaining = size % 4;
     for (int i = 0; i < parts; ++i){
@@ -552,6 +552,14 @@ void op_vec_magnitudes(const float *a, const float *b, float *c, int size) {
 #else
     op_vec_magnitudes_c(a, b, c, size);
 #endif
+}
+
+void op_vec_db(float *a, float *c, int size){
+    
+}
+
+void op_split_complex_fill(complex_float_spl *split, complex_float *complex, int size) {
+
 }
 
 
