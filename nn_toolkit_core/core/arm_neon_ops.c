@@ -12,9 +12,6 @@
     #define NEON 0
 #endif
 
-#include "Sources/NNToolkitCore/include/dense.h"
-
-
 
 
 #define c_exp_hi 88.3762626647949f

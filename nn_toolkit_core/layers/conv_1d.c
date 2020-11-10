@@ -170,7 +170,6 @@ int Conv1dApplyTrainingBatch(Conv1d filter, const float *input, float *output) {
 }
 
 void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, float *d_out) {
-    register int a asm("r8");
 
 }
 

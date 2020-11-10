@@ -5,8 +5,6 @@
 #include "nn_toolkit_core/signal/fft.h"
 #include "stdlib.h"
 
-#define APPLE 1
-
 #if APPLE
     #include <Accelerate/Accelerate.h>
 #else
