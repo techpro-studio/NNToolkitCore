@@ -5,7 +5,8 @@
 #include "nn_toolkit_core/signal/fft.h"
 #include "stdlib.h"
 
-#if APPLE
+
+#ifdef __APPLE__
     #include <Accelerate/Accelerate.h>
 #else
     #define NO
@@ -20,7 +21,7 @@ struct DFTSetupStruct{
 DFTSetup DFTSetupCreate(DFTConfig config) {
     DFTSetup setup = malloc(sizeof(struct DFTSetupStruct));
     setup->config = config;
-#if APPLE
+#ifdef __APPLE__
     setup->implementer = vDSP_DFT_zop_CreateSetup(NULL, config.nfft, config.forward ? vDSP_DFT_FORWARD : vDSP_DFT_INVERSE);
 #else
 
@@ -29,7 +30,7 @@ DFTSetup DFTSetupCreate(DFTConfig config) {
 }
 
 void DFTPerform(DFTSetup setup, complex_float_spl* input, complex_float_spl* output){
-#if APPLE
+#ifdef __APPLE__
     vDSP_DFT_Execute(setup->implementer,
                      input->real_p, input->imag_p,
                      output->real_p, output->imag_p);
@@ -39,7 +40,7 @@ void DFTPerform(DFTSetup setup, complex_float_spl* input, complex_float_spl* out
 }
 
 void DFTSetupDestroy(DFTSetup setup) {
-#if APPLE
+#ifdef __APPLE__
     vDSP_DFT_DestroySetup(setup->implementer);
     free(setup);
 #else
