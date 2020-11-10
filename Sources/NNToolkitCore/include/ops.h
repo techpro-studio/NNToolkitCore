@@ -54,6 +54,8 @@ void op_vec_tanh(const float *a, float *c, int size);
 
 void op_vec_reciprocal(const float *a, float *c, int size);
 
+void op_vec_magnitudes(float *a, float *b, float *c, int size);
+
 #if defined __cplusplus
 }
 #endif
