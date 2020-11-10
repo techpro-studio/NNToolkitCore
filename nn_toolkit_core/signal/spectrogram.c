@@ -5,10 +5,10 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#include "spectrogram.h"
-#include "fft.h"
-#include "ops.h"
-#include "loop.h"
+#include "nn_toolkit_core/signal/spectrogram.h"
+#include "nn_toolkit_core/signal/fft.h"
+#include "nn_toolkit_core/core/ops.h"
+#include "nn_toolkit_core/core/loop.h"
 #include "stdlib.h"
 #include "string.h"
 
@@ -40,7 +40,7 @@ inline static void magnitude(float* real_p, float* imag_p, float *freqs, const i
     op_vec_magnitudes(real_p, imag_p, freqs, size);
     op_vec_sqrt(freqs, freqs, size);
     op_vec_add_sc(freqs, 1.5849e-13f, freqs, size);
-    op_vec_db(freqs, freqs, size);
+    op_vec_db(freqs, 1.0f, freqs, size);
 }
 
 

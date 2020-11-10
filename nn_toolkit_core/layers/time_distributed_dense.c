@@ -5,11 +5,12 @@
 //  Created by Alex on 21.10.2020.
 //
 
-#include "time_distributed_dense.h"
-#include "ops.h"
+#include "nn_toolkit_core/layers/time_distributed_dense.h"
+#include "nn_toolkit_core/core/ops.h"
+#include "nn_toolkit_core/core/loop.h"
 #include "stdlib.h"
 #include "string.h"
-#include "loop.h"
+
 
 typedef struct  {
     TimeDistributedDenseTrainingConfig config;

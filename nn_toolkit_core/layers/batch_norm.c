@@ -6,11 +6,12 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#include "batch_norm.h"
-#include "ops.h"
+#include "nn_toolkit_core/layers/batch_norm.h"
+#include "nn_toolkit_core/core/ops.h"
+#include "nn_toolkit_core/core/loop.h"
 #include "stdlib.h"
 #include "string.h"
-#include "loop.h"
+
 
 typedef struct {
     BatchNormTrainingConfig config;

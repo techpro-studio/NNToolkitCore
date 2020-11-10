@@ -2,8 +2,8 @@
 // Created by Alex on 10.11.2020.
 //
 
-#ifndef complex_h
-#define complex_h
+#ifndef types_h
+#define types_h
 
 
 typedef struct {

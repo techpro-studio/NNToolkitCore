@@ -6,11 +6,11 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#include "activation_default.h"
-#include "ops.h"
-#include "string.h"
-#include "loop.h"
+#include "nn_toolkit_core/layers/activation_default.h"
+#include "nn_toolkit_core/core/ops.h"
+#include "nn_toolkit_core/core/loop.h"
 #include "stdlib.h"
+#include "string.h"
 
 
 

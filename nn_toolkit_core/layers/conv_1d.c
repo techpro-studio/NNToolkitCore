@@ -6,11 +6,12 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#include "conv_1d.h"
+#include "nn_toolkit_core/layers/conv_1d.h"
+#include "nn_toolkit_core/core/loop.h"
+#include "nn_toolkit_core/core/ops.h"
 #include "stdlib.h"
-#include "ops.h"
 #include "string.h"
-#include "loop.h"
+
 
 typedef struct {
     ConvTrainingConfig config;

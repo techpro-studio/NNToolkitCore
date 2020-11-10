@@ -246,9 +246,8 @@ void op_vec_magnitudes(float *a, float *b, float *c, int size) {
     vDSP_zvmags(&split, 1, c, 1, size);
 }
 
-void op_vec_db(float *a, float *c, int size){
-    Float32 one = 1;
-    vDSP_vdbcon(a, 1, &one, c, 1, size, 0);
+void op_vec_db(float *a, float b, float *c, int size){
+    vDSP_vdbcon(a, 1, &b, c, 1, size, 0);
 }
 
 void op_split_complex_fill(complex_float_spl *split, complex_float *cmplx, int size) {

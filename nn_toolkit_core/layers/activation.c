@@ -6,7 +6,8 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#include "activation.h"
+#include "nn_toolkit_core/layers/activation.h"
+
 #include "stdlib.h"
 #include <string.h>
 

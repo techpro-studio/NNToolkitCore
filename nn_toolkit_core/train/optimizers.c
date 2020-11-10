@@ -2,8 +2,8 @@
 // Created by Alex on 02.11.2020.
 //
 
-#include "optimizers.h"
-#include "ops.h"
+#include "nn_toolkit_core/train/optimizers.h"
+#include "nn_toolkit_core/core/ops.h"
 #include "string.h"
 #include "stdlib.h"
 

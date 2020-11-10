@@ -5,9 +5,9 @@
 //  Created by Alex on 17.10.2020.
 //
 
-#include "loss.h"
-#include "ops.h"
-#include "loop.h"
+#include "nn_toolkit_core/train/loss.h"
+#include "nn_toolkit_core/core/ops.h"
+#include "nn_toolkit_core/core/loop.h"
 
 float mean_squared_error(float* y, float * y_pred, int size, int batch) {
     float loss = 0.0f;

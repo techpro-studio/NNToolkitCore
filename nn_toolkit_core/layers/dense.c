@@ -6,11 +6,12 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#include "dense.h"
-#include "ops.h"
+#include "nn_toolkit_core/layers//dense.h"
+#include "nn_toolkit_core/core/ops.h"
+#include "nn_toolkit_core/core/loop.h"
 #include "stdlib.h"
 #include "string.h"
-#include "loop.h"
+
 
 
 typedef struct{

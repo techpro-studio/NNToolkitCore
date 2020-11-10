@@ -12,6 +12,8 @@
     #define NEON 0
 #endif
 
+#include "Sources/NNToolkitCore/include/dense.h"
+
 
 
 
@@ -554,12 +556,33 @@ void op_vec_magnitudes(float *a, float *b, float *c, int size) {
 #endif
 }
 
-void op_vec_db(float *a, float *c, int size){
-    
+void op_vec_db_c(float *a, float b, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = 10 * log10f((a[i] / b));
+    }
+}
+
+void op_vec_db(float *a, float b, float *c, int size){
+#if NEON
+    int parts = size / 4, remaining = size % 4;
+    float32x4_t b_4 = vdupq_n_f32(b);
+    for (int i = 0; i < parts; ++i){
+        float32x4_t a_4 = vld1q_f32(a + 4 * i);
+
+        vst1q_f32(c + i * 4, vaddq_f32(vmulq_f32(a_4, a_4), vmulq_f32(b_4, b_4)));
+    }
+    op_vec_db_c(a + parts * 4, b, c + parts * 4, remaining);
+#else
+    op_vec_db_c(a, b, c, size);
+#endif
 }
 
 void op_split_complex_fill(complex_float_spl *split, complex_float *complex, int size) {
-
+    for (int i = 0; i < size; ++i){
+        complex_float item = complex[i];
+        split->real_p[i] = item.real;
+        split->imag_p[i] = item.imag;
+    }
 }
 
 
