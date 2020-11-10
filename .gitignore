@@ -2,7 +2,7 @@
 *.d
 .swiftpm/
 Tests/
-
+#Makefile
 cmake-build-debug/
 *.cmake
 
