@@ -7,7 +7,7 @@
 //
 
 #include "activation_default.h"
-#include "operations.h"
+#include "ops.h"
 #include "string.h"
 #include "loops.h"
 #include "stdlib.h"

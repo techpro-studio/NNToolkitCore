@@ -9,7 +9,7 @@
 #include "stdlib.h"
 #include "string.h"
 #include "activation_default.h"
-#include "operations.h"
+#include "ops.h"
 #include "debug.h"
 
 LSTMActivations LSTMActivationsCreate(ActivationFunction input_gate_activation, ActivationFunction forget_gate_activation, ActivationFunction candidate_gate_activation, ActivationFunction output_gate_activation, ActivationFunction output_activation){

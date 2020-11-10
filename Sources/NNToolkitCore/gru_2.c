@@ -3,7 +3,7 @@
 //
 
 #include "gru_2.h"
-#include "operations.h"
+#include "ops.h"
 #include "stdlib.h"
 #include "string.h"
 

@@ -6,7 +6,7 @@
 //
 
 #include "time_distributed_dense.h"
-#include "operations.h"
+#include "ops.h"
 #include "stdlib.h"
 #include "string.h"
 #include "loops.h"

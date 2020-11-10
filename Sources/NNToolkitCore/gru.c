@@ -7,7 +7,7 @@
 //
 
 #include "gru.h"
-#include "operations.h"
+#include "ops.h"
 #include "stdlib.h"
 #include "string.h"
 

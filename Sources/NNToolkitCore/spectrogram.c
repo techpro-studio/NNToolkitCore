@@ -7,7 +7,7 @@
 
 #include "spectrogram.h"
 #include <Accelerate/Accelerate.h>
-#include "operations.h"
+#include "ops.h"
 #include "loops.h"
 
 
@@ -68,7 +68,7 @@ Spectrogram SpectrogramCreate(SpectrogramConfig config){
     filter->fft_setup = vDSP_DFT_zop_CreateSetup(NULL, config.nfft, vDSP_DFT_FORWARD);
     filter->window = malloc(config.nfft * sizeof(float));
     for (int i = 0; i < config.nfft; ++i)
-        filter->window[i] = 1.0;
+        filter->window[i] = 1.0f;
     return filter;
 }
 void SpectrogramSetWindowFunc(Spectrogram filter, window_fn fn) {

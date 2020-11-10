@@ -9,12 +9,10 @@
 #define loops_h
 
 
-#include <TargetConditionals.h>
-
-#define S_LOOP_START(size, var)
+#define S_LOOP_START(size, var) for(int var = 0; var < size; ++var){
 #define S_LOOP_END }
 
-#if TARGET_OS_MAC
+#if APPLE
     #include <dispatch/dispatch.h>
     #define P_LOOP_START(size, var) dispatch_apply(size, DISPATCH_APPLY_AUTO, ^(size_t var) {
     #define P_LOOP_END });

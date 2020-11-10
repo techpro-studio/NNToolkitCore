@@ -5,10 +5,10 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#include "operations.h"
+#include "ops.h"
 #include <Accelerate/Accelerate.h>
 #include <simd/simd.h>
-//#include <arm_neon.h>
+
 
 
 #define simd_float_16_init(var, value) \
@@ -159,6 +159,14 @@ get_optimized(op_vec_dot)
 get_optimized(op_vec_clamp)
 get_optimized(op_vec_max_sc)
 
+void op_vec_max(const float *a, const float *b, float *c, int size){
+    vDSP_vmax(a, 1, b, 1, c, 1, size);
+}
+
+void op_vec_min(const float *a, const float *b, float *c, int size){
+    vDSP_vmin(a, 1, b, 1, c, 1, size);
+}
+
 float op_vec_dot(const float *a, const float *b, int size) {
     return op_vec_dot_4(a, b, size);
 }
@@ -179,7 +187,6 @@ void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int
 void op_mat_transp(const float *a, float *b, int m, int n) {
     vDSP_mtrans(a, 1, b, 1, m, n);
 }
-
 
 void op_vec_add(const float *a, const float * b, float *result, int size){
     vDSP_vadd(a, 1, b, 1, result, 1, size);
@@ -233,11 +240,7 @@ void op_vec_div(const float *a, const float *b, float *c, int size) {
     vDSP_vdiv(b, 1, a, 1, c, 1, size);
 }
 
-void op_vec_max(const float *a, const float *b, float *c, int size){
-    vDSP_vmax(a, 1, b, 1, c, 1, size);
-}
 
-void op_vec_min(const float *a, const float *b, float *c, int size){
-    vDSP_vmin(a, 1, b, 1, c, 1, size);
-}
+
+
 

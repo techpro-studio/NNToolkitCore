@@ -8,7 +8,7 @@
 
 #include "conv_1d.h"
 #include "stdlib.h"
-#include "operations.h"
+#include "ops.h"
 #include "string.h"
 #include "loops.h"
 

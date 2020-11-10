@@ -7,7 +7,7 @@
 //
 
 #include "debug.h"
-#include <CoreFoundation/CoreFoundation.h>
+#include "stdlib.h"
 
 void print_vector(const float *vector, int size)
 {
