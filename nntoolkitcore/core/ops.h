@@ -14,16 +14,9 @@
 extern "C" {
 #endif
 
-
-#include "nn_toolkit_core/core/types.h"
+#include "nntoolkitcore/core/types.h"
 #include <stdio.h>
 #include "stdbool.h"
-
-
-
-void op_mat_mul(const float *a, const float *b, float* result, int m, int n, int k);
-
-void op_mat_transp(const float *a, float *b, int m, int n);
 
 void op_vec_sub(const float *a, const float *b, float *result, int size);
 

@@ -2,7 +2,7 @@
 // Created by Alex on 10.11.2020.
 //
 
-#include "nn_toolkit_core/signal/fft.h"
+#include "nntoolkitcore/signal/fft.h"
 #include "stdlib.h"
 
 

@@ -5,9 +5,9 @@
 //  Created by Alex on 21.10.2020.
 //
 
-#include "nn_toolkit_core/layers/time_distributed_dense.h"
-#include "nn_toolkit_core/core/ops.h"
-#include "nn_toolkit_core/core/loop.h"
+#include "nntoolkitcore/layers/time_distributed_dense.h"
+#include "nntoolkitcore/core/ops.h"
+#include "nntoolkitcore/core/loop.h"
 #include "stdlib.h"
 #include "string.h"
 

@@ -6,8 +6,9 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#include "nn_toolkit_core/layers/gru.h"
-#include "nn_toolkit_core/core/ops.h"
+#include "nntoolkitcore/layers/gru.h"
+#include "nntoolkitcore/core/ops.h"
+#include "nntoolkitcore/core/mat_ops.h"
 #include "stdlib.h"
 #include "string.h"
 

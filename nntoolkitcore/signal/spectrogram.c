@@ -5,10 +5,10 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#include "nn_toolkit_core/signal/spectrogram.h"
-#include "nn_toolkit_core/signal/fft.h"
-#include "nn_toolkit_core/core/ops.h"
-#include "nn_toolkit_core/core/loop.h"
+#include "nntoolkitcore/signal/spectrogram.h"
+#include "nntoolkitcore/signal/fft.h"
+#include "nntoolkitcore/core/ops.h"
+#include "nntoolkitcore/core/loop.h"
 #include "stdlib.h"
 #include "string.h"
 

@@ -6,9 +6,10 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#include "nn_toolkit_core/layers/batch_norm.h"
-#include "nn_toolkit_core/core/ops.h"
-#include "nn_toolkit_core/core/loop.h"
+#include "nntoolkitcore/layers/batch_norm.h"
+#include "nntoolkitcore/core/ops.h"
+#include "nntoolkitcore/core/mat_ops.h"
+#include "nntoolkitcore/core/loop.h"
 #include "stdlib.h"
 #include "string.h"
 

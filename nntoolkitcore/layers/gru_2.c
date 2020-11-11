@@ -2,8 +2,9 @@
 // Created by Alex on 05.11.2020.
 //
 
-#include "nn_toolkit_core/layers/gru_2.h"
-#include "nn_toolkit_core/core/ops.h"
+#include "nntoolkitcore/layers/gru_2.h"
+#include "nntoolkitcore/core/ops.h"
+#include "nntoolkitcore/core/mat_ops.h"
 #include "stdlib.h"
 #include "string.h"
 

@@ -5,9 +5,10 @@
 //  Created by Alex on 01.10.2020.
 //
 
-#include "nn_toolkit_core/layers/lstm.h"
-#include "nn_toolkit_core/layers/activation_default.h"
-#include "nn_toolkit_core/core/ops.h"
+#include "nntoolkitcore/layers/lstm.h"
+#include "nntoolkitcore/layers/activation_default.h"
+#include "nntoolkitcore/core/mat_ops.h"
+#include "nntoolkitcore/core/ops.h"
 #include "stdlib.h"
 #include "string.h"
 

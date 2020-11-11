@@ -5,7 +5,7 @@
 //  Created by Alex on 04.10.2020.
 //
 
-#include "nn_toolkit_core/signal/window.h"
+#include "nntoolkitcore/signal/window.h"
 #include <math.h>
 
 void hann_family_window(float * vector, int size, float alpha){
