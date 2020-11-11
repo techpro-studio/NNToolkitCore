@@ -5,7 +5,8 @@ Tests/
 #Makefile
 cmake-build-debug/
 *.cmake
-
+third_party/pffft/
+third_party/eigen3/
 
 *.txt
 *.cbp
