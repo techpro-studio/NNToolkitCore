@@ -5,15 +5,11 @@
 #ifndef types_h
 #define types_h
 
+#ifdef __APPLE__
+    #define APPLE 0
+#else
+    #define APPLE 0
+#endif
 
-typedef struct {
-    float real;
-    float imag;
-} complex_float;
-
-typedef struct {
-    float *real_p;
-    float *imag_p;
-} complex_float_spl;
 
 #endif

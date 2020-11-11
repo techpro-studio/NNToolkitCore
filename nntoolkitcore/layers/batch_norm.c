@@ -8,7 +8,6 @@
 
 #include "nntoolkitcore/layers/batch_norm.h"
 #include "nntoolkitcore/core/ops.h"
-#include "nntoolkitcore/core/mat_ops.h"
 #include "nntoolkitcore/core/loop.h"
 #include "stdlib.h"
 #include "string.h"

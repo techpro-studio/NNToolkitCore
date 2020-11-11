@@ -7,7 +7,6 @@
 
 #include "nntoolkitcore/layers/lstm.h"
 #include "nntoolkitcore/layers/activation_default.h"
-#include "nntoolkitcore/core/mat_ops.h"
 #include "nntoolkitcore/core/ops.h"
 #include "stdlib.h"
 #include "string.h"

@@ -4,6 +4,7 @@
 
 #include "ops.h"
 #include "math.h"
+#include "third_party/eigen3/Eigen/Dense"
 
 #if __arm__
     #include <arm_neon.h>
@@ -11,6 +12,10 @@
 #else
     #define NEON 0
 #endif
+
+
+typedef Eigen::Map<const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> const_map_t;
+typedef Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> map_t;
 
 
 
@@ -100,9 +105,29 @@ float32x4_t neon_div(float32x4_t a, float32x4_t b){
 #endif
 }
 
+void mat_mul_neon_slow(const float *a, const float *b, float *c, int M, int N, int K){
+    for (int m = 0; m < M; ++m){
+        for (int n = 0; n < N; ++n){
+            int parts = K / 4, remaining = K % 4;
+            float32x4_t sum_4 = vdupq_n_f32(0);
+            for (int k = 0; k < parts; ++k){
+                float32x4_t a_4 = vld1q_f32(a + (m * K + 4 * k));
+                float b_arr_4 [4] = { b[4 * k * N + n], b[(4 * k + 1) * N + n],
+                    b[(4 * k + 2) * N + n], b[(4 * k + 3) * N + n] };
+                sum_4 = vmlaq_f32(sum_4, a_4, vld1q_f32(b_arr_4));
+            }
+            float sum[4];
+            vst1q_f32(sum, sum_4);
+            float remaining_sum = 0.0f;
+            for (int r = 0; r < remaining; ++r){
+                remaining_sum += a[m * K + 4 * parts + r] * b[((r + 4 * parts) * N) + n];
+            }
+            c[m * N + n] = sum[0] + sum[1] + sum[2] + sum[3] + remaining_sum;
+        }
+    }
+}
+
 #endif
-
-
 
 
 static inline float op_vec_dot_c(const float *a, const float *b, int size){
@@ -479,59 +504,7 @@ void op_vec_sum(const float *a, float* c, int size) {
 #endif
 }
 
-void op_mat_mul_c(const float *a, const float *b, float *c, int M, int N, int K) {
-    for (int m = 0; m < M; ++m){
-        for (int n = 0; n < N; ++n){
-            float c_mn = 0.0f;
-            for (int k = 0; k < K; ++k){
-                c_mn += a[m * K + k] * b [k * N + n];
-            }
-            c[m * N + n] = c_mn;
-        }
-    }
-}
 
-#if NEON
-
-void mat_mul_neon_slow(const float *a, const float *b, float *c, int M, int N, int K){
-    for (int m = 0; m < M; ++m){
-        for (int n = 0; n < N; ++n){
-            int parts = K / 4, remaining = K % 4;
-            float32x4_t sum_4 = vdupq_n_f32(0);
-            for (int k = 0; k < parts; ++k){
-                float32x4_t a_4 = vld1q_f32(a + (m * K + 4 * k));
-                float b_arr_4 [4] = { b[4 * k * N + n], b[(4 * k + 1) * N + n],
-                    b[(4 * k + 2) * N + n], b[(4 * k + 3) * N + n] };
-                sum_4 = vmlaq_f32(sum_4, a_4, vld1q_f32(b_arr_4));
-            }
-            float sum[4];
-            vst1q_f32(sum, sum_4);
-            float remaining_sum = 0.0f;
-            for (int r = 0; r < remaining; ++r){
-                remaining_sum += a[m * K + 4 * parts + r] * b[((r + 4 * parts) * N) + n];
-            }
-            c[m * N + n] = sum[0] + sum[1] + sum[2] + sum[3] + remaining_sum;
-        }
-    }
-}
-
-#endif
-
-void op_mat_mul(const float *a, const float *b, float *c, int M, int N, int K) {
-#if NEON
-    mat_mul_neon_slow(a, b, c, M, N, K);
-#else
-    op_mat_mul_c(a, b, c, M, N, K);
-#endif
-}
-
-void op_mat_transp(const float *a, float *b, int m, int n) {
-    for (int i = 0; i < m; ++i){
-        for (int j = 0; j < n; ++j){
-            b[i * n + j] = a[j * m + i];
-        }
-    }
-}
 
 static void op_vec_magnitudes_c(const float *a, const float *b, float *c, int size){
     for (int i = 0; i < size; ++i){
@@ -574,12 +547,52 @@ void op_vec_db(float *a, float b, float *c, int size){
 #endif
 }
 
-void op_split_complex_fill(complex_float_spl *split, complex_float *complex, int size) {
-    for (int i = 0; i < size; ++i){
-        complex_float item = complex[i];
-        split->real_p[i] = item.real;
-        split->imag_p[i] = item.imag;
+
+
+
+
+
+
+void op_mat_mul_c(const float *a, const float *b, float *c, int M, int N, int K) {
+    for (int m = 0; m < M; ++m){
+        for (int n = 0; n < N; ++n){
+            float c_mn = 0.0f;
+            for (int k = 0; k < K; ++k){
+                c_mn += a[m * K + k] * b [k * N + n];
+            }
+            c[m * N + n] = c_mn;
+        }
     }
+}
+
+void op_mat_transp_c(const float *a, float *b, int m, int n) {
+    for (int i = 0; i < m; ++i){
+        for (int j = 0; j < n; ++j){
+            b[i * n + j] = a[j * m + i];
+        }
+    }
+}
+
+
+
+void op_mat_mul(const float *a, const float *b, float *c, int M, int N, int K) {
+    const_map_t mA(a, M, K);
+    const_map_t mB(b, K, N);
+    map_t mC(c, M, N);
+    if (N == 1) {
+        mC.col(0).noalias() = mA * mB.col(0);
+    } else if (M == 1) {
+        mC.row(0).noalias() = mA.row(0) * mB;
+    } else {
+        mC.noalias() = mA * mB;
+    }
+}
+
+
+void op_mat_transp(const float *a, float *b, int M, int N) {
+    const_map_t mA(a, N, M);
+    map_t mB(b, M, N);
+    mB.noalias() = mB.transpose();
 }
 
 

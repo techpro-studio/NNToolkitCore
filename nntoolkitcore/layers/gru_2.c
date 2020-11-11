@@ -4,7 +4,6 @@
 
 #include "nntoolkitcore/layers/gru_2.h"
 #include "nntoolkitcore/core/ops.h"
-#include "nntoolkitcore/core/mat_ops.h"
 #include "stdlib.h"
 #include "string.h"
 

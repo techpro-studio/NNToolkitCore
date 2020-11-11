@@ -21,15 +21,17 @@ Pod::Spec.new do |s|
   'nntoolkitcore/signal/spectrogram.h',
   'nntoolkitcore/signal/window.h',
   'nntoolkitcore/core/debug.h'
+  'nntoolkitcore/core/ops.h'
 
   s.source_files =
       'nntoolkitcore/include/*.h',
       'nntoolkitcore/core/*.h',
       'nntoolkitcore/core/debug.c',
-      'nntoolkitcore/core/apple_ops.c',
+      'nntoolkitcore/core/default_ops.cc',
       'nntoolkitcore/layers/*.{h,c}',
       'nntoolkitcore/train/*.{h,c}',
       'nntoolkitcore/signal/*.{h,c}'
+      'thirdparty/pffft/*.{h,c}'
 
 
   s.pod_target_xcconfig = {

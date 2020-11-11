@@ -17,14 +17,24 @@ typedef struct {
     bool complex;
 } DFTConfig;
 
+typedef struct {
+    float real;
+    float imag;
+} ComplexFloat;
+
+typedef struct {
+    float *real_p;
+    float *imag_p;
+} ComplexFloatSplit;
 
 DFTConfig DFTConfigCreate(int nfft, bool forward, bool complex);
 
 DFTSetup DFTSetupCreate(DFTConfig config);
 
-void DFTPerform(DFTSetup setup, complex_float_spl* input, complex_float_spl* output);
+void DFTPerform(DFTSetup setup, ComplexFloatSplit* input, ComplexFloatSplit* output);
 
 void DFTSetupDestroy(DFTSetup setup);
 
+void SplitComplex(ComplexFloatSplit*split, ComplexFloat *complex, int size);
 
 #endif //fft_h

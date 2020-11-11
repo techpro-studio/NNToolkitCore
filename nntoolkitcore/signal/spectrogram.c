@@ -53,8 +53,8 @@ static void real_spectrogram(Spectrogram filter, const float* input, float* outp
         memset(input_re_im, 0, nfft * 2 * sizeof(float));
         float output_memory[2 * nfft];
         op_vec_mul(filter->window, input + timed * filter->config.step, input_re_im, nfft);
-        complex_float_spl input_split = { input_re_im, input_re_im + nfft};
-        complex_float_spl output_split = { output_memory, output_memory + nfft};
+        ComplexFloatSplit input_split = {input_re_im, input_re_im + nfft};
+        ComplexFloatSplit output_split = {output_memory, output_memory + nfft};
         DFTPerform(filter->dft_setup, &input_split , &output_split);
         op_vec_mul_sc(output_memory, norm_factor, output_memory, nfft * 2);
         magnitude(output_memory, output_memory + nfft, output + timed * nfreq, nfreq);
@@ -80,9 +80,9 @@ void complex_spectrogram(Spectrogram filter, const float* input, float* output) 
         int nfreq = filter->config.nfreq;
         float output_memory[nfft * 2];
         float input_memory[nfft * 2];
-        complex_float_spl input_split = {input_memory, input_memory + nfft};
-        op_split_complex_fill(&input_split, ((complex_float *)input) + timed * filter->config.step, nfft);
-        complex_float_spl output_split = { output_memory, output_memory + nfft};
+        ComplexFloatSplit input_split = {input_memory, input_memory + nfft};
+        SplitComplex(&input_split, ((ComplexFloat *) input) + timed * filter->config.step, nfft);
+        ComplexFloatSplit output_split = {output_memory, output_memory + nfft};
         op_vec_mul(filter->window, input_split.real_p, input_split.real_p, nfft);
         op_vec_mul(filter->window, input_split.imag_p, input_split.imag_p, nfft);
         DFTPerform(filter->dft_setup, &input_split , &output_split);

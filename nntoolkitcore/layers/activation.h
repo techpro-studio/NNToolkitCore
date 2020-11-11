@@ -9,7 +9,7 @@
 #ifndef activation_h
 #define activation_h
 
-#include <stdio.h>
+
 #include "stdbool.h"
 
 #if defined __cplusplus

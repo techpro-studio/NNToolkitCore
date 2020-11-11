@@ -14,8 +14,6 @@
 extern "C" {
 #endif
 
-#include "nntoolkitcore/core/types.h"
-#include <stdio.h>
 #include "stdbool.h"
 
 void op_vec_sub(const float *a, const float *b, float *result, int size);
@@ -54,7 +52,10 @@ void op_vec_magnitudes(float *a, float *b, float *c, int size);
 
 void op_vec_db(float *a, float b, float *c, int size);
 
-void op_split_complex_fill(complex_float_spl*split, complex_float *complex, int size);
+void op_mat_mul(const float *a, const float *b, float *C, int M, int N, int K);
+
+void op_mat_transp(const float *a, float *c, int M, int N);
+
 #if defined __cplusplus
 }
 #endif

@@ -241,6 +241,10 @@ void op_vec_db(float *a, float b, float *c, int size){
     vDSP_vdbcon(a, 1, &b, c, 1, size, 0);
 }
 
-void op_split_complex_fill(complex_float_spl *split, complex_float *cmplx, int size) {
-    vDSP_ctoz((DSPComplex *)cmplx, 1, (DSPSplitComplex *) split, 2, size);
+void op_mat_mul(const float *a, const float *b, float *c, int M, int N, int K) {
+    vDSP_mmul(a, 1, b, 1, c, 1, M, N, K);
+}
+
+void op_mat_transp(const float *a, float *b, int M, int N) {
+    vDSP_mtrans(a, 1, b, 1, M, N);
 }
