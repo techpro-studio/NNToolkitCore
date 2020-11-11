@@ -20,7 +20,7 @@ Pod::Spec.new do |s|
   'nntoolkitcore/train/*.{h}',
   'nntoolkitcore/signal/spectrogram.h',
   'nntoolkitcore/signal/window.h',
-  'nntoolkitcore/core/debug.h'
+  'nntoolkitcore/core/debug.h',
   'nntoolkitcore/core/ops.h'
 
   s.source_files =

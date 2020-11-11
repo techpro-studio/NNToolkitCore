@@ -6,7 +6,7 @@
 #include "math.h"
 #include "third_party/eigen3/Eigen/Dense"
 
-#if __arm__
+#if (__arm__) || (__arm64__)
     #include <arm_neon.h>
     #define NEON __ARM_NEON__
 #else
@@ -97,12 +97,102 @@ static float32x4_t exp_neon(float32x4_t x) {
   return y;
 }
 
+#define c_inv_mant_mask ~0x7f800000u
+#define c_cephes_SQRTHF 0.707106781186547524
+#define c_cephes_log_p0 7.0376836292E-2
+#define c_cephes_log_p1 - 1.1514610310E-1
+#define c_cephes_log_p2 1.1676998740E-1
+#define c_cephes_log_p3 - 1.2420140846E-1
+#define c_cephes_log_p4 + 1.4249322787E-1
+#define c_cephes_log_p5 - 1.6668057665E-1
+#define c_cephes_log_p6 + 2.0000714765E-1
+#define c_cephes_log_p7 - 2.4999993993E-1
+#define c_cephes_log_p8 + 3.3333331174E-1
+#define c_cephes_log_q1 -2.12194440e-4
+#define c_cephes_log_q2 0.693359375
+
+float32x4_t neon_ln(float32x4_t x) {
+  float32x4_t one = vdupq_n_f32(1);
+
+  x = vmaxq_f32(x, vdupq_n_f32(0)); /* force flush to zero on denormal values */
+  uint32x4_t invalid_mask = vcleq_f32(x, vdupq_n_f32(0));
+
+  int32x4_t ux = vreinterpretq_s32_f32(x);
+
+  int32x4_t emm0 = vshrq_n_s32(ux, 23);
+
+  /* keep only the fractional part */
+  ux = vandq_s32(ux, vdupq_n_s32(c_inv_mant_mask));
+  ux = vorrq_s32(ux, vreinterpretq_s32_f32(vdupq_n_f32(0.5f)));
+  x = vreinterpretq_f32_s32(ux);
+
+  emm0 = vsubq_s32(emm0, vdupq_n_s32(0x7f));
+  float32x4_t e = vcvtq_f32_s32(emm0);
+
+  e = vaddq_f32(e, one);
+
+  /* part2:
+     if( x < SQRTHF ) {
+       e -= 1;
+       x = x + x - 1.0;
+     } else { x = x - 1.0; }
+  */
+  uint32x4_t mask = vcltq_f32(x, vdupq_n_f32(c_cephes_SQRTHF));
+  float32x4_t tmp = vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(x), mask));
+  x = vsubq_f32(x, one);
+  e = vsubq_f32(e, vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(one), mask)));
+  x = vaddq_f32(x, tmp);
+
+  float32x4_t z = vmulq_f32(x,x);
+
+  float32x4_t y = vdupq_n_f32(c_cephes_log_p0);
+  y = vmulq_f32(y, x);
+  y = vaddq_f32(y, vdupq_n_f32(c_cephes_log_p1));
+  y = vmulq_f32(y, x);
+  y = vaddq_f32(y, vdupq_n_f32(c_cephes_log_p2));
+  y = vmulq_f32(y, x);
+  y = vaddq_f32(y, vdupq_n_f32(c_cephes_log_p3));
+  y = vmulq_f32(y, x);
+  y = vaddq_f32(y, vdupq_n_f32(c_cephes_log_p4));
+  y = vmulq_f32(y, x);
+  y = vaddq_f32(y, vdupq_n_f32(c_cephes_log_p5));
+  y = vmulq_f32(y, x);
+  y = vaddq_f32(y, vdupq_n_f32(c_cephes_log_p6));
+  y = vmulq_f32(y, x);
+  y = vaddq_f32(y, vdupq_n_f32(c_cephes_log_p7));
+  y = vmulq_f32(y, x);
+  y = vaddq_f32(y, vdupq_n_f32(c_cephes_log_p8));
+  y = vmulq_f32(y, x);
+
+  y = vmulq_f32(y, z);
+
+
+  tmp = vmulq_f32(e, vdupq_n_f32(c_cephes_log_q1));
+  y = vaddq_f32(y, tmp);
+
+
+  tmp = vmulq_f32(z, vdupq_n_f32(0.5f));
+  y = vsubq_f32(y, tmp);
+
+  tmp = vmulq_f32(e, vdupq_n_f32(c_cephes_log_q2));
+  x = vaddq_f32(x, y);
+  x = vaddq_f32(x, tmp);
+  x = vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(x), invalid_mask)); // negative arg will be NAN
+  return x;
+}
+
 float32x4_t neon_div(float32x4_t a, float32x4_t b){
-#if __arm64
+#if __arm64__
     return vdivq_f32(a, b);
 #else
     return vmulq_f32(a, vrecpeq_f32(b));
 #endif
+}
+
+#define ln10 2.30258509299
+
+float32x4_t neon_log10(float32x4_t a){
+    return neon_div(neon_ln(a), vdupq_n_f32(ln10));
 }
 
 void mat_mul_neon_slow(const float *a, const float *b, float *c, int M, int N, int K){
@@ -438,7 +528,7 @@ void op_vec_div(const float *a, const float *b, float *c, int size){
 #if NEON
     int parts = size / 4, remaining = size % 4;
     for (int i = 0; i < parts; ++i){
-        vst1q_f32(c + i * 4, neon_div(vld1q_f32((void *)(a + 4 * i)), vld1q_f32(b + 4 * i)));
+        vst1q_f32(c + i * 4, neon_div(vld1q_f32((a + 4 * i)), vld1q_f32(b + 4 * i)));
     }
     op_vec_div_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
 #else
@@ -534,21 +624,17 @@ void op_vec_db_c(float *a, float b, float *c, int size){
 
 void op_vec_db(float *a, float b, float *c, int size){
 #if NEON
-//    int parts = size / 4, remaining = size % 4;
-//    float32x4_t b_4 = vdupq_n_f32(b);
-//    for (int i = 0; i < parts; ++i){
-//        float32x4_t a_4 = vld1q_f32(a + 4 * i);
-//    }
-//    op_vec_db_c(a + parts * 4, b, c + parts * 4, remaining);
+    int parts = size / 4, remaining = size % 4;
+    float32x4_t b_4 = vdupq_n_f32(b);
+    float32x4_t ten = vdupq_n_f32(10.0f);
+    for (int i = 0; i < parts; ++i){
+        vst1q_f32(c + 4 * i, vmulq_f32(ten, neon_log10(neon_div(vld1q_f32(a + 4 * i), b_4))));
+    }
+    op_vec_db_c(a + parts * 4, b, c + parts * 4, remaining);
 #else
     op_vec_db_c(a, b, c, size);
 #endif
 }
-
-
-
-
-
 
 
 void op_mat_mul_c(const float *a, const float *b, float *c, int M, int N, int K) {
