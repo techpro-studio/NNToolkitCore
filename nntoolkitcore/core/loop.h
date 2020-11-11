@@ -8,6 +8,8 @@
 #ifndef loop_h
 #define loop_h
 
+#include "types.h"
+
 #define S_LOOP_START(size, var) for(int var = 0; var < size; ++var){
 #define S_LOOP_END }
 

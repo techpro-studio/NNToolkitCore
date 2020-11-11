@@ -6,7 +6,7 @@
 #define types_h
 
 #ifdef __APPLE__
-    #define APPLE 0
+    #define APPLE 1
 #else
     #define APPLE 0
 #endif
