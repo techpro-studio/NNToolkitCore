@@ -49,8 +49,7 @@ void DFTSetupDestroy(DFTSetup setup) {
 
 void SplitComplex(ComplexFloatSplit *split, ComplexFloat *complex, int size) {
 #if APPLE
-    void op_split_complex_fill(ComplexFloatSplit *split, ComplexFloat *cmplx, int size) {
-    vDSP_ctoz((DSPComplex *)cmplx, 1, (DSPSplitComplex *) split, 2, size);
+    vDSP_ctoz((DSPComplex *)complex, 1, (DSPSplitComplex *) split, 2, size);
 #else
     for (int i = 0; i < size; ++i){
         ComplexFloat item = complex[i];

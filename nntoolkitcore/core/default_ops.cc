@@ -534,14 +534,12 @@ void op_vec_db_c(float *a, float b, float *c, int size){
 
 void op_vec_db(float *a, float b, float *c, int size){
 #if NEON
-    int parts = size / 4, remaining = size % 4;
-    float32x4_t b_4 = vdupq_n_f32(b);
-    for (int i = 0; i < parts; ++i){
-        float32x4_t a_4 = vld1q_f32(a + 4 * i);
-
-        vst1q_f32(c + i * 4, vaddq_f32(vmulq_f32(a_4, a_4), vmulq_f32(b_4, b_4)));
-    }
-    op_vec_db_c(a + parts * 4, b, c + parts * 4, remaining);
+//    int parts = size / 4, remaining = size % 4;
+//    float32x4_t b_4 = vdupq_n_f32(b);
+//    for (int i = 0; i < parts; ++i){
+//        float32x4_t a_4 = vld1q_f32(a + 4 * i);
+//    }
+//    op_vec_db_c(a + parts * 4, b, c + parts * 4, remaining);
 #else
     op_vec_db_c(a, b, c, size);
 #endif
@@ -592,7 +590,7 @@ void op_mat_mul(const float *a, const float *b, float *c, int M, int N, int K) {
 void op_mat_transp(const float *a, float *b, int M, int N) {
     const_map_t mA(a, N, M);
     map_t mB(b, M, N);
-    mB.noalias() = mB.transpose();
+    mB.noalias() = mA.transpose();
 }
 
 
