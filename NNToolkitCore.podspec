@@ -15,21 +15,21 @@ Pod::Spec.new do |s|
   s.osx.deployment_target = '10.9'
 
   s.public_header_files =
-  'nn_toolkit_core/include/*.{h}',
-  'nn_toolkit_core/layers/*.{h}',
-  'nn_toolkit_core/train/*.{h}',
-  'nn_toolkit_core/signal/spectrogram.h',
-  'nn_toolkit_core/signal/window.h',
-  'nn_toolkit_core/core/debug.h'
+  'nntoolkitcore/include/*.{h}',
+  'nntoolkitcore/layers/*.{h}',
+  'nntoolkitcore/train/*.{h}',
+  'nntoolkitcore/signal/spectrogram.h',
+  'nntoolkitcore/signal/window.h',
+  'nntoolkitcore/core/debug.h'
 
   s.source_files =
-      'nn_toolkit_core/include/*.h',
-      'nn_toolkit_core/core/*.h',
-      'nn_toolkit_core/core/debug.c',
-      'nn_toolkit_core/core/apple_ops.c',
-      'nn_toolkit_core/layers/*.{h,c}',
-      'nn_toolkit_core/train/*.{h,c}',
-      'nn_toolkit_core/signal/*.{h,c}'
+      'nntoolkitcore/include/*.h',
+      'nntoolkitcore/core/*.h',
+      'nntoolkitcore/core/debug.c',
+      'nntoolkitcore/core/apple_ops.c',
+      'nntoolkitcore/layers/*.{h,c}',
+      'nntoolkitcore/train/*.{h,c}',
+      'nntoolkitcore/signal/*.{h,c}'
 
 
   s.pod_target_xcconfig = {
