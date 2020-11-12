@@ -81,7 +81,7 @@ void complex_spectrogram(Spectrogram filter, const float* input, float* output) 
         float output_memory[nfft * 2];
         float input_memory[nfft * 2];
         ComplexFloatSplit input_split = {input_memory, input_memory + nfft};
-        SplitComplex(&input_split, ((ComplexFloat *) input) + timed * filter->config.step, nfft);
+        split_complex(&input_split, ((ComplexFloat *) input) + timed * filter->config.step, nfft);
         ComplexFloatSplit output_split = {output_memory, output_memory + nfft};
         op_vec_mul(filter->window, input_split.real_p, input_split.real_p, nfft);
         op_vec_mul(filter->window, input_split.imag_p, input_split.imag_p, nfft);

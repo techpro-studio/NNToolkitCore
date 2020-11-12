@@ -35,6 +35,8 @@ void DFTPerform(DFTSetup setup, ComplexFloatSplit* input, ComplexFloatSplit* out
 
 void DFTSetupDestroy(DFTSetup setup);
 
-void SplitComplex(ComplexFloatSplit*split, ComplexFloat *complex, int size);
+void split_complex(ComplexFloatSplit*split, ComplexFloat *complex, int size);
+
+void join_complex_split(ComplexFloat *complex, ComplexFloatSplit*split, int size);
 
 #endif //fft_h
