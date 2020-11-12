@@ -19,6 +19,8 @@ typedef Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::R
 
 
 
+#if NEON
+
 #define c_exp_hi 88.3762626647949f
 #define c_exp_lo -88.3762626647949f
 
@@ -32,9 +34,7 @@ typedef Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::R
 #define c_cephes_exp_p3 4.1665795894E-2
 #define c_cephes_exp_p4 1.6666665459E-1
 #define c_cephes_exp_p5 5.0000001201E-1
-/* exp() computed for 4 float at once */
 
-#if NEON
 
 static float32x4_t exp_neon(float32x4_t x) {
 
@@ -372,7 +372,7 @@ void op_vec_tanh(const float *a, float *c, int size){
         float32x4_t x = vld1q_f32(a + 4 * i);
         float32x4_t e_x = exp_neon(x);
         float32x4_t e_minus_x = exp_neon(vmulq_f32(x, minus_one));
-        vst1q_f32(c + i * 4, vmulq_f32(vsubq_f32(e_x, e_minus_x), vrecpeq_f32(vaddq_f32(e_x, e_minus_x))));
+        vst1q_f32(c + i * 4, neon_div(vsubq_f32(e_x, e_minus_x), vaddq_f32(e_x, e_minus_x)));
     }
     op_vec_tanh_c(a + parts * 4, c + parts * 4, remaining);
 #else
