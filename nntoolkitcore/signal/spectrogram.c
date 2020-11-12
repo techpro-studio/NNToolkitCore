@@ -6,7 +6,7 @@
 //
 
 #include "nntoolkitcore/signal/spectrogram.h"
-#include "nntoolkitcore/signal/fft.h"
+#include "nntoolkitcore/signal/dft.h"
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/loop.h"
 #include "stdlib.h"

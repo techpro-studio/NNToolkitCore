@@ -8,7 +8,6 @@ cmake-build-debug/
 third_party/pffft/
 third_party/eigen3/
 
-*.txt
 *.cbp
 # Object files
 *.o

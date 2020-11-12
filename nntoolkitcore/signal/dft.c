@@ -2,11 +2,11 @@
 // Created by Alex on 10.11.2020.
 //
 
-#include "nntoolkitcore/signal/fft.h"
+#include "nntoolkitcore/signal/dft.h"
 #include "stdlib.h"
 #include "nntoolkitcore/core/loop.h"
 
-#define USE_APPLE_FFT 0
+#define USE_APPLE_FFT APPLE
 
 #if USE_APPLE_FFT
     #include <Accelerate/Accelerate.h>
@@ -40,9 +40,10 @@ void DFTPerform(DFTSetup setup, ComplexFloatSplit* input, ComplexFloatSplit* out
     int nfft = setup->config.nfft;
     kiss_fft_cpx in[nfft];
     kiss_fft_cpx out[nfft];
+    join_complex_split((ComplexFloat *)in, input, nfft);
     kiss_fft(setup->implementer, in, out);
     split_complex(output, (ComplexFloat *) out, nfft);
-    join_complex_split((ComplexFloat *)out, output, nfft);
+
 #endif
 }
 

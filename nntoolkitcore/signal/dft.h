@@ -6,7 +6,6 @@
 #define fft_h
 
 #include "stdbool.h"
-#include "nntoolkitcore/core/loop.h"
 #include "nntoolkitcore/core/types.h"
 
 typedef struct DFTSetupStruct* DFTSetup;
