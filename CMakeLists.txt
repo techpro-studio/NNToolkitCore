@@ -106,8 +106,17 @@ if(APPLE)
 
     # Install
     install (TARGETS ${PROJECT_NAME}
-        FRAMEWORK DESTINATION . # relative to CMAKE_INSTALL_PREFIX
+        FRAMEWORK DESTINATION .# relative to CMAKE_INSTALL_PREFIX
         PRIVATE_HEADER
         PUBLIC_HEADER
     )
+else()
+    set_target_properties (${PROJECT_NAME} PROPERTIES
+        PUBLIC_HEADER "${PUBLIC_HEADERS}"
+    )
+
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PUBLIC_HEADERS})
+
 endif()
+
+
