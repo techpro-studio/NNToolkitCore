@@ -220,6 +220,10 @@ void op_vec_exp(const float *a, float *c, int size) {
     vvexpf(c, a, &size);
 }
 
+void op_vec_log(const float *a, float *c, int size) {
+    vvlogf(c, a, &size);
+}
+
 void op_vec_tanh(const float *a, float *c, int size) {
     vvtanhf(c, a, &size);
 }
@@ -248,3 +252,5 @@ void op_mat_mul(const float *a, const float *b, float *c, int M, int N, int K) {
 void op_mat_transp(const float *a, float *b, int M, int N) {
     vDSP_mtrans(a, 1, b, 1, M, N);
 }
+
+

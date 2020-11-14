@@ -13,11 +13,11 @@ float mean_squared_error(float* y, float * y_pred, int size, int batch) {
     float loss = 0.0f;
     for (int b = 0; b < batch; ++b) {
         float buffer[size];
-        float cost = 0.0f;
+        float one = 0.0f;
         op_vec_sub(y + b * size, y_pred + b * size, buffer, size);
         op_vec_mul(buffer, buffer, buffer, size);
-        op_vec_sum(buffer, &cost, size);
-        loss += cost / (float)size;
+        op_vec_sum(buffer, &one, size);
+        loss += one / (float)size;
     }
     return loss / (float)batch;
 }
@@ -29,3 +29,14 @@ void mean_squared_error_derivative(float* y, float * y_pred, float *d_y_pred, in
         op_vec_mul_sc(d_y_pred + b * size, k, d_y_pred + b * size, size);
     P_LOOP_END
 }
+
+float categorical_crossentropy(float *y, float *y_pred, int c, int batch) {
+    float loss = 0.0f;
+    for (int b = 0; b < batch; ++b) {
+        float buffer[c];
+        float one = 0.0f;
+//        op_vec_log();
+    }
+    return loss / (float)batch;
+}
+

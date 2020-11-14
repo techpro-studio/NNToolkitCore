@@ -14,11 +14,11 @@
 
 
 
-ActivationFunction ActivationFunctionCreateSimple(int size, ActivationFunctionImpl function, ActivationFunctionImpl derivative) {
+ActivationFunction create_simple(int size, ActivationFunctionImpl function, ActivationFunctionImpl derivative) {
     return ActivationFunctionCreate(size, NULL, NULL, function, derivative, NULL);
 }
 
-ActivationFunction ActivationFunctionCreateSimpleWithCached(int size, ActivationFunctionImpl function, ActivationFunctionImpl derivative, ActivationFunctionImpl cachedDerivative) {
+ActivationFunction create_simple_with_cached(int size, ActivationFunctionImpl function, ActivationFunctionImpl derivative, ActivationFunctionImpl cachedDerivative) {
     return ActivationFunctionCreate(size, NULL, NULL, function, derivative, cachedDerivative);
 }
 
@@ -50,7 +50,8 @@ void activation_sigmoid_derivative(void *implementer, const float *input, float 
 
 
 ActivationFunction ActivationFunctionCreateSigmoid(int inputSize){
-    return ActivationFunctionCreateSimpleWithCached(inputSize, activation_sigmoid, activation_sigmoid_derivative, activation_sigmoid_cached_derivative);
+    return create_simple_with_cached(inputSize, activation_sigmoid, activation_sigmoid_derivative,
+                                     activation_sigmoid_cached_derivative);
 }
 
 
@@ -76,7 +77,8 @@ void activation_tanh_derivative(void *implementer, const float *input, float *ou
 
 
 ActivationFunction ActivationFunctionCreateTanh(int inputSize){
-    return ActivationFunctionCreateSimpleWithCached(inputSize, activation_tanh, activation_tanh_derivative, activation_tanh_cached_derivative);
+    return create_simple_with_cached(inputSize, activation_tanh, activation_tanh_derivative,
+                                     activation_tanh_cached_derivative);
 }
 
 //Identity
@@ -94,7 +96,7 @@ void activation_identity(void *implementer, const float *input, float *output, i
 }
 
 ActivationFunction ActivationFunctionCreateIdentity(int inputSize) {
-    return ActivationFunctionCreateSimple(inputSize, activation_identity, activation_identity_derivative);
+    return create_simple(inputSize, activation_identity, activation_identity_derivative);
 }
 
 
@@ -118,16 +120,15 @@ void activation_relu(void *implementer, const float *input, float *output, int s
     }
 }
 
-void ReLUImplementerDestroy(void * ptr){
+void relu_implementer_destroy(void * ptr){
     free(ptr);
 }
 
 ActivationFunction ActivationFunctionCreateReLU(int inputSize, float a) {
     ReLUImplementer* implementer = malloc(sizeof(ReLUImplementer));
-//    implementer->max_fn = op_vec_max_sc_get_optimized(inputSize);
     implementer->a = a;
-//    implementer->clamp_fn = op_vec_clamp_get_optimized(inputSize);
-    return ActivationFunctionCreate(inputSize, ReLUImplementerDestroy, implementer, activation_relu, activation_relu_derivative, NULL);
+    return ActivationFunctionCreate(inputSize, relu_implementer_destroy, implementer, activation_relu,
+                                    activation_relu_derivative, NULL);
 }
 
 
@@ -178,6 +179,10 @@ void softmax(const float *input, float *output, int vector_size){
     op_vec_div_sc(output, sum, output, vector_size);
 }
 
+void softmax_derivative(const float *input_softmax, float *output, int vector_size){
+    
+}
+
 void activation_softmax(void *implementer, const float *input, float *output, int size){
     SoftmaxImplementer* impl = (SoftmaxImplementer *)implementer;
     if (size == 1){
@@ -190,19 +195,24 @@ void activation_softmax(void *implementer, const float *input, float *output, in
     P_LOOP_END
 }
 
-void activation_softmax_derivative(void *implementer, const float *input, float *output, int size) {
+void activation_softmax_derivative_cached(void *implementer, const float *input, float *output, int size) {
 #warning implement this;
 }
 
+void activation_softmax_derivative(void *implementer, const float *input, float *output, int size) {
 
-void SoftmaxImplementerDestroy(void *ptr){
+}
+
+
+void softmax_implementer_destroy(void *ptr){
     free(ptr);
 }
 
 ActivationFunction ActivationFunctionCreateSoftmax(int inputSize, int vectorSize){
     SoftmaxImplementer *implementer = malloc(sizeof(SoftmaxImplementer));
     implementer->vector_size = vectorSize;
-    return ActivationFunctionCreate(inputSize, SoftmaxImplementerDestroy, implementer, activation_softmax, activation_softmax_derivative, NULL);
+    return ActivationFunctionCreate(inputSize, softmax_implementer_destroy, implementer, activation_softmax,
+                                    activation_softmax_derivative, NULL);
 }
 
 

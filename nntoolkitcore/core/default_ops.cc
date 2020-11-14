@@ -111,7 +111,7 @@ static float32x4_t exp_neon(float32x4_t x) {
 #define c_cephes_log_q1 -2.12194440e-4
 #define c_cephes_log_q2 0.693359375
 
-float32x4_t neon_ln(float32x4_t x) {
+float32x4_t log_neon(float32x4_t x) {
   float32x4_t one = vdupq_n_f32(1);
 
   x = vmaxq_f32(x, vdupq_n_f32(0)); /* force flush to zero on denormal values */
@@ -191,8 +191,8 @@ float32x4_t neon_div(float32x4_t a, float32x4_t b){
 
 #define ln10 2.30258509299
 
-float32x4_t neon_log10(float32x4_t a){
-    return neon_div(neon_ln(a), vdupq_n_f32(ln10));
+float32x4_t log10_neon(float32x4_t a){
+    return neon_div(log_neon(a), vdupq_n_f32(ln10));
 }
 
 void mat_mul_neon_slow(const float *a, const float *b, float *c, int M, int N, int K){
@@ -302,6 +302,25 @@ void op_vec_exp(const float *a, float *c, int size){
     op_vec_exp_c(a, c, size);
 #endif
 }
+
+static inline void op_vec_log_c(const float *a, float *c, int size){
+    for (int i = 0; i < size; ++i){
+        c[i] = logf(a[i]);
+    }
+}
+
+void op_vec_log(const float *a, float *c, int size) {
+#if NEON
+    int parts = size / 4, remaining = size % 4;
+    for (int i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, log_neon(vld1q_f32(a + 4 * i)));
+    }
+    op_vec_log_c(a + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_log_c(a, c, size);
+#endif
+}
+
 
 static inline void op_vec_reciprocal_c(const float *a, float *c, int size){
     for (int i = 0; i < size; ++i){
@@ -628,7 +647,7 @@ void op_vec_db(float *a, float b, float *c, int size){
     float32x4_t b_4 = vdupq_n_f32(b);
     float32x4_t ten = vdupq_n_f32(10.0f);
     for (int i = 0; i < parts; ++i){
-        vst1q_f32(c + 4 * i, vmulq_f32(ten, neon_log10(neon_div(vld1q_f32(a + 4 * i), b_4))));
+        vst1q_f32(c + 4 * i, vmulq_f32(ten, log10_neon(neon_div(vld1q_f32(a + 4 * i), b_4))));
     }
     op_vec_db_c(a + parts * 4, b, c + parts * 4, remaining);
 #else
