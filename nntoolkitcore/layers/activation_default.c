@@ -201,8 +201,6 @@ void activation_softmax(void *implementer, const float *input, float *output, in
     P_LOOP_END
 }
 
-#include "debug.h"
-
 void activation_softmax_derivative_cached(void *implementer, const float *input, const float *d_out, float *output, int size) {
     int v_size = ((SoftmaxImplementer *) implementer)->vector_size;
     P_LOOP_START(size, index)
@@ -213,12 +211,10 @@ void activation_softmax_derivative_cached(void *implementer, const float *input,
         for (int i = 0; i < v_size; ++i) {
             for (int j = 0; j < v_size; ++j) {
                 m_derivative[i * v_size + j] = i == j ?
-                        in[i] * (1 - in[i]) :
-                        -1 * in[i] * in[j];
+                                               in[i] * (1 - in[i]) :
+                                               -1 * in[i] * in[j];
             }
         }
-        print_vector(in, v_size);
-        print_matrix(m_derivative, v_size, v_size);
         op_mat_mul(d_out, m_derivative, out, 1, v_size, v_size);
     P_LOOP_END
 }
