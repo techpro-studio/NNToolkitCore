@@ -44,8 +44,8 @@ ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestr
     return filter;
 }
 
-void ActivationFunctionApplyDerivative(ActivationFunction filter, const float *z, const float *a, const float *d_out,
-                                       float *output) {
+void ActivationFunctionCalculateGradient(ActivationFunction filter, const float *z, const float *a, const float *d_out,
+                                         float *output) {
     if (filter->cached_derivative == NULL || a == NULL) {
         filter->derivative(filter->implementer, z, d_out, output, filter->input_size);
     } else {

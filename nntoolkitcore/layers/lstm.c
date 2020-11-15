@@ -343,14 +343,14 @@ void LSTMCellBackward(
     op_vec_mul(d_h_t, d_a_O_t, d_a_O_t, out);
 
     //d_z_O_t = d_a_O_t * d_activation(z_t)
-    ActivationFunctionApplyDerivative(activations.output_gate_activation, z_o_t, o_t, d_a_O_t, d_o_t);
+    ActivationFunctionCalculateGradient(activations.output_gate_activation, z_o_t, o_t, d_a_O_t, d_o_t);
     // d_c_t
     float *d_a_C_t = d_a_O_t + out;
     float *d_c_t = d_a_C_t + out;
     // d_a_C_t = d_h_t * ot
     op_vec_mul(d_h_t, o_t, d_a_C_t, out);
     // d_c_t = d_a_C_t * d_output_activation()
-    ActivationFunctionApplyDerivative(activations.output_activation, cache.c_t, NULL, d_a_C_t, d_c_t);
+    ActivationFunctionCalculateGradient(activations.output_activation, cache.c_t, NULL, d_a_C_t, d_c_t);
     if (d_c_t_init != NULL)
         op_vec_add(d_c_t, d_c_t_init, d_c_t, out);
     /*
@@ -375,7 +375,7 @@ void LSTMCellBackward(
      */
     float* d_a_I_t = d_c_t + out;
     op_vec_mul(d_c_t, g_t, d_a_I_t, out);
-    ActivationFunctionApplyDerivative(activations.input_gate_activation, z_i_t, i_t, d_a_I_t, d_i_t);
+    ActivationFunctionCalculateGradient(activations.input_gate_activation, z_i_t, i_t, d_a_I_t, d_i_t);
     /*
         Forget gate:
         d_a_f_t = d_c_t * c_t-1;
@@ -388,7 +388,7 @@ void LSTMCellBackward(
     } else {
 //        d_a_f_t = d_c_t * c_t-1;
         op_vec_mul(cache.c_t_prev, d_c_t, d_a_F_t, out);
-        ActivationFunctionApplyDerivative(activations.forget_gate_activation, z_f_t, f_t, d_a_F_t, d_f_t);
+        ActivationFunctionCalculateGradient(activations.forget_gate_activation, z_f_t, f_t, d_a_F_t, d_f_t);
     }
     /*
         Candidate gate:
@@ -399,7 +399,7 @@ void LSTMCellBackward(
     float* d_a_G_t = d_a_F_t + out;
 //    d_a_g_t = d_c_t * i_t;
     op_vec_mul(d_c_t, i_t, d_a_G_t, out);
-    ActivationFunctionApplyDerivative(activations.candidate_gate_activation, z_g_t, g_t, d_a_G_t, d_g_t);
+    ActivationFunctionCalculateGradient(activations.candidate_gate_activation, z_g_t, g_t, d_a_G_t, d_g_t);
     /*
        Previous state:
        d_c_t-1 = d_c_t * f_t

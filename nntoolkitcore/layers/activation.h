@@ -29,7 +29,7 @@ void ActivationFunctionDestroy(ActivationFunction filter);
 
 void ActivationFunctionApply(ActivationFunction filter, const float *input, float *output);
 
-void ActivationFunctionApplyDerivative(ActivationFunction filter, const float *z, const float *a, const float* d_out, float *output);
+void ActivationFunctionCalculateGradient(ActivationFunction filter, const float *z, const float *a, const float* d_out, float *output);
 
 
 

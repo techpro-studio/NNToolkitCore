@@ -36,7 +36,8 @@ void activation_sigmoid(void *implementer, const float *input, float *output, in
 
 // sigmoid(x)' = sigmoid(x)* (1 * sigmoid(x));
 
-void activation_sigmoid_cached_derivative(void *implementer, const float *input, const float *d_out, float *output, int size) {
+void activation_sigmoid_cached_derivative(void *implementer, const float *input, const float *d_out, float *output,
+                                          int size) {
     op_vec_neg(input, output, size);
     op_vec_add_sc(output, 1, output, size);
     op_vec_mul(input, output, output, size);
@@ -66,7 +67,8 @@ void activation_tanh(void *implementer, const float *input, float *output, int s
     op_vec_tanh(input, output, size);
 }
 
-void activation_tanh_cached_derivative(void *implementer, const float *input, const float *d_out, float *output, int size) {
+void
+activation_tanh_cached_derivative(void *implementer, const float *input, const float *d_out, float *output, int size) {
     op_vec_mul(input, input, output, size);
     op_vec_neg(output, output, size);
     op_vec_add_sc(output, 1, output, size);
@@ -186,28 +188,44 @@ void softmax(const float *input, float *output, int vector_size) {
     op_vec_div_sc(output, sum, output, vector_size);
 }
 
-void softmax_derivative(const float *input, float *output, int vector_size) {
-//    op_vec_mul();
-}
 
 void activation_softmax(void *implementer, const float *input, float *output, int size) {
-    SoftmaxImplementer *impl = (SoftmaxImplementer *) implementer;
+    int v_size = ((SoftmaxImplementer *) implementer)->vector_size;
     if (size == 1) {
-        softmax(input, output, impl->vector_size);
+        softmax(input, output, v_size);
         return;
     }
     P_LOOP_START(size, index)
-                        size_t offset = index * impl->vector_size;
-                softmax(input + offset, output + offset, impl->vector_size);
+        int offset = index * v_size;
+        softmax(input + offset, output + offset, v_size);
     P_LOOP_END
 }
 
-void activation_softmax_derivative_cached(void *implementer, const float *input, float *output, int size) {
-#warning implement this;
+#include "debug.h"
+
+void activation_softmax_derivative_cached(void *implementer, const float *input, const float *d_out, float *output, int size) {
+    int v_size = ((SoftmaxImplementer *) implementer)->vector_size;
+    P_LOOP_START(size, index)
+        int offset = index * v_size;
+        const float *in = input + offset;
+        float *out = output + offset;
+        float m_derivative[v_size * v_size];
+        for (int i = 0; i < v_size; ++i) {
+            for (int j = 0; j < v_size; ++j) {
+                m_derivative[i * v_size + j] = i == j ?
+                        in[i] * (1 - in[i]) :
+                        -1 * in[i] * in[j];
+            }
+        }
+        print_vector(in, v_size);
+        print_matrix(m_derivative, v_size, v_size);
+        op_mat_mul(d_out, m_derivative, out, 1, v_size, v_size);
+    P_LOOP_END
 }
 
-void activation_softmax_derivative(void *implementer, const float *input, float *output, int size) {
-#warning implement this;
+void activation_softmax_derivative(void *implementer, const float *input, const float *d_out, float *output, int size) {
+    activation_softmax(implementer, input, output, size);
+    activation_softmax_derivative_cached(implementer, output, d_out,  output, size);
 }
 
 
@@ -219,7 +237,7 @@ ActivationFunction ActivationFunctionCreateSoftmax(int inputSize, int vectorSize
     SoftmaxImplementer *implementer = malloc(sizeof(SoftmaxImplementer));
     implementer->vector_size = vectorSize;
     return ActivationFunctionCreate(inputSize, softmax_implementer_destroy, implementer, activation_softmax,
-                                    activation_softmax_derivative, NULL);
+                                    activation_softmax_derivative, activation_softmax_derivative_cached);
 }
 
 

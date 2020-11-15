@@ -16,4 +16,6 @@ void mean_squared_error_derivative(float* y, float * y_pred, float *d_y_pred, in
 
 float categorical_crossentropy(float *y, float *y_pred, int c, int batch);
 
+void categorical_crossentropy_derivative(float* y, float * y_pred, float *d_y_pred, int c, int batch);
+
 #endif /* File_h */

@@ -161,8 +161,8 @@ void DenseCalculateGradient(Dense filter, DenseGradient *gradient, float *d_out)
                 // dz = d_out * d_activation ?? 1;
         float *dz = filter->training_data->dz + b * out;
         if (filter->config.activation) {
-            ActivationFunctionApplyDerivative(filter->config.activation, filter->training_data->z + b * out,
-                                              filter->training_data->a + b * out, d_out + b * out, dz);
+            ActivationFunctionCalculateGradient(filter->config.activation, filter->training_data->z + b * out,
+                                                filter->training_data->a + b * out, d_out + b * out, dz);
         } else {
             memcpy(dz, d_out + b * out, out * sizeof(float));
         }
