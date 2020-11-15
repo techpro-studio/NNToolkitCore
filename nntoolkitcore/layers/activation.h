@@ -17,18 +17,19 @@ extern "C" {
 #endif
 
 typedef void(*ActivationFunctionImpl)(void *, const float *, float *, int);
+typedef void(*ActivationFunctionDerivative)(void *, const float *, const float*, float *, int);
 
 typedef void(*ActivationImplementerDestroy)(void *);
 
 typedef struct ActivationFunctionStruct* ActivationFunction;
 
-ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestroy destroy_fn, void *implementer, ActivationFunctionImpl function, ActivationFunctionImpl derivative, ActivationFunctionImpl cached_derivative);
+ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestroy destroy_fn, void *implementer, ActivationFunctionImpl function, ActivationFunctionDerivative derivative, ActivationFunctionDerivative cached_derivative);
 
 void ActivationFunctionDestroy(ActivationFunction filter);
 
 void ActivationFunctionApply(ActivationFunction filter, const float *input, float *output);
 
-void ActivationFunctionApplyDerivative(ActivationFunction filter, const float *z, const float *a, float *output);
+void ActivationFunctionApplyDerivative(ActivationFunction filter, const float *z, const float *a, const float* d_out, float *output);
 
 
 

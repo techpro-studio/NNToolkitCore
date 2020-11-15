@@ -35,7 +35,10 @@ float categorical_crossentropy(float *y, float *y_pred, int c, int batch) {
     for (int b = 0; b < batch; ++b) {
         float buffer[c];
         float one = 0.0f;
-//        op_vec_log();
+        op_vec_log(y_pred + b * c, buffer, c);
+        op_vec_mul(buffer, y + b * c, buffer, c);
+        op_vec_sum(buffer, &one, c);
+        loss += one;
     }
     return loss / (float)batch;
 }

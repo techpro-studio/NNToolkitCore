@@ -328,21 +328,29 @@ void LSTMCellBackward(
      Backward step 1.
         FWD: h_t = tanh(c_t) * OutputGate(t);
 
-        d_o_t = d_h_t * tanh(c_t);
+        d_a_O_t = d_h_t * tanh(c_t);
+        d_z_O_t = d_a_O_t * d_output_activation;
+
+
         d_c_t = d_h_t * o_t * (1 - tanh^2(c_t))); //From current formula
         d_c_t += d_ct (from previous calculation) (d_c_t+1 * f_t+1) in step 2 you will see "Previous state"
      */
-    // d_o_t
-    ActivationFunctionApply(activations.output_activation, cache.c_t, d_o_t);
-    float *d_out_gate_act = d_o_t + out;
-    ActivationFunctionApplyDerivative(activations.output_gate_activation, z_o_t, o_t, d_out_gate_act);
-    op_vec_mul(d_o_t, d_out_gate_act, d_o_t, out);
-    op_vec_mul(d_h_t, d_o_t, d_o_t, out);
+    // d_a_O_t
+    // d_a_O_t = tanh(c_t);
+    float *d_a_O_t = d_o_t + out;
+    ActivationFunctionApply(activations.output_activation, cache.c_t, d_a_O_t);
+    // d_a_O_t = d_o_t * d_H_t
+    op_vec_mul(d_h_t, d_a_O_t, d_a_O_t, out);
+
+    //d_z_O_t = d_a_O_t * d_activation(z_t)
+    ActivationFunctionApplyDerivative(activations.output_gate_activation, z_o_t, o_t, d_a_O_t, d_o_t);
     // d_c_t
-    float *d_c_t = d_out_gate_act + out;
-    ActivationFunctionApplyDerivative(activations.output_activation, cache.c_t, NULL, d_c_t);
-    op_vec_mul(d_c_t, o_t, d_c_t, out);
-    op_vec_mul(d_h_t, d_c_t, d_c_t, out);
+    float *d_a_C_t = d_a_O_t + out;
+    float *d_c_t = d_a_C_t + out;
+    // d_a_C_t = d_h_t * ot
+    op_vec_mul(d_h_t, o_t, d_a_C_t, out);
+    // d_c_t = d_a_C_t * d_output_activation()
+    ActivationFunctionApplyDerivative(activations.output_activation, cache.c_t, NULL, d_a_C_t, d_c_t);
     if (d_c_t_init != NULL)
         op_vec_add(d_c_t, d_c_t_init, d_c_t, out);
     /*
@@ -365,21 +373,22 @@ void LSTMCellBackward(
         d_z_i_t = d_a_i_t * d_input_activation(z_i_t);
         for default sigmoid => d_z_i_t = d_c_t * g_t * a_i_t * (1 - a_i_t);
      */
-    ActivationFunctionApplyDerivative(activations.input_gate_activation, z_i_t, i_t, d_i_t);
-    op_vec_mul(d_c_t, d_i_t, d_i_t, out);
-    op_vec_mul(g_t, d_i_t, d_i_t, out);
+    float* d_a_I_t = d_c_t + out;
+    op_vec_mul(d_c_t, g_t, d_a_I_t, out);
+    ActivationFunctionApplyDerivative(activations.input_gate_activation, z_i_t, i_t, d_a_I_t, d_i_t);
     /*
         Forget gate:
         d_a_f_t = d_c_t * c_t-1;
         d_z_f_t = d_a_f_t * d_forget_activation(z_f_t);
         for default sigmoid => d_z_f_t = d_c_t * c_t-1 * a_f_t * (1 - a_f_t);
      */
-    ActivationFunctionApplyDerivative(activations.forget_gate_activation, z_f_t, f_t, d_f_t);
-    op_vec_mul(d_c_t, d_f_t, d_f_t, out);
+    float* d_a_F_t = d_a_I_t + out;
     if (cache.c_t_prev == NULL){
         memset(d_f_t, 0, out * sizeof(float));
     } else {
-        op_vec_mul(cache.c_t_prev, d_f_t, d_f_t, out);
+//        d_a_f_t = d_c_t * c_t-1;
+        op_vec_mul(cache.c_t_prev, d_c_t, d_a_F_t, out);
+        ActivationFunctionApplyDerivative(activations.forget_gate_activation, z_f_t, f_t, d_a_F_t, d_f_t);
     }
     /*
         Candidate gate:
@@ -387,9 +396,10 @@ void LSTMCellBackward(
         d_z_g_t = d_a_g_t * d_candidate_activation(z_g_t);
         for default tanh => d_z_g_t = d_c_t * i_t * (1 - (g_t^2));
     */
-    ActivationFunctionApplyDerivative(activations.candidate_gate_activation, z_g_t, g_t, d_g_t);
-    op_vec_mul(d_c_t, d_g_t, d_g_t, out);
-    op_vec_mul(i_t, d_g_t, d_g_t, out);
+    float* d_a_G_t = d_a_F_t + out;
+//    d_a_g_t = d_c_t * i_t;
+    op_vec_mul(d_c_t, i_t, d_a_G_t, out);
+    ActivationFunctionApplyDerivative(activations.candidate_gate_activation, z_g_t, g_t, d_a_G_t, d_g_t);
     /*
        Previous state:
        d_c_t-1 = d_c_t * f_t
@@ -511,7 +521,7 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
 
     memset(dW, 0, sizes.buffer * batch);
 
-    int computation_buffer_size = 6 * out * sizeof(float);
+    int computation_buffer_size = 10 * out * sizeof(float);
     float *computation_buffer = (float *) malloc(computation_buffer_size);
     memset(computation_buffer, 0, computation_buffer_size);
 

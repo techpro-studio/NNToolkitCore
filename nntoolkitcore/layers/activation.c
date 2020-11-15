@@ -15,23 +15,25 @@ struct ActivationFunctionStruct {
     void *implementer;
     int input_size;
     ActivationImplementerDestroy destroy_fn;
-    ActivationFunctionImpl derivative;
-    ActivationFunctionImpl cached_derivative;
+    ActivationFunctionDerivative derivative;
+    ActivationFunctionDerivative cached_derivative;
     ActivationFunctionImpl function;
 };
 
-void ActivationFunctionApply(ActivationFunction  filter, const float * input, float * output){
+void ActivationFunctionApply(ActivationFunction filter, const float *input, float *output) {
     filter->function(filter->implementer, input, output, filter->input_size);
 }
 
-void ActivationFunctionDestroy(ActivationFunction filter){
-    if (filter->implementer){
+void ActivationFunctionDestroy(ActivationFunction filter) {
+    if (filter->implementer) {
         filter->destroy_fn(filter->implementer);
     }
     free(filter);
 }
 
-ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestroy destroy_fn, void *implementer, ActivationFunctionImpl function, ActivationFunctionImpl derivative, ActivationFunctionImpl cached_derivative) {
+ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestroy destroy_fn, void *implementer,
+                                            ActivationFunctionImpl function, ActivationFunctionDerivative derivative,
+                                            ActivationFunctionDerivative cached_derivative) {
     ActivationFunction filter = malloc(sizeof(struct ActivationFunctionStruct));
     filter->implementer = implementer;
     filter->input_size = size;
@@ -42,11 +44,12 @@ ActivationFunction ActivationFunctionCreate(int size, ActivationImplementerDestr
     return filter;
 }
 
-void ActivationFunctionApplyDerivative(ActivationFunction filter, const float *z, const float *a, float *output){
-    if(filter->cached_derivative == NULL || a == NULL){
-        filter->derivative(filter->implementer, z, output, filter->input_size);
+void ActivationFunctionApplyDerivative(ActivationFunction filter, const float *z, const float *a, const float *d_out,
+                                       float *output) {
+    if (filter->cached_derivative == NULL || a == NULL) {
+        filter->derivative(filter->implementer, z, d_out, output, filter->input_size);
     } else {
-        filter->cached_derivative(filter->implementer, a, output, filter->input_size);
+        filter->cached_derivative(filter->implementer, a, d_out, output, filter->input_size);
     }
 }
 
