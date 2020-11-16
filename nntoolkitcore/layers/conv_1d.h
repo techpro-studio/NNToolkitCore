@@ -61,7 +61,7 @@ int Conv1dApplyInference(Conv1d filter, const float *input, float* output);
 
 int Conv1dApplyTrainingBatch(Conv1d filter, const float *input, float* output);
 
-void Conv1dCalculateGradient(Conv1d filter, ConvGradient* gradient, float *d_out);
+void Conv1dCalculateGradient(Conv1d filter, ConvGradient* gradient, const float *d_out);
 
 void Conv1dDestroy(Conv1d filter);
 

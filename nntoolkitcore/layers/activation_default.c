@@ -140,41 +140,7 @@ ActivationFunction ActivationFunctionCreateReLU(int inputSize, float a) {
                                     activation_relu_derivative, NULL);
 }
 
-
-
-// HARD SIGMOID
-
-
-
-//typedef struct {
-//    op_vec_clamp_fn clamp_fn;
-//} HardSigmoidImplementer;
-//
-//void activation_hard_sigmoid(void *implementer, const float *input, float *output, int size){
-//    HardSigmoidImplementer* impl = (HardSigmoidImplementer *)implementer;
-//    op_vec_mul_sc(input, 0.2f, output, size);
-//    op_vec_add_sc(output, 0.5f, output, size);
-//    impl->clamp_fn(output, output, 0, 1, size);
-//}
-//
-//void activation_hard_sigmoid_derivative(void *implementer, const float *input, float *output, int size) {
-//#warning implement this;
-//    memcpy(output, input, size * sizeof(float));
-//}
-//
-//void HardSigmoidImplementerDestroy(void * ptr){
-//    free(ptr);
-//}
-//
-//ActivationFunction ActivationFunctionCreateHardSigmoid(int input_size){
-//    HardSigmoidImplementer* implementer = malloc(sizeof(HardSigmoidImplementer));
-//    implementer->clamp_fn = op_vec_clamp_get_optimized(input_size);
-//    return ActivationFunctionCreate(input_size, HardSigmoidImplementerDestroy, implementer, activation_hard_sigmoid, activation_hard_sigmoid_derivative, NULL);
-//}
-
-
 // SOFTMAX
-
 
 typedef struct {
     int vector_size;
