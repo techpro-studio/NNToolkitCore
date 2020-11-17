@@ -8,12 +8,9 @@
 #include "stdlib.h"
 
 void sum_batch_gradient(float * gradients, float* gradient, int size, int batch){
-    float* buffer = malloc(size * sizeof(float));
-    memset(buffer, 0, size * sizeof(float));
     for (int b = 0; b < batch; ++b) {
         op_vec_add(gradient, gradients + b * size, gradient, size);
     }
-    free(buffer);
 }
 
 int sgd_optimize(SGD optimizer, float *gradient, float *weights, int size) {
