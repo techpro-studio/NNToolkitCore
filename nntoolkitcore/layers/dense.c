@@ -146,8 +146,8 @@ int DenseApplyTrainingBatch(Dense filter, const float *input, float *output) {
     memcpy(filter->training_data->x, input, in * batch * sizeof(float));
 
     P_LOOP_START(batch, b)
-                        z(filter, input + b * in, filter->training_data->z + b * out);
-                a(filter, filter->training_data->z + b * out, filter->training_data->a + b * out);
+        z(filter, input + b * in, filter->training_data->z + b * out);
+        a(filter, filter->training_data->z + b * out, filter->training_data->a + b * out);
     P_LOOP_END
 
     memcpy(output, filter->training_data->a, out * batch * sizeof(float));

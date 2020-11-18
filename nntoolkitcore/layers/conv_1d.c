@@ -104,24 +104,24 @@ static void conv_1d_one(const struct Conv1dFilterStruct *filter, const float *in
     op_mat_transp((float *) input, float_input, filter->config.input_feature_channels, filter->config.input_size);
     int k_size = filter->config.kernel_size;
     P_LOOP_START(filter->config.output_feature_channels, out_feature)
-                        for (int x = 0; x < filter->config.output_size; ++x) {
-                            int weights_offset = (int) out_feature * filter->config.input_feature_channels * k_size;
-                            const float *output_feature_weights = filter->weights->W + weights_offset;
+        for (int x = 0; x < filter->config.output_size; ++x) {
+            int weights_offset = (int) out_feature * filter->config.input_feature_channels * k_size;
+            const float *output_feature_weights = filter->weights->W + weights_offset;
 
-                            float result = 0.0f;
+            float result = 0.0f;
 
-                            int input_row_offset = x * filter->config.stride;
+            int input_row_offset = x * filter->config.stride;
 
-                            for (int i = 0; i < filter->config.input_feature_channels; ++i) {
-                                const float *row_ptr = float_input + i * filter->config.input_size + input_row_offset;
-                                const float *weights_ptr = output_feature_weights + (i * k_size);
-                                result += op_vec_dot(row_ptr, weights_ptr, k_size);
-                            }
+            for (int i = 0; i < filter->config.input_feature_channels; ++i) {
+                const float *row_ptr = float_input + i * filter->config.input_size + input_row_offset;
+                const float *weights_ptr = output_feature_weights + (i * k_size);
+                result += op_vec_dot(row_ptr, weights_ptr, k_size);
+            }
 
-                            result += filter->weights->b[out_feature];
+            result += filter->weights->b[out_feature];
 
-                            ((float *) output)[x * filter->config.output_feature_channels + out_feature] = result;
-                        }
+            ((float *) output)[x * filter->config.output_feature_channels + out_feature] = result;
+        }
     P_LOOP_END
 }
 
@@ -136,8 +136,7 @@ int Conv1dApplyInference(Conv1d filter, const float *input, float *output) {
 ConvGradient *Conv1dCreateGradient(Conv1dConfig config, ConvTrainingConfig training_config) {
     ConvGradient *gradient = malloc(sizeof(ConvGradient));
     int d_x_size = config.input_size * config.input_feature_channels * training_config.mini_batch_size;
-    int d_w_size = config.input_feature_channels * config.output_feature_channels * config.kernel_size *
-                   training_config.mini_batch_size;
+    int d_w_size = config.input_feature_channels * config.output_feature_channels * config.kernel_size * training_config.mini_batch_size;
     int grad_buffer_size =
             (d_x_size + d_w_size + config.output_feature_channels * training_config.mini_batch_size) * sizeof(float);
     gradient->d_W = malloc(grad_buffer_size);
@@ -171,12 +170,12 @@ int Conv1dApplyTrainingBatch(Conv1d filter, const float *input, float *output) {
 }
 
 void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, const float *d_out) {
-    memcpy(gradient->d_b, d_out,
-           filter->config.output_size *
-           filter->config.output_feature_channels *
-           filter->training_data->config.mini_batch_size *
-           sizeof(float)
-    );
+    int db_size = filter->config.output_feature_channels *
+    filter->training_data->config.mini_batch_size;
+    for (int o = 0; o < filter->config.output_size; ++o){
+        op_vec_add(gradient->d_b, d_out + o * db_size, gradient->d_b, db_size);
+    }
+
 
     int k_size = filter->config.kernel_size;
     int batch = filter->training_data->config.mini_batch_size;

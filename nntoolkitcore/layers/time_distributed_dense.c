@@ -71,9 +71,9 @@ DenseGradient* TimeDistributedDenseGradientCreate(TimeDistributedDense filter){
     int batch = filter->training_data->config.mini_batch_size;
     int ts = filter->config.ts;
 
-    int d_w_size =  in * out * batch;
+    int d_w_size =  in * out * ts * batch;
     int d_x_size = in * ts * batch;
-    int buff_size = (d_w_size + d_x_size + out * batch) * sizeof(float);
+    int buff_size = (d_w_size + d_x_size + out * ts * batch) * sizeof(float);
     grad->d_W = (float *) malloc(buff_size);
     grad->d_X = grad->d_W + d_w_size;
     grad->d_b = grad->d_X + d_x_size;
