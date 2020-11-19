@@ -19,21 +19,37 @@ extern "C" {
 #endif
 
 typedef struct {
+    ActivationFunction input_gate_activation;
+    ActivationFunction update_gate_activation;
+    ActivationFunction reset_gate_activation;
+} GRUActivations;
+
+typedef struct {
     int input_feature_channels;
     int output_feature_channels;
     bool return_sequences;
     int timesteps;
-    ActivationFunction recurrent_activation;
-    ActivationFunction activation;
+    GRUActivations activations;
 } GRU2Config;
+
+
+
+GRUActivations GRUActivationsCreate(
+    ActivationFunction input_gate_activation,
+    ActivationFunction update_gate_activation,
+    ActivationFunction reset_gate_activation
+);
+
+GRUActivations GRUActivationsCreateDefault(int size);
+
+void GRUActivationsDestroy(GRUActivations activations);
 
 GRU2Config GRU2ConfigCreate(
     int input_feature_channels,
     int output_feature_channels,
     bool return_sequences,
     int timesteps,
-    ActivationFunction recurrent_activation,
-    ActivationFunction activation
+    GRUActivations activations
 );
 
 typedef struct {

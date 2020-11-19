@@ -9,6 +9,7 @@
 
 #include <Accelerate/Accelerate.h>
 #include <simd/simd.h>
+#include <TargetConditionals.h>
 
 
 
@@ -39,8 +40,8 @@ simd_float2 var = simd_make_float2(*(simd_float2 *)(var##arr));\
     int iterations = size / NUM;\
     for (int i = 0; i < iterations; ++i)\
     {\
-        simd_float##NUM _a = ((simd_float##NUM*) a)[i];\
-        simd_float##NUM _b = ((simd_float##NUM*) b)[i];\
+        simd_float##NUM _a = ((simd_packed_float##NUM*) a)[i];\
+        simd_float##NUM _b = ((simd_packed_float##NUM*) b)[i];\
         sum += simd_dot(_a, _b);\
     }\
     int left = size % NUM;\
@@ -52,10 +53,27 @@ simd_float2 var = simd_make_float2(*(simd_float2 *)(var##arr));\
 }
 
 vector_dot_(2)
-vector_dot_(3)
 vector_dot_(4)
 vector_dot_(8)
 vector_dot_(16)
+
+float op_vec_dot_3(const float* a, const float *b, int size)
+{
+    float sum = 0.0f;
+    int iterations = size / 3;
+    for (int i = 0; i < iterations; ++i)\
+    {
+        simd_float3 _a = ((simd_float3 *) a)[i];
+        simd_float3 _b = ((simd_float3 *) b)[i];
+        sum += simd_dot(_a, _b);
+    }
+    int left = size % 3;
+    for (int i = 0; i < left; ++i)
+    {
+        sum += a[iterations * 3 + i] * b[iterations * 3 + i];\
+    }
+    return sum;
+}
 
 
 #define op_vec_clamp_(NUM)  void op_vec_clamp_##NUM(const float* a, float* c, float min, float max, int size)\
@@ -95,6 +113,8 @@ op_vec_clamp_(16)
         c[iterations * NUM + i] = simd_max(a[iterations * NUM + i], b);\
     }\
 }
+
+
 
 op_vec_max_sc_(2)
 op_vec_max_sc_(3)
@@ -169,7 +189,14 @@ void op_vec_min(const float *a, const float *b, float *c, int size){
 }
 
 float op_vec_dot(const float *a, const float *b, int size) {
+#if TARGET_OS_OSX
+    return size >= 16 ? op_vec_dot_16(a, b, size) : op_vec_dot_4(a, b, size);
+#else
     return op_vec_dot_4(a, b, size);
+#endif
+//    float c;
+//    vDSP_dotpr(a, 1, b, 1, &c, size);
+//    return c;
 }
 
 void op_vec_clamp(const float *a, float *c, float min, float max, int size){

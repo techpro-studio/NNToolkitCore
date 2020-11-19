@@ -16,6 +16,7 @@
 #include "time_distributed_dense.h"
 #include "lstm.h"
 #include "loss.h"
+#include "rnn.h"
 #include "conv_1d.h"
 #include "optimizers.h"
 

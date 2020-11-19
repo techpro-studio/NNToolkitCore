@@ -74,8 +74,6 @@ GRUWeights * GRUGetWeights(GRU filter);
 
 GRU GRUCreateForInference(GRUConfig config);
 
-//feature channels in row
-
 int GRUApplyInference(GRU filter, const float *input, float* output);
 
 void GRUDestroy(GRU filter);

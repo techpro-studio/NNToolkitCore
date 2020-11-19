@@ -28,6 +28,7 @@ set (PUBLIC_HEADERS nntoolkitcore/include/NNToolkitCore.h
     nntoolkitcore/train/optimizers.h
     nntoolkitcore/layers/dense.h
     nntoolkitcore/layers/gru.h
+    nntoolkitcore/layers/rnn.h
     nntoolkitcore/train/loss.h
     nntoolkitcore/layers/lstm.h
     nntoolkitcore/layers/activation.h
@@ -41,7 +42,7 @@ set(PRIVATE_HEADERS
     nntoolkitcore/core/types.h
     nntoolkitcore/core/ops.h
     nntoolkitcore/core/loop.h
-)
+        )
 
 set(SOURCES
     nntoolkitcore/layers/activation.c
@@ -53,10 +54,11 @@ set(SOURCES
     nntoolkitcore/layers/gru.c
     nntoolkitcore/train/loss.c
     nntoolkitcore/layers/lstm.c
+    nntoolkitcore/layers/rnn.c
     nntoolkitcore/layers/time_distributed_dense.c
     nntoolkitcore/train/optimizers.c
     nntoolkitcore/layers/gru_2.c
-)
+    )
 
 if(APPLE)
     list(APPEND SOURCES nntoolkitcore/core/apple_ops.c)
