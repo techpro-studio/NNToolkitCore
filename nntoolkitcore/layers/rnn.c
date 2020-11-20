@@ -111,7 +111,6 @@ RNN RNNCreateForInference(RNNConfig config) {
     return rnn;
 }
 
-
 RNN RNNCreateForTraining(RNNConfig config, RecurrentTrainingConfig training_config) {
     RNN rnn = rnn_create(config);
     rnn->training_data = rnn_training_data_create(config, training_config);
@@ -127,8 +126,7 @@ RNNGradient *RNNGradientCreate(RNNConfig config, RNNTrainingConfig training_conf
 }
 
 void RNNDestroy(RNN filter) {
-    free(filter->weights->W);
-    free(filter->weights);
+    recurrent_weights_destroy(filter->weights);
     free(filter->h);
     if (filter->training_data != NULL){
         rnn_training_data_destroy(filter->training_data);

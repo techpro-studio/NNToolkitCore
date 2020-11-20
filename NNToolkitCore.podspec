@@ -28,6 +28,7 @@ Pod::Spec.new do |s|
       'nntoolkitcore/core/*.h',
       'nntoolkitcore/core/debug.c',
       'nntoolkitcore/core/apple_ops.c',
+      'nntoolkitcore/core/memory.c',
       'nntoolkitcore/layers/**/*',
       'nntoolkitcore/train/*.{h,c}',
       'nntoolkitcore/signal/*.{h,c}'

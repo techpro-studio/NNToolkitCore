@@ -28,8 +28,12 @@ void recurrent_gradient_destroy(RecurrentGradient *gradient) {
 }
 
 RecurrentWeights *recurrent_weights_create(RecurrentWeightsSize sizes) {
-    float *buffer = f_malloc(sizes.sum);
-    return NULL;
+    RecurrentWeights *weights = malloc(sizeof(RecurrentWeights));
+    weights->W = f_malloc(sizes.sum);
+    weights->U = weights->W + sizes.w;
+    weights->b_i = weights->U + sizes.u;
+    weights->b_h = weights->b_i + sizes.b_i;
+    return weights;
 }
 
 void recurrent_weights_destroy(RecurrentWeights *weights) {
