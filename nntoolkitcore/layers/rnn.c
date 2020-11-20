@@ -9,14 +9,19 @@
 
 
 typedef struct {
-
+    float *computation_buffer;
 } RNNTrainingData;
+
+typedef struct {
+    float *computation_buffer;
+} RNNInferenceData;
+
 
 struct RNNStruct {
     RNNWeights *weights;
     RNNConfig config;
-    float *forward_computation_buffer;
     float *h;
+    RNNInferenceData *inference_data;
     RNNTrainingData* training_data;
 };
 

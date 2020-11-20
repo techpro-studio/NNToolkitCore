@@ -49,7 +49,6 @@ void lstm_inference_data_destroy(LSTMInferenceData *data){
     free(data);
 }
 
-
 LSTMTrainingData* lstm_training_data_create(LSTMConfig config, LSTMTrainingConfig training_config){
     LSTMTrainingData *training_data = malloc(sizeof(LSTMTrainingData));
 
@@ -72,17 +71,22 @@ LSTMTrainingData* lstm_training_data_create(LSTMConfig config, LSTMTrainingConfi
     training_data->dH = training_data->output + batch * ts * out;
     training_data->dC = training_data->dH + batch * out;
 
-
-
+    training_data->computation_buffer = malloc_zeros( 7 * out * sizeof(float));
 
     return training_data;
 }
 
+LSTMInferenceData *lstm_inference_data_create(LSTMConfig config){
+    LSTMInferenceData* data = malloc(sizeof(LSTMInferenceData));
+    data->computation_buffer = malloc_zeros(15 * config.output_feature_channels * sizeof(float));
+    return data;
+}
+
 struct LSTMStruct {
     LSTMConfig config;
-    float *forward_computation_buffer;
     float *c;
     float *h;
+    LSTMInferenceData* inference_data;
     LSTMTrainingData* training_data;
     LSTMWeights* weights;
 };
@@ -161,14 +165,15 @@ LSTM lstm_create(LSTMConfig config){
     filter->weights->b_i = filter->weights->U + sizes.u;
     filter->weights->b_h = filter->weights->b_i + sizes.b_i;
 
+    filter->training_data = NULL;
+    filter->inference_data = NULL;
+
     return filter;
 }
 
 LSTM LSTMCreateForInference(LSTMConfig config){
     LSTM filter = lstm_create(config);
-    int computation_buffer_size = 15 * config.output_feature_channels * sizeof(float);
-    filter->forward_computation_buffer = malloc_zeros(computation_buffer_size);
-    filter->training_data = NULL;
+    filter->inference_data = lstm_inference_data_create(config);
     return filter;
 }
 
@@ -181,8 +186,6 @@ LSTMTrainingConfig LSTMTrainingConfigCreate(int mini_batch_size){
 LSTM LSTMCreateForTraining(LSTMConfig config, LSTMTrainingConfig training_config){
     LSTM filter = lstm_create(config);
 
-    int computation_buffer_size = 7 * config.output_feature_channels * sizeof(float);
-    filter->forward_computation_buffer = malloc_zeros(computation_buffer_size);
     filter->training_data = lstm_training_data_create(config, training_config);
 
     return filter;
@@ -190,11 +193,13 @@ LSTM LSTMCreateForTraining(LSTMConfig config, LSTMTrainingConfig training_config
 
 void LSTMDestroy(LSTM filter) {
     free(filter->weights->W);
-    free(filter->forward_computation_buffer);
     free(filter->weights);
     free(filter->h);
     free(filter->c);
-    if (filter->training_data){
+    if (filter->inference_data != NULL){
+        lstm_inference_data_destroy(filter->inference_data);
+    }
+    if (filter->training_data != NULL){
         lstm_training_data_destroy(filter->training_data);
     }
     free(filter);
@@ -271,8 +276,8 @@ int LSTMApplyInference(LSTM filter, const float *input, float* output){
             filter->h,
             state,
             output + output_offset,
-            filter->forward_computation_buffer,
-            filter->forward_computation_buffer + 8 * out
+            filter->inference_data->computation_buffer,
+            filter->inference_data->computation_buffer + 8 * out
         );
         memcpy(filter->h, output + output_offset, out * sizeof(float));
         memcpy(filter->c, state, out * sizeof(float));
@@ -462,7 +467,15 @@ int LSTMApplyTrainingBatch(LSTM filter, const float *input, float* output){
             float *c_t_prev = filter->c;
             float *h_t_prev = filter->h;
 
-            LSTMCellForward(filter->weights, filter->config.activations, in, out, x_t, c_t_prev, h_t_prev, c_t, h_t, zifgo , filter->forward_computation_buffer);
+            LSTMCellForward(
+                filter->weights,
+                filter->config.activations,
+                in, out,
+                x_t, c_t_prev,
+                h_t_prev, c_t,
+                h_t, zifgo,
+                filter->training_data->computation_buffer
+            );
 
             memcpy(filter->h, h_t, out * sizeof(float));
             memcpy(filter->c, c_t, out * sizeof(float));
@@ -517,7 +530,7 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
 
     int buffer_size = sizes.buffer * batch + batch * in * ts * sizeof(float);
 
-    float *dW = malloc(buffer_size);
+    float *dW = malloc_zeros(buffer_size);
     float *dU = dW + batch * sizes.w;
     float *d_bi = dU + batch * sizes.u;
     float *d_bh = d_bi + batch * sizes.b_i;
@@ -526,7 +539,6 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
     float *dc = filter->training_data->dC;
     float *dh = filter->training_data->dH;
 
-    memset(dW, 0, sizes.buffer * batch);
 
     int computation_buffer_size = 10 * out * sizeof(float);
     float *computation_buffer = (float *) malloc_zeros(computation_buffer_size);
