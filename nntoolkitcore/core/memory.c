@@ -6,14 +6,11 @@
 #include "string.h"
 #include "stdlib.h"
 
-void* malloc_zeros(size_t __size) {
-    void *ptr = malloc(__size);
-    memset(ptr, 0, __size);
-    return ptr;
-}
 
 float *f_malloc(unsigned long size) {
-    return (float *) malloc_zeros(size * sizeof(float));
+    float *ptr = (float *)malloc(size * sizeof(float));
+    f_zero(ptr, size);
+    return ptr;
 }
 
 void f_copy(float *dst, const float *src, unsigned long size) {
