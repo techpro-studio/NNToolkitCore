@@ -9,8 +9,7 @@
 #include "nntoolkitcore/layers/activation_default.h"
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/loop.h"
-#include "stdlib.h"
-#include "string.h"
+#include "nntoolkitcore/core/memory.h"
 
 
 ActivationFunction create_simple(int size, ActivationFunctionImpl function, ActivationFunctionDerivative derivative) {
@@ -93,14 +92,14 @@ ActivationFunction ActivationFunctionCreateTanh(int inputSize) {
 
 void
 activation_identity_derivative(void *implementer, const float *input, const float *d_out, float *output, int size) {
-    memcpy(output, d_out, size * sizeof(float));
+    f_copy(output, d_out, size);
 }
 
 void activation_identity(void *implementer, const float *input, float *output, int size) {
     if (input == output) {
         return;
     }
-    memcpy(output, input, size * sizeof(float));
+    f_copy(output, input, size);
 }
 
 ActivationFunction ActivationFunctionCreateIdentity(int inputSize) {

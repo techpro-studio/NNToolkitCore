@@ -9,8 +9,8 @@
 #include "nntoolkitcore/signal/dft.h"
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/loop.h"
+#include "nntoolkitcore/core/memory.h"
 #include "stdlib.h"
-#include "string.h"
 
 
 typedef void (*spectrogram_implementer)(Spectrogram filter, const float* input, float* output);
@@ -50,7 +50,7 @@ static void real_spectrogram(Spectrogram filter, const float* input, float* outp
         int nfreq = filter->config.nfreq;
         float norm_factor = filter->config.fft_normalization_factor;
         float input_re_im[nfft * 2];
-        memset(input_re_im, 0, nfft * 2 * sizeof(float));
+        f_zero(input_re_im, nfft * 2);
         float output_memory[2 * nfft];
         op_vec_mul(filter->window, input + timed * filter->config.step, input_re_im, nfft);
         ComplexFloatSplit input_split = {input_re_im, input_re_im + nfft};

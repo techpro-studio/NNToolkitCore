@@ -4,13 +4,13 @@
 
 #ifndef memory_h
 #define memory_h
-#include "string.h"
-#include "stdlib.h"
 
-inline static void* malloc_zeros(size_t __size) {
-    void *ptr = malloc(__size);
-    memset(ptr, 0, __size);
-    return ptr;
-}
+//void* malloc_zeros(size_t __size);
+
+float *f_malloc(unsigned long size);
+
+void f_copy(float *dst, const float *src, unsigned long size);
+
+void f_zero(float *a, unsigned long size);
 
 #endif //memory_h

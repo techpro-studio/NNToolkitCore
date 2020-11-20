@@ -13,8 +13,8 @@ RecurrentGradient *recurrent_gradient_create(
 ) {
     RecurrentGradient *gradient = malloc(sizeof(RecurrentGradient));
     int batch = training_config.mini_batch_size;
-    int buffer_size = (sizes.buffer *  batch + batch * input_size) * sizeof(float);
-    gradient->d_W = malloc_zeros(buffer_size);
+    int buffer_size = sizes.sum * batch + batch * input_size;
+    gradient->d_W = f_malloc(buffer_size);
     gradient->d_U = gradient->d_W + sizes.w * batch;
     gradient->d_b_i = gradient->d_U + sizes.u * batch;
     gradient->d_b_h = gradient->d_b_i + sizes.b_i * batch;
@@ -28,7 +28,7 @@ void recurrent_gradient_destroy(RecurrentGradient *gradient) {
 }
 
 RecurrentWeights *recurrent_weights_create(RecurrentWeightsSize sizes) {
-    float *buffer = malloc_zeros(sizes.buffer);
+    float *buffer = f_malloc(sizes.sum);
     return NULL;
 }
 

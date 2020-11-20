@@ -10,9 +10,6 @@
 #include "nntoolkitcore/core/loop.h"
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/memory.h"
-#include "stdlib.h"
-#include "string.h"
-
 
 typedef struct {
     ConvTrainingConfig config;
@@ -81,8 +78,8 @@ Conv1d conv1d_create(Conv1dConfig config) {
     filter->config = config;
     filter->weights = malloc(sizeof(ConvWeights));
     int W_size = config.kernel_size * config.input_feature_channels * config.output_feature_channels;
-    int weights_size = (W_size + config.output_feature_channels) * sizeof(float);
-    filter->weights->W = malloc_zeros(weights_size);
+    int weights_size = W_size + config.output_feature_channels;
+    filter->weights->W = f_malloc(weights_size);
     filter->weights->b = filter->weights->W + W_size;
     filter->training_data = NULL;
     filter->inference_data = NULL;
@@ -152,9 +149,8 @@ ConvGradient *Conv1dCreateGradient(Conv1dConfig config, ConvTrainingConfig train
     ConvGradient *gradient = malloc(sizeof(ConvGradient));
     int d_x_size = config.input_size * config.input_feature_channels * training_config.mini_batch_size;
     int d_w_size = config.input_feature_channels * config.output_feature_channels * config.kernel_size * training_config.mini_batch_size;
-    int grad_buffer_size =
-            (d_x_size + d_w_size + config.output_feature_channels * training_config.mini_batch_size) * sizeof(float);
-    gradient->d_W = malloc_zeros(grad_buffer_size);
+    int grad_size = d_x_size + d_w_size + config.output_feature_channels * training_config.mini_batch_size;
+    gradient->d_W = f_malloc(grad_size);
     gradient->d_X = gradient->d_W + d_w_size;
     gradient->d_b = gradient->d_X + d_x_size;
     return gradient;
@@ -198,9 +194,9 @@ void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, const float 
     int W_size = in_ftrs * out_ftrs * k_size;
     int inp_size = in_ftrs * filter->config.input_size;
     int out_size = out_ftrs * filter->config.output_size;
-    int buffer_size = inp_size * batch * sizeof(float);
+    int buffer_size = inp_size * batch;
 
-    float *d_x_transposed = malloc_zeros(buffer_size);
+    float *d_x_transposed = f_malloc(buffer_size);
 
 
     //then thought the h features

@@ -5,6 +5,8 @@
 #ifndef types_h
 #define types_h
 
+typedef float scalar;
+
 #ifdef __APPLE__
     #define APPLE 1
 #else

@@ -6,7 +6,6 @@
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/memory.h"
 #include "stdlib.h"
-#include "string.h"
 #include "activation_default.h"
 
 GRU2Config
@@ -38,11 +37,11 @@ GRU2 GRU2CreateForInference(GRU2Config config) {
     filter->weights = malloc(sizeof(GRU2Weights));
     int in = config.input_feature_channels;
     int out = config.output_feature_channels;
-    int buff_state_length = 14 * out * sizeof(float);
-    filter->state = malloc_zeros(buff_state_length);
+    int buff_state_length = 14 * out;
+    filter->state = f_malloc(buff_state_length);
     filter->buffer = filter->state + out;
-    int length = (3 * in * out + 3 * out * out + 6 * out) * sizeof(float);
-    float *weights = malloc_zeros(length);
+    int length = 3 * in * out + 3 * out * out + 6 * out;
+    float *weights = f_malloc(length);
     filter->weights->W = weights;
     filter->weights->U = filter->weights->W + 3 * in * out;
     filter->weights->b_i = filter->weights->U + 3 * out * out;
@@ -122,7 +121,7 @@ int GRU2ApplyInference(GRU2 filter, const float *input, float *output) {
         int output_offset = filter->config.return_sequences ? i * out : 0;
         GRUCellForward(filter->weights, filter->config.activations, in, out, input + i * in, filter->state,
                        output + output_offset, filter->buffer);
-        memcpy(filter->state, output + output_offset, out * sizeof(float));
+        f_copy(filter->state, output + output_offset, out);
     }
     return 0;
 }

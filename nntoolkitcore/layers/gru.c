@@ -10,7 +10,6 @@
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/memory.h"
 #include "stdlib.h"
-#include "string.h"
 
 GRUConfig GRUConfigCreate(int input_feature_channels, int output_feature_channels, bool flip_output_gates, bool v2, bool return_sequences, int batchSize, ActivationFunction recurrent_activation, ActivationFunction activation){
     GRUConfig config;
@@ -42,11 +41,11 @@ GRU GRUCreateForInference(GRUConfig config) {
     filter->weights = malloc(sizeof(GRUWeights));
     int in = config.input_feature_channels;
     int out = config.output_feature_channels;
-    int buff_state_length = 10 * out * sizeof(float);
-    filter->state = malloc_zeros(buff_state_length);
+    int buff_state_length = 10 * out;
+    filter->state = f_malloc(buff_state_length);
     filter->buffer = filter->state + out;
-    int length = (3 * in * out + 3 * out * out + 6 * out) * sizeof(float);
-    float *weights = malloc_zeros(length);
+    int length = 3 * in * out + 3 * out * out + 6 * out;
+    float *weights = f_malloc(length);
     filter->weights->W_z = weights;
     filter->weights->W_r = filter->weights->W_z + in * out;
     filter->weights->W_h = filter->weights->W_r + in * out;
@@ -165,7 +164,7 @@ int GRUApplyInference(GRU filter, const float *input, float* output){
     for (int i = 0; i < filter->config.timesteps; ++i){
         int output_offset = filter->config.return_sequences ? i * out : 0;
         GRUCellForward(filter, input + i * in, filter->state, output + output_offset, filter->buffer);
-        memcpy(filter->state, output + output_offset, out * sizeof(float));
+        f_copy(filter->state, output + output_offset, out);
     }
     return 0;
 }

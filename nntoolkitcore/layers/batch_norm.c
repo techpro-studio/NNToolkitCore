@@ -10,8 +10,6 @@
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/loop.h"
 #include "nntoolkitcore/core/memory.h"
-#include "stdlib.h"
-#include "string.h"
 
 
 typedef struct {
@@ -34,9 +32,9 @@ BatchNormTrainingData* batch_norm_training_data_create(BatchNormConfig config, B
     BatchNormTrainingData *data = malloc(sizeof(BatchNormTrainingData));
     int feat = config.feature_channels;
     int N = config.count * training_config.mini_batch_size;
-    int buffer_size = (2 * feat + 8 * N * feat) * sizeof(float);
+    int buffer_size = 2 * feat + 8 * N * feat;
     data->config = training_config;
-    data->mean = malloc_zeros(buffer_size);
+    data->mean = f_malloc(buffer_size);
     data->variance = data->mean + feat;
     data->input_transposed = data->variance + feat;
     data->transposed_minus_mean = data->input_transposed + N * feat;
@@ -78,8 +76,8 @@ BatchNorm BatchNormCreateForInference(BatchNormConfig config) {
     filter->training_data = NULL;
     int chan = config.feature_channels;
     filter->weights = malloc(sizeof(BatchNormWeights));
-    int weights_size = 4 * chan * sizeof(float);
-    float *weights = malloc_zeros(weights_size);
+    int weights_size = 4 * chan;
+    float *weights = f_malloc(weights_size);
     filter->weights->gamma = weights;
     filter->weights->beta = filter->weights->gamma + chan;
     filter->weights->moving_mean = filter->weights->beta + chan;
@@ -99,8 +97,8 @@ void BatchNormDestroy(BatchNorm filter) {
 BatchNormGradient *BatchNormGradientCreate(BatchNormConfig config, BatchNormTrainingConfig training_config) {
     BatchNormGradient *grad = malloc(sizeof(BatchNormGradient));
     int feat = config.feature_channels;
-    int buff = (2 * feat * training_config.mini_batch_size + feat * config.count * training_config.mini_batch_size) * sizeof(float);
-    grad->d_beta = malloc_zeros(buff);
+    int buff = 2 * feat * training_config.mini_batch_size + feat * config.count * training_config.mini_batch_size;
+    grad->d_beta = f_malloc(buff);
     grad->d_gamma = grad->d_beta + feat * training_config.mini_batch_size;
     grad->d_x = grad->d_gamma + feat * training_config.mini_batch_size;
     return grad;
@@ -259,8 +257,6 @@ int BatchNormApplyTrainingBatch(BatchNorm filter, const float *input, float *out
     return 0;
 }
 
-#define PRINT 1
-
 void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, float *d_out) {
     int feat = filter->config.feature_channels;
     int N = filter->config.count * filter->training_data->config.mini_batch_size;
@@ -273,9 +269,9 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
      * d_gamma = sum(0; F)(d_out * x_norm)
      * */
 
-    int buffer_size = (4 * feat + 12 * N * feat) * sizeof(float);
+    int buffer_size = 4 * feat + 12 * N * feat;
 
-    float* buffer = malloc_zeros(buffer_size);
+    float* buffer = f_malloc(buffer_size);
 
 
     float *transposed_d_out = buffer; //  N * feat
@@ -363,7 +359,7 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
 
     float *d_x_1 = d_x_mu + N * feat;
 
-    memcpy(d_x_1, d_x_mu, N * feat * sizeof(float));
+    f_copy(d_x_1, d_x_mu, N * feat);
 
     /*
      * d_mu = - 1 * sum(1, N)(d_x_mu)
@@ -379,7 +375,7 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
     op_vec_mul_sc(d_mu, (-1.0f / (float )N), d_mu, feat);
     float *d_x_2 = d_mu + feat;
     P_LOOP_START(N, n)
-        memcpy(d_x_2 + n * feat, d_mu, feat * sizeof(float));
+        f_copy(d_x_2 + n * feat, d_mu, feat);
     P_LOOP_END
     op_vec_add(d_x_1, d_x_2, gradient->d_x, N * feat);
     free(buffer);

@@ -29,7 +29,7 @@ typedef struct {
     int u;
     int b_i;
     int b_h;
-    int buffer;
+    int sum;
 } RecurrentWeightsSize;
 
 inline static RecurrentTrainingConfig RecurrentTrainingConfigCreate(int mini_batch_size){

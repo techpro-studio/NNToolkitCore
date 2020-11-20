@@ -10,7 +10,6 @@
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/loop.h"
 #include "stdlib.h"
-#include "string.h"
 
 
 typedef struct  {
@@ -74,8 +73,8 @@ DenseGradient* TimeDistributedDenseGradientCreate(TimeDistributedDense filter){
 
     int d_w_size =  in * out * ts * batch;
     int d_x_size = in * ts * batch;
-    int buff_size = (d_w_size + d_x_size + out * ts * batch) * sizeof(float);
-    grad->d_W = (float *) malloc_zeros(buff_size);
+    int buff_size = d_w_size + d_x_size + out * ts * batch;
+    grad->d_W = (float *) f_malloc(buff_size);
     grad->d_X = grad->d_W + d_w_size;
     grad->d_b = grad->d_X + d_x_size;
     return grad;
@@ -115,7 +114,7 @@ void TimeDistributedDenseCalculateGradient(TimeDistributedDense filter, DenseGra
             op_vec_add(gradient->d_b + b * d_b_size, dense_gradient->d_b + (t * d_b_size + b * ts * d_b_size), gradient->d_b + b * d_b_size, d_b_size);
         }
     P_LOOP_END
-    memcpy(gradient->d_X, dense_gradient->d_X, filter->config.dense.input_size * ts * batch * sizeof(float));
+    f_copy(gradient->d_X, dense_gradient->d_X, filter->config.dense.input_size * ts * batch);
 }
 
 void TimeDistributedDenseDestroy(TimeDistributedDense filter){

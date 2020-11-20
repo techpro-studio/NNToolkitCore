@@ -62,7 +62,7 @@ set(SOURCES
     nntoolkitcore/layers/recurrent.h
     nntoolkitcore/layers/private/recurrent_private.c
     nntoolkitcore/layers/private/recurrent_private.h
-)
+        nntoolkitcore/core/memory.c)
 
 if(APPLE)
     list(APPEND SOURCES nntoolkitcore/core/apple_ops.c)

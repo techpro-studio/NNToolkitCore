@@ -12,6 +12,8 @@
 typedef struct {
     float *computation_buffer;
     float *gate;
+    float *input;
+    float *output;
 } RNNTrainingData;
 
 typedef struct {
@@ -21,7 +23,7 @@ typedef struct {
 typedef RecurrentWeightsSize RNNWeightsSize;
 
 struct RNNStruct {
-    RecurrentWeights *weights;
+    RNNWeights *weights;
     RNNConfig config;
     float *h;
     RNNInferenceData *inference_data;
@@ -37,7 +39,7 @@ RNNWeightsSize rnn_weights_size_from_config(RNNConfig config){
     size.u = out * out;
     size.b_i = out;
     size.b_h = out;
-    size.buffer = (size.w + size.u + size.b_h + size.b_i) * sizeof(float);
+    size.sum = size.w + size.u + size.b_h + size.b_i;
     return size;
 }
 
@@ -71,15 +73,22 @@ void rnn_inference_data_destroy(RNNInferenceData *data){
 
 RNNInferenceData *rnn_inference_data_create(RNNConfig config){
     RNNInferenceData *data = malloc(sizeof(RNNInferenceData));
-    data->computation_buffer = malloc_zeros(3 * config.output_feature_channels * sizeof(float));
+    data->computation_buffer = f_malloc(3 * config.output_feature_channels);
     return data;
 }
 
 RNNTrainingData *rnn_training_data_create(RNNConfig config, RecurrentTrainingConfig training_config){
     RNNTrainingData *data = malloc(sizeof(RNNTrainingData));
     int out = config.output_feature_channels;
-    data->computation_buffer = malloc_zeros(3 * out * sizeof(float));
-    data->gate = data->computation_buffer + 2 * out;
+    int batch = training_config.mini_batch_size;
+    int input_size = batch * config.input_feature_channels * config.timesteps;
+    int output_size = batch * out * config.timesteps;
+    int gate_size = batch * out * config.timesteps;
+
+    data->input = f_malloc(input_size + output_size + gate_size + 2 * out);
+    data->output = data->input + input_size;
+    data->gate = data->output + output_size;
+    data->computation_buffer = data->gate + gate_size;
     return data;
 }
 
@@ -171,12 +180,17 @@ int RNNApplyInference(RNN filter, const float *input, float *output) {
             filter->inference_data->computation_buffer,
             filter->inference_data->computation_buffer + 2 * out
         );
-        memcpy(filter->h, output + output_offset, out * sizeof(float));
+        f_copy(filter->h, output + output_offset, out);
     }
     return 0;
 }
 
 int RNNApplyTrainingBatch(RNN filter, const float *input, float *output) {
+    if (filter->training_data == NULL){
+        return -1;
+    }
+    int out = filter->config.output_feature_channels;
+    int in = filter->config.input_feature_channels;
     return 0;
 }
 
