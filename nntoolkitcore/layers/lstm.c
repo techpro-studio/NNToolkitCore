@@ -465,6 +465,7 @@ int LSTMApplyTrainingBatch(LSTM filter, const float *input, float* output){
             LSTMCellForward(
                 filter->weights,
                 filter->config.activations,
+                filter->config.v2,
                 in, out,
                 x_t, c_t_prev,
                 h_t_prev, c_t,
