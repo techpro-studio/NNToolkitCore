@@ -475,10 +475,11 @@ int LSTMApplyTrainingBatch(LSTM filter, const float *input, float* output){
 
 LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig training_config) {
     return recurrent_gradient_create(
-            lstm_weights_size_from_config(config), training_config, config.input_feature_channels * config.timesteps);
+            lstm_weights_size_from_config(config), training_config.mini_batch_size,
+            config.input_feature_channels * config.timesteps);
 }
 
-void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
+void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out) {
     if (filter->training_data == NULL){
         return;
     }
@@ -494,14 +495,7 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
     float *zifgo = filter->training_data->zifgo;
 
     LSTMWeightsSize sizes = lstm_weights_size_from_config(filter->config);
-
-    int buffer_size = sizes.sum * batch + batch * in * ts;
-
-    float *dW = f_malloc(buffer_size);
-    float *dU = dW + batch * sizes.w;
-    float *d_bi = dU + batch * sizes.u;
-    float *d_bh = d_bi + batch * sizes.b_i;
-    float *dx = d_bh + batch * sizes.b_h;
+    LSTMGradient *current_gradient = recurrent_gradient_create(sizes, batch, in * ts);
 
     float *dc = filter->training_data->dC;
     float *dh = filter->training_data->dH;
@@ -524,13 +518,13 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
 
             CellBackwardGradients current_gradients;
 
-            current_gradients.d_W_t = dW + b * sizes.w;
-            current_gradients.d_U_t = dU + b * sizes.u;
-            current_gradients.d_bi_t = d_bi + b * sizes.b_i;
-            current_gradients.d_bh_t = d_bh + b * sizes.b_h;
+            current_gradients.d_W_t = current_gradient->d_W + b * sizes.w;
+            current_gradients.d_U_t = current_gradient->d_U + b * sizes.u;
+            current_gradients.d_bi_t = current_gradient->d_b_i + b * sizes.b_i;
+            current_gradients.d_bh_t = current_gradient->d_b_h + b * sizes.b_h;
             current_gradients.d_c_t_prev = dc + (b * out);
             current_gradients.d_h_t_prev = dh + (b * out);
-            current_gradients.d_x_t = dx + (t * in + b * ts * in);
+            current_gradients.d_x_t = current_gradient->d_X + (t * in + b * ts * in);
 
             float *d_c_t_init = t == ts - 1 ? NULL : dc + (b * out);
             float *d_h_t_init = t == ts - 1 ? NULL : dh + (b * out);
@@ -554,15 +548,15 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out) {
                              current_gradients, computation_buffer);
             f_zero(computation_buffer, computation_buffer_size);
 
-            op_vec_add(gradients->d_W + b * sizes.w, current_gradients.d_W_t, gradients->d_W + b * sizes.w, sizes.w);
-            op_vec_add(gradients->d_U + b * sizes.u, current_gradients.d_U_t, gradients->d_U + b * sizes.u, sizes.u);
-            op_vec_add(gradients->d_b_i + b * sizes.b_i, current_gradients.d_bi_t, gradients->d_b_i + b * sizes.b_i,
+            op_vec_add(gradient->d_W + b * sizes.w, current_gradients.d_W_t, gradient->d_W + b * sizes.w, sizes.w);
+            op_vec_add(gradient->d_U + b * sizes.u, current_gradients.d_U_t, gradient->d_U + b * sizes.u, sizes.u);
+            op_vec_add(gradient->d_b_i + b * sizes.b_i, current_gradients.d_bi_t, gradient->d_b_i + b * sizes.b_i,
                        sizes.b_i);
-            op_vec_add(gradients->d_b_h + b * sizes.b_h, current_gradients.d_bh_t, gradients->d_b_h + b * sizes.b_h,
+            op_vec_add(gradient->d_b_h + b * sizes.b_h, current_gradients.d_bh_t, gradient->d_b_h + b * sizes.b_h,
                        sizes.b_h);
 
         }
     }
-    f_copy(gradients->d_X, dx, in * ts * batch);
-    free(dW);
+    f_copy(gradient->d_X, current_gradient->d_X, in * ts * batch);
+    recurrent_gradient_destroy(current_gradient);
 }

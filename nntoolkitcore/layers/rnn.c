@@ -10,6 +10,7 @@
 
 
 typedef struct {
+    RNNTrainingConfig config;
     float *computation_buffer;
     float *gate;
     float *input;
@@ -120,7 +121,7 @@ RNN RNNCreateForTraining(RNNConfig config, RecurrentTrainingConfig training_conf
 RNNGradient *RNNGradientCreate(RNNConfig config, RNNTrainingConfig training_config) {
     return recurrent_gradient_create(
             rnn_weights_size_from_config(config),
-            training_config,
+            training_config.mini_batch_size,
             config.timesteps * config.input_feature_channels
     );
 }
@@ -187,8 +188,46 @@ int RNNApplyTrainingBatch(RNN filter, const float *input, float *output) {
     if (filter->training_data == NULL){
         return -1;
     }
+
     int out = filter->config.output_feature_channels;
     int in = filter->config.input_feature_channels;
+    int batch = filter->training_data->config.mini_batch_size;
+    int ts = filter->config.timesteps;
+
+    int input_buffer_size = batch * ts * in;
+    f_copy(filter->training_data->input, input, input_buffer_size);
+
+    for (int b = 0; b < batch; ++b){
+        f_zero(filter->h, out);
+        for (int i = 0; i < filter->config.timesteps; ++i){
+
+            const float *x_t = input + i * in + b * ts * in;
+            float *h_t = filter->training_data->output + out * i + b * ts * out;
+            float *gate = filter->training_data->gate + out * i + b * ts * out;
+            float *h_t_prev = filter->h;
+
+            RNNCellForward(
+                filter->weights,
+                filter->config.activation,
+                filter->config.v2,
+                in, out, x_t,
+                h_t_prev,
+                h_t,
+                filter->training_data->computation_buffer,
+                gate
+            );
+
+            f_copy(filter->h, h_t, out);
+        }
+    }
+    if (filter->config.return_sequences){
+        f_copy(output, filter->training_data->output, batch * ts * out);
+    } else {
+        for (int b = 0; b < batch; ++b){
+            int offset = ((ts - 1) * out) + b * ts * out;
+            f_copy(output + b * out, filter->training_data->output + offset, out);
+        }
+    }
     return 0;
 }
 

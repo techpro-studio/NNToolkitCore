@@ -72,7 +72,7 @@ int LSTMApplyInference(LSTM filter, const float *input, float* output);
 
 int LSTMApplyTrainingBatch(LSTM filter, const float *input, float* output);
 
-void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradients, float *d_out);
+void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out);
 
 void LSTMDestroy(LSTM filter);
 

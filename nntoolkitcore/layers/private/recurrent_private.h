@@ -13,7 +13,7 @@ void recurrent_weights_destroy(RecurrentWeights *weights);
 
 RecurrentGradient *recurrent_gradient_create(
         RecurrentWeightsSize sizes,
-        RecurrentTrainingConfig training_config,
+        int batch,
         int input_size
 );
 
