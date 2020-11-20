@@ -9,6 +9,7 @@
 #include "nntoolkitcore/layers/conv_1d.h"
 #include "nntoolkitcore/core/loop.h"
 #include "nntoolkitcore/core/ops.h"
+#include "nntoolkitcore/core/memory.h"
 #include "stdlib.h"
 #include "string.h"
 
@@ -18,10 +19,14 @@ typedef struct {
     float *input_transposed;
 } Conv1dTrainingData;
 
+typedef struct {
+    void *buffer;
+} Conv1dInferenceData;
+
 struct Conv1dFilterStruct {
     Conv1dConfig config;
     ConvWeights *weights;
-    void *buffer;
+    Conv1dInferenceData *inference_data;
     Conv1dTrainingData *training_data;
 };
 
@@ -36,6 +41,17 @@ static Conv1dTrainingData *conv1d_training_data_create(Conv1dConfig config, Conv
 static void conv_training_data_destroy(Conv1dTrainingData *training_data) {
     free(training_data->input_transposed);
     free(training_data);
+}
+
+static Conv1dInferenceData *conv1d_inference_data_create(Conv1dConfig config) {
+    Conv1dInferenceData *data = malloc(sizeof(Conv1dInferenceData));
+    data->buffer = malloc(config.input_size * config.input_feature_channels * sizeof(float));
+    return data;
+}
+
+static void conv1d_inference_data_destroy(Conv1dInferenceData* data) {
+    free(data->buffer);
+    free(data);
 }
 
 ConvWeights *Conv1dGetWeights(Conv1d filter) {
@@ -66,17 +82,16 @@ Conv1d conv1d_create(Conv1dConfig config) {
     filter->weights = malloc(sizeof(ConvWeights));
     int W_size = config.kernel_size * config.input_feature_channels * config.output_feature_channels;
     int weights_size = (W_size + config.output_feature_channels) * sizeof(float);
-    filter->weights->W = malloc(weights_size);
+    filter->weights->W = malloc_zeros(weights_size);
     filter->weights->b = filter->weights->W + W_size;
-    memset(filter->weights->W, 0, weights_size);
     filter->training_data = NULL;
-    filter->buffer = NULL;
+    filter->inference_data = NULL;
     return filter;
 }
 
 Conv1d Conv1dCreateForInference(Conv1dConfig config) {
     Conv1d filter = conv1d_create(config);
-    filter->buffer = malloc(config.input_size * config.input_feature_channels * sizeof(float));
+    filter->inference_data = conv1d_inference_data_create(config);
     return filter;
 }
 
@@ -87,8 +102,8 @@ Conv1d Conv1dCreateForTraining(Conv1dConfig config, ConvTrainingConfig training_
 }
 
 void Conv1dDestroy(Conv1d filter) {
-    if (filter->buffer != NULL) {
-        free(filter->buffer);
+    if (filter->inference_data != NULL) {
+        conv1d_inference_data_destroy(filter->inference_data);
     }
     if (filter->training_data != NULL) {
         conv_training_data_destroy(filter->training_data);
@@ -129,7 +144,7 @@ int Conv1dApplyInference(Conv1d filter, const float *input, float *output) {
     if (filter->training_data != NULL) {
         return -1;
     }
-    conv_1d_one(filter, input, output, filter->buffer);
+    conv_1d_one(filter, input, output, filter->inference_data->buffer);
     return 0;
 }
 
@@ -139,10 +154,9 @@ ConvGradient *Conv1dCreateGradient(Conv1dConfig config, ConvTrainingConfig train
     int d_w_size = config.input_feature_channels * config.output_feature_channels * config.kernel_size * training_config.mini_batch_size;
     int grad_buffer_size =
             (d_x_size + d_w_size + config.output_feature_channels * training_config.mini_batch_size) * sizeof(float);
-    gradient->d_W = malloc(grad_buffer_size);
+    gradient->d_W = malloc_zeros(grad_buffer_size);
     gradient->d_X = gradient->d_W + d_w_size;
     gradient->d_b = gradient->d_X + d_x_size;
-    memset(gradient->d_W, 0, grad_buffer_size);
     return gradient;
 }
 
@@ -186,10 +200,10 @@ void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, const float 
     int out_size = out_ftrs * filter->config.output_size;
     int buffer_size = inp_size * batch * sizeof(float);
 
-    float *d_x_transposed = malloc(buffer_size);
-    memset(d_x_transposed, 0, buffer_size);
+    float *d_x_transposed = malloc_zeros(buffer_size);
 
-    //then thought the output features
+
+    //then thought the h features
     //        out_f   f   f
     //  out_n  d1  d2  d3
     //  out_n  d4  d5  d6

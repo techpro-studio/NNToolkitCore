@@ -2,16 +2,45 @@
 // Created by Alex on 19.11.2020.
 //
 
+#include <nntoolkitcore/core/memory.h>
 #include "rnn.h"
 #include "stdlib.h"
 #include "nntoolkitcore/core/ops.h"
 
-RNNGradient * RNNGradientCreate(RNNConfig config, RNNTrainingConfig training_config) {
-    return NULL;
+
+typedef struct {
+
+} RNNTrainingData;
+
+struct RNNStruct {
+    RNNWeights *weights;
+    RNNConfig config;
+    float *forward_computation_buffer;
+    float *h;
+    RNNTrainingData* training_data;
+};
+
+typedef struct {
+    int w;
+    int u;
+    int b_i;
+    int b_h;
+    int buffer;
+} RNNWeightsSize;
+
+RNNWeightsSize rnn_weights_size_from_config(RNNConfig config){
+    int in = config.input_feature_channels;
+    int out = config.output_feature_channels;
+    RNNWeightsSize size;
+    size.w = in * out;
+    size.u = out * out;
+    size.b_i = out;
+    size.b_h = out;
+    size.buffer = (size.w + size.u + size.b_h + size.b_i) * sizeof(float);
+    return size;
 }
 
-RNNConfig
-RNNConfigCreate(
+RNNConfig RNNConfigCreate(
     int input_feature_channels,
     int output_feature_channels,
     bool v2,
@@ -30,7 +59,7 @@ RNNConfigCreate(
 }
 
 RNNWeights *RNNGetWeights(RNN filter) {
-    return NULL;
+    return filter->weights;
 }
 
 
@@ -58,20 +87,42 @@ void RNNCellForward(
     ActivationFunctionApply(activation, gate, h);
 }
 
-RNN RNNCreateForInference(RNNConfig config) {
-    return NULL;
+
+RNN rnn_create(RNNConfig config){
+    RNN filter = malloc(sizeof(struct RNNStruct));
+    filter->config = config;
+    filter->weights = malloc(sizeof(RNNWeights));
+    filter->training_data = NULL;
+
+    RNNWeightsSize w_sizes = rnn_weights_size_from_config(config);
+
+    filter->weights->W = malloc_zeros(w_sizes.buffer);
+    filter->weights->U = filter->weights->W + w_sizes.w;
+    filter->weights->b_i = filter->weights->U + w_sizes.u;
+    filter->weights->b_h = filter->weights->b_i + w_sizes.b_i;
+
+    return filter;
 }
 
-RNN RNNCreateForTraining(RNNConfig config, RNNTrainingConfig training_config) {
-    return NULL;
+RNN RNNCreateForInference(RNNConfig config) {
+
 }
 
 int RNNApplyInference(RNN filter, const float *input, float *output) {
     return 0;
 }
 
+
+RNN RNNCreateForTraining(RNNConfig config, RNNTrainingConfig training_config) {
+    return NULL;
+}
+
 int RNNApplyTrainingBatch(RNN filter, const float *input, float *output) {
     return 0;
+}
+
+RNNGradient * RNNGradientCreate(RNNConfig config, RNNTrainingConfig training_config) {
+    return NULL;
 }
 
 void RNNCalculateGradient(RNN filter, RNNGradient *gradients, float *d_out) {

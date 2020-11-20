@@ -14,7 +14,7 @@ third_party/eigen3/
 *.obj
 *.elf
 
-# Linker output
+# Linker h
 *.ilk
 *.map
 *.exp

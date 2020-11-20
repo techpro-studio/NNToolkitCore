@@ -32,8 +32,6 @@ typedef struct {
     GRUActivations activations;
 } GRU2Config;
 
-
-
 GRUActivations GRUActivationsCreate(
     ActivationFunction input_gate_activation,
     ActivationFunction update_gate_activation,

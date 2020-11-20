@@ -42,7 +42,7 @@ void DFTPerform(DFTSetup setup, ComplexFloatSplit* input, ComplexFloatSplit* out
     kiss_fft_cpx out[nfft];
     join_complex_split((ComplexFloat *)in, input, nfft);
     kiss_fft(setup->implementer, in, out);
-    split_complex(output, (ComplexFloat *) out, nfft);
+    split_complex(h, (ComplexFloat *) out, nfft);
 
 #endif
 }

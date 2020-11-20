@@ -9,6 +9,7 @@
 #include "nntoolkitcore/layers/batch_norm.h"
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/loop.h"
+#include "nntoolkitcore/core/memory.h"
 #include "stdlib.h"
 #include "string.h"
 
@@ -35,7 +36,7 @@ BatchNormTrainingData* batch_norm_training_data_create(BatchNormConfig config, B
     int N = config.count * training_config.mini_batch_size;
     int buffer_size = (2 * feat + 8 * N * feat) * sizeof(float);
     data->config = training_config;
-    data->mean = malloc(buffer_size);
+    data->mean = malloc_zeros(buffer_size);
     data->variance = data->mean + feat;
     data->input_transposed = data->variance + feat;
     data->transposed_minus_mean = data->input_transposed + N * feat;
@@ -45,7 +46,6 @@ BatchNormTrainingData* batch_norm_training_data_create(BatchNormConfig config, B
     data->sqrt_var = data->var_eps + N * feat;
     data->x_norm = data->sqrt_var + N * feat;
     data->gamma_x_norm = data->x_norm + N * feat;
-    memset(data->mean, 0, buffer_size);
     return data;
 }
 
@@ -79,12 +79,11 @@ BatchNorm BatchNormCreateForInference(BatchNormConfig config) {
     int chan = config.feature_channels;
     filter->weights = malloc(sizeof(BatchNormWeights));
     int weights_size = 4 * chan * sizeof(float);
-    float *weights = malloc(weights_size);
+    float *weights = malloc_zeros(weights_size);
     filter->weights->gamma = weights;
     filter->weights->beta = filter->weights->gamma + chan;
     filter->weights->moving_mean = filter->weights->beta + chan;
     filter->weights->moving_variance = filter->weights->moving_mean + chan;
-    memset(weights, 0, weights_size);
     return filter;
 }
 
@@ -101,10 +100,9 @@ BatchNormGradient *BatchNormGradientCreate(BatchNormConfig config, BatchNormTrai
     BatchNormGradient *grad = malloc(sizeof(BatchNormGradient));
     int feat = config.feature_channels;
     int buff = (2 * feat * training_config.mini_batch_size + feat * config.count * training_config.mini_batch_size) * sizeof(float);
-    grad->d_beta = malloc(buff);
+    grad->d_beta = malloc_zeros(buff);
     grad->d_gamma = grad->d_beta + feat * training_config.mini_batch_size;
     grad->d_x = grad->d_gamma + feat * training_config.mini_batch_size;
-    memset(grad->d_beta, 0, buff);
     return grad;
 }
 
@@ -152,17 +150,17 @@ void batch_norm(
         float epsilon,
         int size
 ) {
-    // output = input - moving_mean
+    // h = input - moving_mean
     op_vec_sub(input, mean, buffer.x_mu, size);
     // input_transposed = moving_variance + epsilon
     op_vec_add_sc(variance, epsilon, buffer.var_eps, size);
 //    input_transposed = sqrt(input_transposed)
     op_vec_sqrt(buffer.var_eps, buffer.sqrt_var, size);
-    // output = output / input_transposed
+    // h = h / input_transposed
     op_vec_div(buffer.x_mu, buffer.sqrt_var, buffer.x_norm, size);
-    // output = input * gamma
+    // h = input * gamma
     op_vec_mul(buffer.x_norm, gamma, buffer.gamma_x_norm, size);
-//    output = output + beta
+//    h = h + beta
     op_vec_add(buffer.gamma_x_norm, beta, output, size);
 }
 
@@ -277,8 +275,8 @@ void BatchNormCalculateGradient(BatchNorm filter, BatchNormGradient *gradient, f
 
     int buffer_size = (4 * feat + 12 * N * feat) * sizeof(float);
 
-    float* buffer = malloc(buffer_size);
-    memset(buffer, 0, buffer_size);
+    float* buffer = malloc_zeros(buffer_size);
+
 
     float *transposed_d_out = buffer; //  N * feat
     //d_beta:

@@ -8,6 +8,7 @@
 
 #include "nntoolkitcore/layers/gru.h"
 #include "nntoolkitcore/core/ops.h"
+#include "nntoolkitcore/core/memory.h"
 #include "stdlib.h"
 #include "string.h"
 
@@ -42,12 +43,10 @@ GRU GRUCreateForInference(GRUConfig config) {
     int in = config.input_feature_channels;
     int out = config.output_feature_channels;
     int buff_state_length = 10 * out * sizeof(float);
-    filter->state = malloc(buff_state_length);
-    memset(filter->state, 0, buff_state_length);
+    filter->state = malloc_zeros(buff_state_length);
     filter->buffer = filter->state + out;
     int length = (3 * in * out + 3 * out * out + 6 * out) * sizeof(float);
-    float *weights = malloc(length);
-    memset(weights, 0, length);
+    float *weights = malloc_zeros(length);
     filter->weights->W_z = weights;
     filter->weights->W_r = filter->weights->W_z + in * out;
     filter->weights->W_h = filter->weights->W_r + in * out;

@@ -5,6 +5,7 @@
 //  Created by Alex on 21.10.2020.
 //
 
+#include <nntoolkitcore/core/memory.h>
 #include "nntoolkitcore/layers/time_distributed_dense.h"
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/loop.h"
@@ -74,10 +75,9 @@ DenseGradient* TimeDistributedDenseGradientCreate(TimeDistributedDense filter){
     int d_w_size =  in * out * ts * batch;
     int d_x_size = in * ts * batch;
     int buff_size = (d_w_size + d_x_size + out * ts * batch) * sizeof(float);
-    grad->d_W = (float *) malloc(buff_size);
+    grad->d_W = (float *) malloc_zeros(buff_size);
     grad->d_X = grad->d_W + d_w_size;
     grad->d_b = grad->d_X + d_x_size;
-    memset(grad->d_W, 0, buff_size);
     return grad;
 }
 

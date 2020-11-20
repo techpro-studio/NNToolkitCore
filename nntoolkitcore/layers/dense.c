@@ -8,6 +8,7 @@
 
 #include "nntoolkitcore/layers/dense.h"
 #include "nntoolkitcore/core/ops.h"
+#include "nntoolkitcore/core/memory.h"
 #include "nntoolkitcore/core/loop.h"
 #include "stdlib.h"
 #include "string.h"
@@ -27,11 +28,10 @@ DenseTrainingData *dense_training_data_create(DenseConfig config, DenseTrainingC
     int x_size = config.input_size * training_config.mini_batch_size;
     int z_size = config.output_size * training_config.mini_batch_size;
     int buff_size = (x_size + 3 * z_size) * sizeof(float);
-    data->x = malloc(buff_size);
+    data->x = malloc_zeros(buff_size);
     data->z = data->x + x_size;
     data->a = data->z + z_size;
     data->dz = data->a + z_size;
-    memset(data->x, 0, buff_size);
     return data;
 }
 
@@ -64,9 +64,8 @@ Dense DenseCreateForInference(DenseConfig config) {
     filter->training_data = NULL;
     filter->weights = malloc(sizeof(DenseWeights));
     int weights_buff_size = config.input_size * (config.output_size + 1) * sizeof(float);
-    filter->weights->W = malloc(weights_buff_size);
+    filter->weights->W = malloc_zeros(weights_buff_size);
     filter->weights->b = filter->weights->W + config.input_size * config.output_size;
-    memset(filter->weights->W, 0, weights_buff_size);
     return filter;
 }
 
@@ -96,10 +95,9 @@ DenseGradient *DenseGradientCreate(DenseConfig config, DenseTrainingConfig train
     int d_w_size = config.input_size * config.output_size * training_config.mini_batch_size;
     int d_x_size = config.input_size * training_config.mini_batch_size;
     int buff_size = (d_w_size + d_x_size + config.output_size * training_config.mini_batch_size) * sizeof(float);
-    grad->d_W = (float *) malloc(buff_size);
+    grad->d_W = (float *) malloc_zeros(buff_size);
     grad->d_X = grad->d_W + d_w_size;
     grad->d_b = grad->d_X + d_x_size;
-    memset(grad->d_W, 0, buff_size);
     return grad;
 }
 

@@ -42,7 +42,7 @@ set(PRIVATE_HEADERS
     nntoolkitcore/core/types.h
     nntoolkitcore/core/ops.h
     nntoolkitcore/core/loop.h
-        )
+        nntoolkitcore/core/memory.h)
 
 set(SOURCES
     nntoolkitcore/layers/activation.c
