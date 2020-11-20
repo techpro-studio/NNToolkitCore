@@ -15,7 +15,6 @@ Pod::Spec.new do |s|
   s.osx.deployment_target = '10.9'
 
   s.public_header_files =
-  'nntoolkitcore/include/*.{h}',
   'nntoolkitcore/layers/*.{h}',
   'nntoolkitcore/train/*.{h}',
   'nntoolkitcore/signal/spectrogram.h',
@@ -24,7 +23,6 @@ Pod::Spec.new do |s|
   'nntoolkitcore/core/ops.h'
 
   s.source_files =
-      'nntoolkitcore/include/*.h',
       'nntoolkitcore/core/*.h',
       'nntoolkitcore/core/debug.c',
       'nntoolkitcore/core/apple_ops.c',

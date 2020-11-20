@@ -22,7 +22,7 @@ include_directories(
     ${SOURCE_DIR}
 )
 
-set (PUBLIC_HEADERS nntoolkitcore/include/NNToolkitCore.h
+set (PUBLIC_HEADERS
     nntoolkitcore/layers/time_distributed_dense.h
     nntoolkitcore/layers/gru_2.h
     nntoolkitcore/train/optimizers.h
@@ -62,7 +62,8 @@ set(SOURCES
     nntoolkitcore/layers/recurrent.h
     nntoolkitcore/layers/private/recurrent_private.c
     nntoolkitcore/layers/private/recurrent_private.h
-        nntoolkitcore/core/memory.c)
+    nntoolkitcore/core/memory.c
+)
 
 if(APPLE)
     list(APPEND SOURCES nntoolkitcore/core/apple_ops.c)
