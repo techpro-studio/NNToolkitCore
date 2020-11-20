@@ -5,6 +5,7 @@
 //  Created by Alex on 01.10.2020.
 //
 
+#include "nntoolkitcore/layers/private/recurrent_private.h"
 #include "nntoolkitcore/layers/lstm.h"
 #include "nntoolkitcore/layers/activation_default.h"
 #include "nntoolkitcore/core/ops.h"
@@ -139,28 +140,13 @@ LSTMWeightsSize lstm_weights_size_from_config(LSTMConfig config){
 
 LSTM lstm_create(LSTMConfig config){
     LSTM filter = malloc(sizeof(struct LSTMStruct));
-
-    int out = config.output_feature_channels;
-
     filter->config = config;
-
-    filter->weights = malloc(sizeof(LSTMWeights));
-
-    int out_size = out * sizeof(float);
+    filter->weights = recurrent_weights_create(lstm_weights_size_from_config(config));
+    int out_size = config.output_feature_channels * sizeof(float);
     filter->c = malloc_zeros(out_size);
     filter->h = malloc_zeros(out_size);
-
-    LSTMWeightsSize sizes = lstm_weights_size_from_config(config);
-    float *buffer = malloc_zeros(sizes.buffer);
-
-    filter->weights->W = buffer;
-    filter->weights->U = filter->weights->W + sizes.w;
-    filter->weights->b_i = filter->weights->U + sizes.u;
-    filter->weights->b_h = filter->weights->b_i + sizes.b_i;
-
     filter->training_data = NULL;
     filter->inference_data = NULL;
-
     return filter;
 }
 
@@ -183,8 +169,7 @@ LSTM LSTMCreateForTraining(LSTMConfig config, LSTMTrainingConfig training_config
 }
 
 void LSTMDestroy(LSTM filter) {
-    free(filter->weights->W);
-    free(filter->weights);
+    recurrent_weights_destroy(filter->weights);
     free(filter->h);
     free(filter->c);
     if (filter->inference_data != NULL){
@@ -490,7 +475,7 @@ int LSTMApplyTrainingBatch(LSTM filter, const float *input, float* output){
 
 
 LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig training_config) {
-    return RecurrentGradientCreate(
+    return recurrent_gradient_create(
             lstm_weights_size_from_config(config), training_config, config.input_feature_channels * config.timesteps);
 }
 

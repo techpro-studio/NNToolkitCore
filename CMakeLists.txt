@@ -42,7 +42,8 @@ set(PRIVATE_HEADERS
     nntoolkitcore/core/types.h
     nntoolkitcore/core/ops.h
     nntoolkitcore/core/loop.h
-        nntoolkitcore/core/memory.h)
+    nntoolkitcore/core/memory.h
+)
 
 set(SOURCES
     nntoolkitcore/layers/activation.c
@@ -58,7 +59,10 @@ set(SOURCES
     nntoolkitcore/layers/time_distributed_dense.c
     nntoolkitcore/train/optimizers.c
     nntoolkitcore/layers/gru_2.c
-        nntoolkitcore/layers/recurrent_base.c nntoolkitcore/layers/recurrent_base.h)
+    nntoolkitcore/layers/recurrent.h
+    nntoolkitcore/layers/private/recurrent_private.c
+    nntoolkitcore/layers/private/recurrent_private.h
+)
 
 if(APPLE)
     list(APPEND SOURCES nntoolkitcore/core/apple_ops.c)

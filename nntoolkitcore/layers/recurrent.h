@@ -32,14 +32,10 @@ typedef struct {
     int buffer;
 } RecurrentWeightsSize;
 
-RecurrentTrainingConfig RecurrentTrainingConfigCreate(int mini_batch_size);
-
-RecurrentGradient *RecurrentGradientCreate(
-    RecurrentWeightsSize sizes,
-    RecurrentTrainingConfig training_config,
-    int input_size
-);
-
-void RecurrentGradientDestroy(RecurrentGradient *gradient);
+inline static RecurrentTrainingConfig RecurrentTrainingConfigCreate(int mini_batch_size){
+    RecurrentTrainingConfig config;
+    config.mini_batch_size = mini_batch_size;
+    return config;
+}
 
 #endif //recurrent

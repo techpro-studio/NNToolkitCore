@@ -6,7 +6,7 @@
 #define rnn_h
 
 #include "activation.h"
-#include "recurrent_base.h"
+#include "recurrent.h"
 
 typedef RecurrentWeights RNNWeights;
 typedef RecurrentGradient RNNGradient;

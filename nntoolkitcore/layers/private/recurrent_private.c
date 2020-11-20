@@ -2,16 +2,11 @@
 // Created by Alex on 20.11.2020.
 //
 
-#include <nntoolkitcore/core/memory.h>
-#include "recurrent_base.h"
+#include "nntoolkitcore/core/memory.h"
+#include "recurrent_private.h"
+#include "stdlib.h"
 
-RecurrentTrainingConfig RecurrentTrainingConfigCreate(int mini_batch_size) {
-    RecurrentTrainingConfig result;
-    result.mini_batch_size = mini_batch_size;
-    return result;
-}
-
-RecurrentGradient *RecurrentGradientCreate(
+RecurrentGradient *recurrent_gradient_create(
         RecurrentWeightsSize sizes,
         RecurrentTrainingConfig training_config,
         int input_size
@@ -27,7 +22,16 @@ RecurrentGradient *RecurrentGradientCreate(
     return gradient;
 }
 
-void RecurrentGradientDestroy(RecurrentGradient *gradient) {
+void recurrent_gradient_destroy(RecurrentGradient *gradient) {
     free(gradient->d_W);
     free(gradient);
+}
+
+RecurrentWeights *recurrent_weights_create(RecurrentWeightsSize sizes) {
+    float *buffer = malloc_zeros(sizes.buffer);
+    return NULL;
+}
+
+void recurrent_weights_destroy(RecurrentWeights *weights) {
+
 }

@@ -2,7 +2,8 @@
 // Created by Alex on 19.11.2020.
 //
 
-#include <nntoolkitcore/core/memory.h>
+#include "nntoolkitcore/core/memory.h"
+#include "nntoolkitcore/layers/private/recurrent_private.h"
 #include "rnn.h"
 #include "stdlib.h"
 #include "nntoolkitcore/core/ops.h"
@@ -89,18 +90,9 @@ RecurrentWeights *RNNGetWeights(RNN filter) {
 RNN rnn_create(RNNConfig config){
     RNN filter = malloc(sizeof(struct RNNStruct));
     filter->config = config;
-    filter->weights = malloc(sizeof(RecurrentWeights));
-
+    filter->weights = recurrent_weights_create(rnn_weights_size_from_config(config));
     filter->training_data = NULL;
     filter->inference_data = NULL;
-
-    RecurrentWeightsSize w_sizes = rnn_weights_size_from_config(config);
-
-    filter->weights->W = malloc_zeros(w_sizes.buffer);
-    filter->weights->U = filter->weights->W + w_sizes.w;
-    filter->weights->b_i = filter->weights->U + w_sizes.u;
-    filter->weights->b_h = filter->weights->b_i + w_sizes.b_i;
-
     return filter;
 }
 
@@ -118,7 +110,7 @@ RNN RNNCreateForTraining(RNNConfig config, RecurrentTrainingConfig training_conf
 }
 
 RNNGradient *RNNGradientCreate(RNNConfig config, RNNTrainingConfig training_config) {
-    return RecurrentGradientCreate(
+    return recurrent_gradient_create(
             rnn_weights_size_from_config(config),
             training_config,
             config.timesteps * config.input_feature_channels
@@ -138,16 +130,16 @@ void RNNDestroy(RNN filter) {
 }
 
 void RNNCellForward(
-        RecurrentWeights *weights,
-        ActivationFunction activation,
-        bool v2,
-        int in,
-        int out,
-        const float *input,
-        float *h_prev,
-        float *h,
-        float *buffer,
-        float *gate
+    RecurrentWeights *weights,
+    ActivationFunction activation,
+    bool v2,
+    int in,
+    int out,
+    const float *input,
+    float *h_prev,
+    float *h,
+    float *buffer,
+    float *gate
 ){
     float *x_W = buffer;
     op_mat_mul(input, weights->W, x_W, 1, out, in);

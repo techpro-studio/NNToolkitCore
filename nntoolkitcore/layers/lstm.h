@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include "stdbool.h"
 #include "activation.h"
-#include "recurrent_base.h"
+#include "recurrent.h"
 
 #if defined __cplusplus
 extern "C" {
