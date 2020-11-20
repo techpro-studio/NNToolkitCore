@@ -7,10 +7,10 @@
 #include "string.h"
 #include "stdlib.h"
 
-inline void* malloc_zeros(size_t __size) {
-    void * buffer = malloc(__size);
-    memset(buffer, 0, __size);
-    return buffer;
+inline static void* malloc_zeros(size_t __size) {
+    void *ptr = malloc(__size);
+    memset(ptr, 0, __size);
+    return ptr;
 }
 
 #endif //memory_h

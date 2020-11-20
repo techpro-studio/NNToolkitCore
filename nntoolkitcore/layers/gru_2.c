@@ -59,7 +59,7 @@ void GRU2Destroy(GRU2 filter) {
 }
 
 
-static void GRUCellCompute(
+static void GRUCellForward(
         GRU2Weights *weights,
         GRUActivations activations,
         int in,
@@ -120,7 +120,7 @@ int GRU2ApplyInference(GRU2 filter, const float *input, float *output) {
     int in = filter->config.input_feature_channels;
     for (int i = 0; i < filter->config.timesteps; ++i) {
         int output_offset = filter->config.return_sequences ? i * out : 0;
-        GRUCellCompute(filter->weights, filter->config.activations, in, out, input + i * in, filter->state,
+        GRUCellForward(filter->weights, filter->config.activations, in, out, input + i * in, filter->state,
                        output + output_offset, filter->buffer);
         memcpy(filter->state, output + output_offset, out * sizeof(float));
     }

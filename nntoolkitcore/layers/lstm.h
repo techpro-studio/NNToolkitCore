@@ -10,11 +10,16 @@
 
 #include <stdio.h>
 #include "stdbool.h"
-#import "activation.h"
+#include "activation.h"
+#include "recurrent_base.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
+
+typedef RecurrentWeights LSTMWeights;
+typedef RecurrentGradient LSTMGradient;
+typedef RecurrentTrainingConfig LSTMTrainingConfig;
 
 typedef struct {
     ActivationFunction candidate_gate_activation;
@@ -52,29 +57,6 @@ LSTMConfig LSTMConfigCreate(
     int timesteps,
     LSTMActivations activations
 );
-
-typedef struct {
-    float *W;
-    float *U;
-    float *b_i;
-    float *b_h;
-} LSTMWeights;
-
-typedef struct {
-    int mini_batch_size;
-} LSTMTrainingConfig;
-
-LSTMTrainingConfig LSTMTrainingConfigCreate(int mini_batch_size);
-
-typedef struct {
-    float * d_W;
-    float * d_U;
-    float * d_b_i;
-    float * d_b_h;
-    float * d_X;
-} LSTMGradient;
-
-void LSTMGradientDestroy(LSTMGradient *gradients);
 
 typedef struct LSTMStruct* LSTM;
 

@@ -58,7 +58,7 @@ set(SOURCES
     nntoolkitcore/layers/time_distributed_dense.c
     nntoolkitcore/train/optimizers.c
     nntoolkitcore/layers/gru_2.c
-    )
+        nntoolkitcore/layers/recurrent_base.c nntoolkitcore/layers/recurrent_base.h)
 
 if(APPLE)
     list(APPEND SOURCES nntoolkitcore/core/apple_ops.c)

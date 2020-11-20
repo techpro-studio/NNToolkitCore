@@ -6,13 +6,11 @@
 #define rnn_h
 
 #include "activation.h"
+#include "recurrent_base.h"
 
-typedef struct {
-    float *W;
-    float *U;
-    float *b_i;
-    float *b_h;
-} RNNWeights;
+typedef RecurrentWeights RNNWeights;
+typedef RecurrentGradient RNNGradient;
+typedef RecurrentTrainingConfig RNNTrainingConfig;
 
 typedef struct {
     int input_feature_channels;
@@ -22,18 +20,6 @@ typedef struct {
     int timesteps;
     ActivationFunction activation;
 } RNNConfig;
-
-typedef struct {
-    int mini_batch_size;
-} RNNTrainingConfig;
-
-typedef struct {
-    float * d_W;
-    float * d_U;
-    float * d_b_i;
-    float * d_b_h;
-    float * d_X;
-} RNNGradient;
 
 typedef struct RNNStruct* RNN;
 
@@ -47,11 +33,9 @@ RNNConfig RNNConfigCreate(
     ActivationFunction activation
 );
 
-RNNTrainingConfig RecurrentTrainingConfigCreate(int mini_batch_size);
+RNNWeights* RNNGetWeights(RNN filter);
 
 RNNGradient * RNNGradientCreate(RNNConfig config, RNNTrainingConfig training_config);
-
-RNNWeights* RNNGetWeights(RNN filter);
 
 RNN RNNCreateForInference(RNNConfig config);
 

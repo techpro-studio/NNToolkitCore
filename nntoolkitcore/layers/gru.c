@@ -88,7 +88,7 @@ void ComputeGate(int in, int out, ActivationFunction activation, const float *x,
     }
 }
 
-static void GRUCellCompute(GRU filter, const float *x, const float *h_pr, float* ht, float *buffer) {
+static void GRUCellForward(GRU filter, const float *x, const float *h_pr, float* ht, float *buffer) {
     int out = filter->config.output_feature_channels;
     int in = filter->config.input_feature_channels;
     // z = sigmoid(x * W_z + h_pr * U_z + bz)
@@ -164,7 +164,7 @@ int GRUApplyInference(GRU filter, const float *input, float* output){
     int in = filter->config.input_feature_channels;
     for (int i = 0; i < filter->config.timesteps; ++i){
         int output_offset = filter->config.return_sequences ? i * out : 0;
-        GRUCellCompute(filter, input + i * in, filter->state, output + output_offset, filter->buffer);
+        GRUCellForward(filter, input + i * in, filter->state, output + output_offset, filter->buffer);
         memcpy(filter->state, output + output_offset, out * sizeof(float));
     }
     return 0;
