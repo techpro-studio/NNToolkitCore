@@ -14,6 +14,7 @@ typedef struct {
     float *computation_buffer;
     float *gate;
     float *input;
+    float *dH;
     float *output;
 } RNNTrainingData;
 
@@ -86,10 +87,11 @@ RNNTrainingData *rnn_training_data_create(RNNConfig config, RecurrentTrainingCon
     int output_size = batch * out * config.timesteps;
     int gate_size = batch * out * config.timesteps;
 
-    data->input = f_malloc(input_size + output_size + gate_size + 2 * out);
+    data->input = f_malloc(input_size + 2 * output_size + gate_size + 2 * out);
     data->output = data->input + input_size;
     data->gate = data->output + output_size;
-    data->computation_buffer = data->gate + gate_size;
+    data->dH = data->gate + gate_size;
+    data->computation_buffer = data->dH + output_size;
     return data;
 }
 
@@ -287,8 +289,79 @@ int RNNApplyTrainingBatch(RNN filter, const float *input, float *output) {
     return 0;
 }
 
-void RNNCalculateGradient(RNN filter, RecurrentGradient *gradients, float *d_out) {
+void RNNCalculateGradient(RNN filter, RNNGradient *gradient, float *d_out) {
+    if (filter->training_data == NULL){
+        return;
+    }
 
+    int batch = filter->training_data->config.mini_batch_size;
+    int ts = filter->config.timesteps;
+    int in = filter->config.input_feature_channels;
+    int out = filter->config.output_feature_channels;
+
+    float *h = filter->training_data->output;
+    float *x = filter->training_data->input;
+    float *gate = filter->training_data->gate;
+
+    RNNWeightsSize sizes = rnn_weights_size_from_config(filter->config);
+    RNNGradient *current_gradient = recurrent_gradient_create(sizes, batch, in * ts);
+
+    float *dh = filter->training_data->dH;
+
+    int computation_buffer_size = 2 * out;
+    float *computation_buffer = f_malloc(computation_buffer_size);
+
+    for (int b = 0; b < batch; ++b) {
+        for (int t = ts - 1; t >= 0; --t) {
+            size_t t_out_offset = t * out + b * ts * out;
+
+            CellBackwardCache cache;
+
+            cache.h_t_prev = t == 0 ? NULL : h + (t_out_offset - out);
+            cache.x_t = x + t * in + b * ts * in;
+            cache.gate = gate + t_out_offset;
+
+            CellBackwardGradients current_gradients;
+
+            current_gradients.d_W_t = current_gradient->d_W + b * sizes.w;
+            current_gradients.d_U_t = current_gradient->d_U + b * sizes.u;
+            current_gradients.d_bi_t = current_gradient->d_b_i + b * sizes.b_i;
+            current_gradients.d_bh_t = current_gradient->d_b_h + b * sizes.b_h;
+
+            current_gradients.d_h_t_prev = dh + (b * out);
+            current_gradients.d_x_t = current_gradient->d_X + (t * in + b * ts * in);
+
+            float *d_h_t_init = t == ts - 1 ? NULL : dh + (b * out);
+
+            bool seq = filter->config.return_sequences;
+
+            float d_out_t[out];
+            f_zero(d_out_t, out);
+            if (seq) {
+                f_copy(d_out_t, d_out + b * ts * out + t * out, out);
+            } else if (t == ts - 1) {
+                f_copy(d_out_t, d_out + b * out, out);
+            }
+
+            float d_h_t[out];
+            f_zero(d_h_t, out);
+
+            op_vec_add(d_h_t_init == NULL ? d_h_t : d_h_t_init, d_out_t, d_h_t, out);
+
+            RNNCellBackward(filter->weights, filter->config.activation, in, out, d_h_t, cache,
+                             current_gradients, computation_buffer);
+            f_zero(computation_buffer, computation_buffer_size);
+
+            op_vec_add(gradient->d_W + b * sizes.w, current_gradients.d_W_t, gradient->d_W + b * sizes.w, sizes.w);
+            op_vec_add(gradient->d_U + b * sizes.u, current_gradients.d_U_t, gradient->d_U + b * sizes.u, sizes.u);
+            op_vec_add(gradient->d_b_i + b * sizes.b_i, current_gradients.d_bi_t, gradient->d_b_i + b * sizes.b_i,
+                       sizes.b_i);
+            op_vec_add(gradient->d_b_h + b * sizes.b_h, current_gradients.d_bh_t, gradient->d_b_h + b * sizes.b_h,
+                       sizes.b_h);
+        }
+    }
+    f_copy(gradient->d_X, current_gradient->d_X, in * ts * batch);
+    recurrent_gradient_destroy(current_gradient);
 }
 
 
