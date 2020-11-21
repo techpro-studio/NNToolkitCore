@@ -85,12 +85,12 @@ RNNTrainingData *rnn_training_data_create(RNNConfig config, RecurrentTrainingCon
     int batch = training_config.mini_batch_size;
     int input_size = batch * config.input_feature_channels * config.timesteps;
     int output_size = batch * out * config.timesteps;
-    int gate_size = batch * out * config.timesteps;
+    data->config = training_config;
 
-    data->input = f_malloc(input_size + 2 * output_size + gate_size + 2 * out);
+    data->input = f_malloc(input_size + 2 * out + 3 * output_size);
     data->output = data->input + input_size;
     data->gate = data->output + output_size;
-    data->dH = data->gate + gate_size;
+    data->dH = data->gate + output_size;
     data->computation_buffer = data->dH + output_size;
     return data;
 }
@@ -103,6 +103,7 @@ RNN rnn_create(RNNConfig config){
     RNN filter = malloc(sizeof(struct RNNStruct));
     filter->config = config;
     filter->weights = recurrent_weights_create(rnn_weights_size_from_config(config));
+    filter->h = f_malloc(config.output_feature_channels);
     filter->training_data = NULL;
     filter->inference_data = NULL;
     return filter;
@@ -186,10 +187,9 @@ void RNNCellBackward(
     int out,
     float *d_H,
     CellBackwardCache cache,
-    CellBackwardGradients gradients,
-    float *computation_buffer
+    CellBackwardGradients gradients
 ){
-    float *d_gate = computation_buffer;
+    float d_gate[out];
     /*
      * d_gate = d_activation_fn * d_h
      * */
@@ -308,9 +308,6 @@ void RNNCalculateGradient(RNN filter, RNNGradient *gradient, float *d_out) {
 
     float *dh = filter->training_data->dH;
 
-    int computation_buffer_size = 2 * out;
-    float *computation_buffer = f_malloc(computation_buffer_size);
-
     for (int b = 0; b < batch; ++b) {
         for (int t = ts - 1; t >= 0; --t) {
             size_t t_out_offset = t * out + b * ts * out;
@@ -319,6 +316,7 @@ void RNNCalculateGradient(RNN filter, RNNGradient *gradient, float *d_out) {
 
             cache.h_t_prev = t == 0 ? NULL : h + (t_out_offset - out);
             cache.x_t = x + t * in + b * ts * in;
+            cache.h_t = h + t_out_offset;
             cache.gate = gate + t_out_offset;
 
             CellBackwardGradients current_gradients;
@@ -331,7 +329,7 @@ void RNNCalculateGradient(RNN filter, RNNGradient *gradient, float *d_out) {
             current_gradients.d_h_t_prev = dh + (b * out);
             current_gradients.d_x_t = current_gradient->d_X + (t * in + b * ts * in);
 
-            
+
             float *d_h_t_init = t == ts - 1 ? NULL : dh + (b * out);
             bool seq = filter->config.return_sequences;
             float d_out_t[out];
@@ -347,8 +345,7 @@ void RNNCalculateGradient(RNN filter, RNNGradient *gradient, float *d_out) {
 
 
             RNNCellBackward(filter->weights, filter->config.activation, in, out, d_h_t, cache,
-                             current_gradients, computation_buffer);
-            f_zero(computation_buffer, computation_buffer_size);
+                             current_gradients);
 
             recurrent_gradient_sum(current_gradient, gradient, sizes, b);
         }
