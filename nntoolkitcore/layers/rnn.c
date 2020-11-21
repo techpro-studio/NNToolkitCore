@@ -161,6 +161,62 @@ void RNNCellForward(
     ActivationFunctionApply(activation, gate, h);
 }
 
+typedef struct {
+    float *gate;
+    float *h_t;
+    float *x_t;
+    float *h_t_prev;
+} CellBackwardCache;
+
+typedef struct {
+    float *d_h_t_prev;
+    float *d_x_t;
+    float *d_W_t;
+    float *d_U_t;
+    float *d_bi_t;
+    float *d_bh_t;
+} CellBackwardGradients;
+
+void RNNCellBackward(
+    RecurrentWeights *weights,
+    ActivationFunction activation,
+    int in,
+    int out,
+    float *d_H,
+    CellBackwardCache cache,
+    CellBackwardGradients gradients,
+    float *computation_buffer
+){
+    float *d_gate = computation_buffer;
+    /*
+     * d_gate = d_activation_fn * d_h
+     * */
+    ActivationFunctionCalculateGradient(activation, cache.gate, cache.h_t, d_H, d_gate);
+    /*
+     * db = d_gate
+     * */
+    f_copy(gradients.d_bi_t, d_gate, out);
+    f_copy(gradients.d_bh_t, d_gate, out);
+    /*
+     * d_x = W * d_gate
+     * d_h_t_prev = U * d_gate
+     * */
+    op_mat_mul(weights->W, d_gate, gradients.d_x_t, in, 1, out);
+    op_mat_mul(weights->U, d_gate, gradients.d_h_t_prev, out, 1, out);
+    /*
+     Final backward step:
+        d_w_t = d_gate * x_t
+        d_u_t = d_gate * h_t-1
+        d_b = d_gates
+    */
+    op_mat_mul(cache.x_t, d_gate, gradients.d_W_t, in, out, 1);
+    if (cache.h_t_prev){
+        op_mat_mul(cache.h_t_prev, d_gate, gradients.d_U_t, out, out, 1);
+    } else {
+        f_zero(gradients.d_U_t,out * out);
+    }
+}
+
 int RNNApplyInference(RNN filter, const float *input, float *output) {
     if(filter->training_data != NULL){
         return -1;

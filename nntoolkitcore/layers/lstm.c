@@ -290,7 +290,7 @@ typedef struct {
 } CellBackwardGradients;
 
 void LSTMCellBackward(
-      LSTMWeights *weigths,
+      LSTMWeights *weights,
       LSTMActivations activations,
       int in,
       int out,
@@ -403,8 +403,8 @@ void LSTMCellBackward(
         d_x_t = dgates * WT;
         d_h_t-1 = dgates * UT;
      */
-    op_mat_mul(weigths->W, dgates, gradients.d_x_t, in, 1, 4 * out);
-    op_mat_mul(weigths->U, dgates,  gradients.d_h_t_prev, out, 1, 4 * out);
+    op_mat_mul(weights->W, dgates, gradients.d_x_t, in, 1, 4 * out);
+    op_mat_mul(weights->U, dgates, gradients.d_h_t_prev, out, 1, 4 * out);
     /*
      Final backward step:
         d_w_t = d_gates * x_t
@@ -506,15 +506,15 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out) {
 
     for (int b = 0; b < batch; ++b) {
         for (int t = ts - 1; t >= 0; --t) {
-            size_t tOutOffset = t * out + b * ts * out;
+            size_t t_out_offset = t * out + b * ts * out;
 
             CellBackwardCache cache;
 
-            cache.c_t = c + tOutOffset;
-            cache.c_t_prev = t == 0 ? NULL : c + (tOutOffset - out);
-            cache.h_t_prev = t == 0 ? NULL : h + (tOutOffset - out);
+            cache.c_t = c + t_out_offset;
+            cache.c_t_prev = t == 0 ? NULL : c + (t_out_offset - out);
+            cache.h_t_prev = t == 0 ? NULL : h + (t_out_offset - out);
             cache.x_t = x + t * in + b * ts * in;
-            cache.zifgo = zifgo + (8 * tOutOffset);
+            cache.zifgo = zifgo + (8 * t_out_offset);
 
             CellBackwardGradients current_gradients;
 
