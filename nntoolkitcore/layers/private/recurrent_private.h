@@ -19,4 +19,6 @@ RecurrentGradient *recurrent_gradient_create(
 
 void recurrent_gradient_destroy(RecurrentGradient *gradient);
 
+void recurrent_gradient_sum(RecurrentGradient *current, RecurrentGradient *root, RecurrentWeightsSize sizes, int batch);
+
 #endif //recurrent_private_h

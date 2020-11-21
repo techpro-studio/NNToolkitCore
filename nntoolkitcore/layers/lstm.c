@@ -531,30 +531,23 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out) {
 
             bool seq = filter->config.return_sequences;
 
+            //d_H_t
+
             float d_out_t[out];
             f_zero(d_out_t, out);
             if (seq) {
-                f_copy(d_out_t, d_out + b * ts * out + t * out, out);
+                f_copy(d_out_t, d_out + t_out_offset, out);
             } else if (t == ts - 1) {
                 f_copy(d_out_t, d_out + b * out, out);
             }
-
             float d_h_t[out];
             f_zero(d_h_t, out);
-
             op_vec_add(d_h_t_init == NULL ? d_h_t : d_h_t_init, d_out_t, d_h_t, out);
 
             LSTMCellBackward(filter->weights, filter->config.activations, in, out, d_h_t, d_c_t_init, cache,
                              current_gradients, computation_buffer);
             f_zero(computation_buffer, computation_buffer_size);
-
-            op_vec_add(gradient->d_W + b * sizes.w, current_gradients.d_W_t, gradient->d_W + b * sizes.w, sizes.w);
-            op_vec_add(gradient->d_U + b * sizes.u, current_gradients.d_U_t, gradient->d_U + b * sizes.u, sizes.u);
-            op_vec_add(gradient->d_b_i + b * sizes.b_i, current_gradients.d_bi_t, gradient->d_b_i + b * sizes.b_i,
-                       sizes.b_i);
-            op_vec_add(gradient->d_b_h + b * sizes.b_h, current_gradients.d_bh_t, gradient->d_b_h + b * sizes.b_h,
-                       sizes.b_h);
-
+            recurrent_gradient_sum(current_gradient, gradient, sizes, b);
         }
     }
     f_copy(gradient->d_X, current_gradient->d_X, in * ts * batch);

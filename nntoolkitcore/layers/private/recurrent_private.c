@@ -5,6 +5,7 @@
 #include "nntoolkitcore/core/memory.h"
 #include "recurrent_private.h"
 #include "stdlib.h"
+#include "nntoolkitcore/core/ops.h"
 
 RecurrentGradient *recurrent_gradient_create(
         RecurrentWeightsSize sizes,
@@ -38,4 +39,14 @@ RecurrentWeights *recurrent_weights_create(RecurrentWeightsSize sizes) {
 void recurrent_weights_destroy(RecurrentWeights *weights) {
     free(weights->W);
     free(weights);
+}
+
+void
+recurrent_gradient_sum(RecurrentGradient *current, RecurrentGradient *root, RecurrentWeightsSize sizes, int batch) {
+    op_vec_add(root->d_W + batch * sizes.w, current->d_W + batch * sizes.w, root->d_W + batch * sizes.w, sizes.w);
+    op_vec_add(root->d_U + batch * sizes.u, current->d_U + batch * sizes.u, root->d_U + batch * sizes.u, sizes.u);
+    op_vec_add(root->d_b_i + batch * sizes.b_i, current->d_b_i + batch * sizes.b_i, root->d_b_i + batch * sizes.b_i,
+               sizes.b_i);
+    op_vec_add(root->d_b_h + batch * sizes.b_h, current->d_b_h + batch * sizes.b_h, root->d_b_h + batch * sizes.b_h,
+               sizes.b_h);
 }
