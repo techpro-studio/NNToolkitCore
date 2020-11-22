@@ -472,11 +472,12 @@ int LSTMApplyTrainingBatch(LSTM filter, const float *input, float* output){
     return 0;
 }
 
-
 LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig training_config) {
     return recurrent_gradient_create(
-            lstm_weights_size_from_config(config), training_config.mini_batch_size,
-            config.input_feature_channels * config.timesteps);
+        lstm_weights_size_from_config(config),
+        training_config.mini_batch_size,
+        config.input_feature_channels * config.timesteps
+    );
 }
 
 void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out) {

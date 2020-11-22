@@ -23,7 +23,6 @@ typedef struct {
 
 typedef struct RNNStruct* RNN;
 
-
 RNNConfig RNNConfigCreate(
     int input_feature_channels,
     int output_feature_channels,
@@ -35,13 +34,13 @@ RNNConfig RNNConfigCreate(
 
 RNNWeights* RNNGetWeights(RNN filter);
 
-RNNGradient * RNNGradientCreate(RNNConfig config, RNNTrainingConfig training_config);
-
 RNN RNNCreateForInference(RNNConfig config);
+
+int RNNApplyInference(RNN filter, const float *input, float* output);
 
 RNN RNNCreateForTraining(RNNConfig config, RNNTrainingConfig training_config);
 
-int RNNApplyInference(RNN filter, const float *input, float* output);
+RNNGradient * RNNGradientCreate(RNNConfig config, RNNTrainingConfig training_config);
 
 int RNNApplyTrainingBatch(RNN filter, const float *input, float* output);
 

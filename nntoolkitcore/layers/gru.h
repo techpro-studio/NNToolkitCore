@@ -6,67 +6,54 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#ifndef gru_h
-#define gru_h
+#ifndef gru2_h
+#define gru2_h
 
 #include <stdio.h>
 #include "stdbool.h"
-#import "activation.h"
+#include "activation.h"
+#include "recurrent.h"
 
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
+typedef RecurrentWeights GRUWeights;
+typedef RecurrentGradient GRUGradient;
+typedef RecurrentTrainingConfig GRUTrainingConfig;
+
+typedef struct {
+    ActivationFunction input_gate_activation;
+    ActivationFunction update_gate_activation;
+    ActivationFunction reset_gate_activation;
+} GRUActivations;
+
 typedef struct {
     int input_feature_channels;
     int output_feature_channels;
-    /*
-     if true:
-     h_t = (1 - z) * h_t_previous + z * h_tilda.
-     else:
-     h_t = (1 - z) * h_tilda + z * h_t_previous
-     */
-    bool flip_output_gates;
-    bool v2;
     bool return_sequences;
     int timesteps;
-    ActivationFunction recurrent_activation;
-    ActivationFunction activation;
+    GRUActivations activations;
 } GRUConfig;
+
+GRUActivations GRUActivationsCreate(
+    ActivationFunction input_gate_activation,
+    ActivationFunction update_gate_activation,
+    ActivationFunction reset_gate_activation
+);
+
+GRUActivations GRUActivationsCreateDefault(int size);
+
+void GRUActivationsDestroy(GRUActivations activations);
 
 GRUConfig GRUConfigCreate(
     int input_feature_channels,
     int output_feature_channels,
-    bool flip_output_gates,
-    bool v2,
     bool return_sequences,
-    int batchSize,
-    ActivationFunction recurrent_activation,
-    ActivationFunction activation
+    int timesteps,
+    GRUActivations activations
 );
-
-typedef struct {
-    float *W_z;
-    float *U_z;
-
-    float *b_iz;
-    float *b_hz;
-
-    float *W_r;
-    float *U_r;
-
-    float *b_ir;
-    float *b_hr;
-
-    float *W_h;
-    float *U_h;
-    
-    float *b_ih;
-    float *b_hh;
-
-} GRUWeights;
-
 
 typedef struct GRUStruct * GRU;
 
@@ -76,6 +63,14 @@ GRU GRUCreateForInference(GRUConfig config);
 
 int GRUApplyInference(GRU filter, const float *input, float* output);
 
+GRU GRUCreateForTraining(GRUConfig config, GRUTrainingConfig training_config);
+
+GRUGradient * GRUGradientCreate(GRUConfig config, GRUTrainingConfig training_config);
+
+int GRUApplyTrainingBatch(GRU filter, const float *input, float* output);
+
+void GRUCalculateGradient(GRU filter, GRUGradient *gradients, float *d_out);
+
 void GRUDestroy(GRU filter);
 
 
@@ -83,4 +78,4 @@ void GRUDestroy(GRU filter);
 }
 #endif
 
-#endif /* gru_h */
+#endif /* gru2_h */

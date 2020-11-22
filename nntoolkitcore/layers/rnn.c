@@ -123,9 +123,9 @@ RNN RNNCreateForTraining(RNNConfig config, RecurrentTrainingConfig training_conf
 
 RNNGradient *RNNGradientCreate(RNNConfig config, RNNTrainingConfig training_config) {
     return recurrent_gradient_create(
-            rnn_weights_size_from_config(config),
-            training_config.mini_batch_size,
-            config.timesteps * config.input_feature_channels
+        rnn_weights_size_from_config(config),
+        training_config.mini_batch_size,
+        config.timesteps * config.input_feature_channels
     );
 }
 

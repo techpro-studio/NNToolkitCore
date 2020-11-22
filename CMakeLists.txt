@@ -24,10 +24,10 @@ include_directories(
 
 set (PUBLIC_HEADERS
     nntoolkitcore/layers/time_distributed_dense.h
-    nntoolkitcore/layers/gru_2.h
+        nntoolkitcore/layers/gru.h
     nntoolkitcore/train/optimizers.h
     nntoolkitcore/layers/dense.h
-    nntoolkitcore/layers/gru.h
+        nntoolkitcore/layers/gru1.h
     nntoolkitcore/layers/rnn.h
     nntoolkitcore/train/loss.h
     nntoolkitcore/layers/lstm.h
@@ -52,13 +52,13 @@ set(SOURCES
     nntoolkitcore/layers/conv_1d.c
     nntoolkitcore/core/debug.c
     nntoolkitcore/layers/dense.c
-    nntoolkitcore/layers/gru.c
+        nntoolkitcore/layers/gru1.c
     nntoolkitcore/train/loss.c
     nntoolkitcore/layers/lstm.c
     nntoolkitcore/layers/rnn.c
     nntoolkitcore/layers/time_distributed_dense.c
     nntoolkitcore/train/optimizers.c
-    nntoolkitcore/layers/gru_2.c
+        nntoolkitcore/layers/gru.c
     nntoolkitcore/layers/recurrent.h
     nntoolkitcore/layers/private/recurrent_private.c
     nntoolkitcore/layers/private/recurrent_private.h

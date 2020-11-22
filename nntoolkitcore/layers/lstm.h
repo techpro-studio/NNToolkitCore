@@ -60,15 +60,15 @@ LSTMConfig LSTMConfigCreate(
 
 typedef struct LSTMStruct* LSTM;
 
-LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig training_config);
-
 LSTMWeights* LSTMGetWeights(LSTM filter);
 
 LSTM LSTMCreateForInference(LSTMConfig config);
 
+int LSTMApplyInference(LSTM filter, const float *input, float* output);
+
 LSTM LSTMCreateForTraining(LSTMConfig config, LSTMTrainingConfig training_config);
 
-int LSTMApplyInference(LSTM filter, const float *input, float* output);
+LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig training_config);
 
 int LSTMApplyTrainingBatch(LSTM filter, const float *input, float* output);
 

@@ -11,7 +11,7 @@ Window functions
 Implemented filters:
 
 Conv1d
-GRU
+GRU1
 LSTM
 BatchNorm
 Dense
