@@ -28,6 +28,7 @@ typedef struct {
     float *input;
     float *output;
     float *d_H;
+    float *h_pr_Uh;
     float* Z_gates;
     float *computation_buffer;
 } GRUTrainingData;
@@ -94,12 +95,13 @@ GRUTrainingData *gru_training_data_create(GRUConfig config, RecurrentTrainingCon
     int input_size = batch * config.input_feature_channels * config.timesteps;
     int output_size = batch * out * config.timesteps;
     // input + output+ Z_gates + d_h + buffer
-    int training_buffer = input_size + 7 * output_size + batch * out + 8 * out;
+    int training_buffer = input_size + 8 * output_size + batch * out + 8 * out;
     data->config = training_config;
     data->input = f_malloc(training_buffer);
     data->output = data->input + input_size;
     data->Z_gates = data->output + output_size;
-    data->d_H = data->Z_gates + 6 * output_size;
+    data->h_pr_Uh = data->Z_gates + 6 * output_size;
+    data->d_H = data->h_pr_Uh + output_size;
     data->computation_buffer = data->d_H + batch * out;
     return data;
 }
@@ -122,6 +124,10 @@ void GRUDestroy(GRU filter) {
     free(filter);
 }
 
+
+#if DEBUG
+#include "nntoolkitcore/core/debug.h"
+#endif
 
 static void GRUCellForward(
     GRUWeights *weights,
@@ -146,7 +152,6 @@ static void GRUCellForward(
     float *h_pr_U = x_W + 3 * out;
     op_mat_mul(h_pr, weights->U, h_pr_U, 1, 3 * out, out);
     op_vec_add(h_pr_U, weights->b_h, h_pr_U, 3 * out);
-
     // Z_zr = x_W[0: 2 * out] + h_pr_U[0: 2 * out]
 
     // 6 * out; (Z_z, Z_r, Z_h_tilda, z, r, h_tilda)
@@ -262,6 +267,7 @@ int GRUApplyTrainingBatch(GRU filter, const float *input, float *output) {
             float *h_t = filter->training_data->output + t_out_offset;
             float *Z_gates = filter->training_data->Z_gates + 6 * t_out_offset;
             float *h_t_prev = filter->h;
+            float *h_pr_Uh = filter->training_data->h_pr_Uh + t_out_offset;
 
             GRUCellForward(
                 filter->weights,
@@ -273,8 +279,9 @@ int GRUApplyTrainingBatch(GRU filter, const float *input, float *output) {
                 Z_gates,
                 filter->training_data->computation_buffer
             );
-
+            f_copy(h_pr_Uh, filter->training_data->computation_buffer + 5 * out, out);
             f_copy(filter->h, h_t, out);
+            f_zero(filter->training_data->computation_buffer, 8 * out);
         }
     }
     if (filter->config.return_sequences){
@@ -291,6 +298,7 @@ int GRUApplyTrainingBatch(GRU filter, const float *input, float *output) {
 typedef struct {
     float *h_t;
     float *x_t;
+    float *h_pr_Uh;
     float *h_t_prev;
     float *Z_gates;
 } CellBackwardCache;
@@ -304,39 +312,43 @@ typedef struct {
     float *d_bh_t;
 } CellBackwardGradients;
 
+#if DEBUG
+    #include "nntoolkitcore/core/debug.h"
+#endif
 
 void
 GRUCellBackward(GRUWeights *weights, GRUActivations activations, int in, int out, float *d_h_t, CellBackwardCache cache,
                 CellBackwardGradients gradients, float *buffer) {
+
+    // Convenient preparation;
+    float* Z_z_gate = cache.Z_gates;
+    float* Z_r_gate = cache.Z_gates + out;
+    float* Z_h_tilda_gate = cache.Z_gates + 2 * out;
+    float* z_gate = cache.Z_gates + 3 * out;
+    float* r_gate = cache.Z_gates + 4 * out;
+    float* h_tilda_gate = cache.Z_gates + 5 * out;
+
+    float* d_x_W = buffer; // 3 out;
+    float* d_h_pr_U = d_x_W + 3 * out;
+    float* d_b_i = d_h_pr_U + 3 * out;
+    float* d_b_h = d_b_i + 3 * out;
+
     /*
      * 1. Forward step
      *    h_t = (1 - z_t) * h_tilda + z_t * h_prev;
      *    Backward <- d_h_t;
      *    d_h_prev_1 = z_t * d_h_t;
      *    d_h_tilda = (1 - z_t) * d_h_t;
-     *    d_z_t = (h_prev - h_tilda) * d_ht_t
+     *    d_z_t = (h_prev - h_tilda) * d_h_t
      * */
-    float* z_gate = cache.Z_gates + 3 * out;
-    float* r_gate = cache.Z_gates + 4 * out;
-    float* h_tilda_gate = cache.Z_gates + 5 * out;
-    float* Z_z_gate = cache.Z_gates;
-    float* Z_r_gate = cache.Z_gates + out;
-    float* Z_h_tilda_gate = cache.Z_gates + 2 * out;
 
-
-
-    float* d_x_W = buffer; // 3 out;
-    float* d_h_pr_U = d_x_W + 3 * out;
-    float* d_b_i = d_h_pr_U + 3 * out;
-    float* d_b_h = d_b_i + 3 * out;
     float* d_h_prev_1 = d_b_h + 3 * out;
-
     op_vec_mul(z_gate, d_h_t, d_h_prev_1, out);
 
     float* d_h_tilda = d_h_prev_1 + out;
     op_vec_neg(z_gate, d_h_tilda, out);
-    op_vec_add_sc(d_h_tilda, 1.0f, d_h_tilda, out);
     op_vec_mul(d_h_tilda, d_h_t, d_h_tilda, out);
+    op_vec_add(d_h_tilda, d_h_t, d_h_tilda, out);
 
     float* d_z_t = d_h_tilda + out;
     if (cache.h_t_prev){
@@ -365,12 +377,7 @@ GRUCellBackward(GRUWeights *weights, GRUActivations activations, int in, int out
     );
 
     float* d_r_t = d_z_h_tilda + out;
-    f_zero(d_r_t, out);
-    if (cache.h_t_prev){
-        op_vec_mul(cache.h_t_prev, weights->U, d_r_t, out);
-    }
-    op_vec_add(d_r_t, weights->b_h + 2 * out, d_r_t, out);
-    op_vec_mul(d_r_t, d_z_h_tilda, d_r_t, out);
+    op_vec_mul(cache.h_pr_Uh, d_z_h_tilda, d_r_t, out);
 
     //d(x * Wh)
     f_copy(d_x_W + 2 * out, d_z_h_tilda, out);
@@ -436,6 +443,8 @@ GRUCellBackward(GRUWeights *weights, GRUActivations activations, int in, int out
     op_mat_mul(weights->U, d_h_pr_U, d_h_prev_2, out, 1, 3 * out);
     op_vec_add(d_h_prev_1, d_h_prev_2, gradients.d_h_t_prev, out);
     op_mat_mul(cache.x_t, d_x_W, gradients.d_W_t, in, 3 * out, 1);
+    f_copy(gradients.d_bi_t, d_b_i, 3 * out);
+    f_copy(gradients.d_bh_t, d_b_h, 3 * out);
     if (cache.h_t_prev){
         op_mat_mul(cache.h_t_prev, d_h_pr_U, gradients.d_U_t, out, 3 * out, 1);
     } else {
@@ -456,6 +465,7 @@ void GRUCalculateGradient(GRU filter, GRUGradient *gradient, float *d_out) {
     float *h = filter->training_data->output;
     float *x = filter->training_data->input;
     float *Z_gates = filter->training_data->Z_gates;
+    float *h_pr_Uh = filter->training_data->h_pr_Uh;
 
     GRUWeightsSize sizes = gru_weights_size_from_config(filter->config);
     GRUGradient *current_gradient = recurrent_gradient_create(sizes, batch, in * ts);
@@ -471,6 +481,7 @@ void GRUCalculateGradient(GRU filter, GRUGradient *gradient, float *d_out) {
             cache.h_t_prev = t == 0 ? NULL : h + (t_out_offset - out);
             cache.x_t = x + t * in + b * ts * in;
             cache.h_t = h + t_out_offset;
+            cache.h_pr_Uh = h_pr_Uh + t_out_offset;
             cache.Z_gates = Z_gates + 6 * t_out_offset;
 
             CellBackwardGradients current_gradients;
