@@ -523,6 +523,7 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out) {
             current_gradients.d_U_t = current_gradient->d_U + b * sizes.u;
             current_gradients.d_bi_t = current_gradient->d_b_i + b * sizes.b_i;
             current_gradients.d_bh_t = current_gradient->d_b_h + b * sizes.b_h;
+
             current_gradients.d_c_t_prev = dc + (b * out);
             current_gradients.d_h_t_prev = dh + (b * out);
             current_gradients.d_x_t = current_gradient->d_X + (t * in + b * ts * in);

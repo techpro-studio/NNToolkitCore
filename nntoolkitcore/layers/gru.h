@@ -24,9 +24,9 @@ typedef RecurrentGradient GRUGradient;
 typedef RecurrentTrainingConfig GRUTrainingConfig;
 
 typedef struct {
-    ActivationFunction input_gate_activation;
-    ActivationFunction update_gate_activation;
-    ActivationFunction reset_gate_activation;
+    ActivationFunction z_gate_activation;
+    ActivationFunction h_gate_activation;
+    ActivationFunction r_gate_activation;
 } GRUActivations;
 
 typedef struct {
@@ -38,9 +38,9 @@ typedef struct {
 } GRUConfig;
 
 GRUActivations GRUActivationsCreate(
-    ActivationFunction input_gate_activation,
-    ActivationFunction update_gate_activation,
-    ActivationFunction reset_gate_activation
+    ActivationFunction z_gate_activation,
+    ActivationFunction h_gate_activation,
+    ActivationFunction r_gate_activation
 );
 
 GRUActivations GRUActivationsCreateDefault(int size);
