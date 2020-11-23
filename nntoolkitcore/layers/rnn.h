@@ -13,11 +13,8 @@ typedef RecurrentGradient RNNGradient;
 typedef RecurrentTrainingConfig RNNTrainingConfig;
 
 typedef struct {
-    int input_feature_channels;
-    int output_feature_channels;
+    RecurrentConfig base;
     bool v2;
-    bool return_sequences;
-    int timesteps;
     ActivationFunction activation;
 } RNNConfig;
 
@@ -26,9 +23,9 @@ typedef struct RNNStruct* RNN;
 RNNConfig RNNConfigCreate(
     int input_feature_channels,
     int output_feature_channels,
-    bool v2,
     bool return_sequences,
     int timesteps,
+    bool v2,
     ActivationFunction activation
 );
 

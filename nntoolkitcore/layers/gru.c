@@ -13,10 +13,7 @@ GRUConfig
 GRUConfigCreate(int input_feature_channels, int output_feature_channels, bool return_sequences, int timesteps,
                 GRUActivations activations) {
     GRUConfig config;
-    config.input_feature_channels = input_feature_channels;
-    config.timesteps = timesteps;
-    config.return_sequences = return_sequences;
-    config.output_feature_channels = output_feature_channels;
+    config.base = RecurrentConfigCreate(input_feature_channels, output_feature_channels, return_sequences, timesteps);
     config.activations = activations;
     return config;
 }
@@ -51,8 +48,8 @@ GRUWeights *GRUGetWeights(GRU filter) {
 }
 
 GRUWeightsSize gru_weights_size_from_config(GRUConfig config){
-    int in = config.input_feature_channels;
-    int out = config.output_feature_channels;
+    int in = config.base.input_feature_channels;
+    int out = config.base.output_feature_channels;
     GRUWeightsSize size;
     size.w = in * out * 3;
     size.u = out * out * 3;
@@ -66,7 +63,7 @@ GRU gru_create(GRUConfig config){
     GRU filter = malloc(sizeof(struct GRUStruct));
     filter->config = config;
     filter->weights = recurrent_weights_create(gru_weights_size_from_config(config));
-    filter->h = f_malloc(config.output_feature_channels);
+    filter->h = f_malloc(config.base.output_feature_channels);
     filter->training_data = NULL;
     filter->inference_data = NULL;
     return filter;
@@ -84,16 +81,16 @@ void gru_inference_data_destroy(GRUInferenceData *data){
 
 GRUInferenceData *gru_inference_data_create(GRUConfig config){
     GRUInferenceData *data = malloc(sizeof(GRUInferenceData));
-    data->computation_buffer = f_malloc(14 * config.output_feature_channels);
+    data->computation_buffer = f_malloc(14 * config.base.output_feature_channels);
     return data;
 }
 
 GRUTrainingData *gru_training_data_create(GRUConfig config, RecurrentTrainingConfig training_config){
     GRUTrainingData *data = malloc(sizeof(GRUTrainingData));
-    int out = config.output_feature_channels;
+    int out = config.base.output_feature_channels;
     int batch = training_config.mini_batch_size;
-    int input_size = batch * config.input_feature_channels * config.timesteps;
-    int output_size = batch * out * config.timesteps;
+    int input_size = batch * config.base.input_feature_channels * config.base.timesteps;
+    int output_size = batch * out * config.base.timesteps;
     // input + output+ Z_gates + d_h + buffer
     int training_buffer = input_size + 8 * output_size + batch * out + 8 * out;
     data->config = training_config;
@@ -193,10 +190,10 @@ int GRUApplyInference(GRU filter, const float *input, float *output) {
     if(filter->training_data != NULL){
         return -1;
     }
-    int out = filter->config.output_feature_channels;
-    int in = filter->config.input_feature_channels;
-    for (int i = 0; i < filter->config.timesteps; ++i) {
-        int output_offset = filter->config.return_sequences ? i * out : 0;
+    int out = filter->config.base.output_feature_channels;
+    int in = filter->config.base.input_feature_channels;
+    for (int i = 0; i < filter->config.base.timesteps; ++i) {
+        int output_offset = filter->config.base.return_sequences ? i * out : 0;
         GRUCellForward(filter->weights, filter->config.activations, in, out, input + i * in, filter->h,
                        output + output_offset,
                        filter->inference_data->computation_buffer,
@@ -242,7 +239,7 @@ GRUGradient *GRUGradientCreate(GRUConfig config, GRUTrainingConfig training_conf
     return recurrent_gradient_create(
         gru_weights_size_from_config(config),
         training_config.mini_batch_size,
-        config.input_feature_channels * config.timesteps
+        config.base.input_feature_channels * config.base.timesteps
     );
 }
 
@@ -251,17 +248,17 @@ int GRUApplyTrainingBatch(GRU filter, const float *input, float *output) {
         return -1;
     }
 
-    int out = filter->config.output_feature_channels;
-    int in = filter->config.input_feature_channels;
+    int out = filter->config.base.output_feature_channels;
+    int in = filter->config.base.input_feature_channels;
     int batch = filter->training_data->config.mini_batch_size;
-    int ts = filter->config.timesteps;
+    int ts = filter->config.base.timesteps;
 
     int input_buffer_size = batch * ts * in;
     f_copy(filter->training_data->input, input, input_buffer_size);
 
     for (int b = 0; b < batch; ++b){
         f_zero(filter->h, out);
-        for (int i = 0; i < filter->config.timesteps; ++i){
+        for (int i = 0; i < filter->config.base.timesteps; ++i){
             int t_out_offset = out * i + b * ts * out;
             const float *x_t = input + i * in + b * ts * in;
             float *h_t = filter->training_data->output + t_out_offset;
@@ -284,7 +281,7 @@ int GRUApplyTrainingBatch(GRU filter, const float *input, float *output) {
             f_zero(filter->training_data->computation_buffer, 8 * out);
         }
     }
-    if (filter->config.return_sequences){
+    if (filter->config.base.return_sequences){
         f_copy(output, filter->training_data->output, batch * ts * out);
     } else {
         for (int b = 0; b < batch; ++b){
@@ -311,10 +308,6 @@ typedef struct {
     float *d_bi_t;
     float *d_bh_t;
 } CellBackwardGradients;
-
-#if DEBUG
-    #include "nntoolkitcore/core/debug.h"
-#endif
 
 void
 GRUCellBackward(GRUWeights *weights, GRUActivations activations, int in, int out, float *d_h_t, CellBackwardCache cache,
@@ -360,7 +353,7 @@ GRUCellBackward(GRUWeights *weights, GRUActivations activations, int in, int out
 
     /*
      * 2. Forward step
-     *    h_tilda = cand_act(x*Wh + b_ih + r_t(h_t_prev * U_h + b_hh))
+     *    h_tilda = cand_act(x*Wh + b_h + r_t(h_t_prev * U_h + b_hh))
      *
      *    Backward <- d_h_tilda
      *    d_z_h_tilda = d_cand_act * d_h_tilda;
@@ -389,7 +382,7 @@ GRUCellBackward(GRUWeights *weights, GRUActivations activations, int in, int out
     f_copy(d_b_h + 2 * out, d_h_pr_U + 2 * out, out);
     /*
      * 3. Forward step
-     *   r_t = r_act(x * Wr + b_ir + h_pr * Ur + b_hr)
+     *   r_t = r_act(x * Wr + b_r + h_pr * Ur + b_hr)
      *   Backward <- d_r_t
      *
      *   d_z_r_t = d_r_t * d_r_act;
@@ -397,7 +390,7 @@ GRUCellBackward(GRUWeights *weights, GRUActivations activations, int in, int out
      *   d(x*Wr) = d_b_i_r = d(h_pr * Ur) = d_b_hr = d_z_r_t;
      *
      *    4. Forward step
-     *   z_t = z_act(x * Wz + b_iz + h_pr * Uz + b_hz)
+     *   z_t = z_act(x * Wz + b_z + h_pr * Uz + b_hz)
      *   Backward <- d_z_t
      *
      *   d_z_z_t = d_z_t * d_z_act;
@@ -458,9 +451,9 @@ void GRUCalculateGradient(GRU filter, GRUGradient *gradient, float *d_out) {
     }
 
     int batch = filter->training_data->config.mini_batch_size;
-    int ts = filter->config.timesteps;
-    int in = filter->config.input_feature_channels;
-    int out = filter->config.output_feature_channels;
+    int ts = filter->config.base.timesteps;
+    int in = filter->config.base.input_feature_channels;
+    int out = filter->config.base.output_feature_channels;
 
     float *h = filter->training_data->output;
     float *x = filter->training_data->input;
@@ -499,7 +492,7 @@ void GRUCalculateGradient(GRU filter, GRUGradient *gradient, float *d_out) {
             float* computation_buffer = f_malloc(computation_buffer_size);
 
             float *d_h_t_init = t == ts - 1 ? NULL : dh + (b * out);
-            bool seq = filter->config.return_sequences;
+            bool seq = filter->config.base.return_sequences;
             float d_out_t[out];
             f_zero(d_out_t, out);
             if (seq) {

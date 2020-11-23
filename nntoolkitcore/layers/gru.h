@@ -30,10 +30,7 @@ typedef struct {
 } GRUActivations;
 
 typedef struct {
-    int input_feature_channels;
-    int output_feature_channels;
-    bool return_sequences;
-    int timesteps;
+    RecurrentConfig base;
     GRUActivations activations;
 } GRUConfig;
 

@@ -55,9 +55,9 @@ LSTMTrainingData* lstm_training_data_create(LSTMConfig config, LSTMTrainingConfi
 
     training_data->config = training_config;
 
-    int in = config.input_feature_channels;
-    int out = config.output_feature_channels;
-    int ts = config.timesteps;
+    int in = config.base.input_feature_channels;
+    int out = config.base.output_feature_channels;
+    int ts = config.base.timesteps;
     int batch = training_config.mini_batch_size;
     /*
      *input -> *zifgo(8 out) -> *c(out) -> *h(out) -> *dHt(out) -> *dCt(out)
@@ -79,7 +79,7 @@ LSTMTrainingData* lstm_training_data_create(LSTMConfig config, LSTMTrainingConfi
 
 LSTMInferenceData *lstm_inference_data_create(LSTMConfig config){
     LSTMInferenceData* data = malloc(sizeof(LSTMInferenceData));
-    data->computation_buffer = f_malloc(15 * config.output_feature_channels);
+    data->computation_buffer = f_malloc(15 * config.base.output_feature_channels);
     return data;
 }
 
@@ -114,20 +114,17 @@ LSTMWeights* LSTMGetWeights(LSTM filter){
     return filter->weights;
 }
 
-LSTMConfig LSTMConfigCreate(int input_feature_channels, int output_feature_channels, bool v2, bool return_sequences, int timesteps, LSTMActivations activations){
+LSTMConfig LSTMConfigCreate(int input_feature_channels, int output_feature_channels, bool return_sequences, int timesteps, bool v2, LSTMActivations activations){
     LSTMConfig config;
-    config.input_feature_channels = input_feature_channels;
-    config.output_feature_channels = output_feature_channels;
+    config.base = RecurrentConfigCreate(input_feature_channels, output_feature_channels, return_sequences, timesteps);
     config.v2 = v2;
-    config.return_sequences = return_sequences;
     config.activations = activations;
-    config.timesteps = timesteps;
     return config;
 }
 
 LSTMWeightsSize lstm_weights_size_from_config(LSTMConfig config){
-    int in = config.input_feature_channels;
-    int out = config.output_feature_channels;
+    int in = config.base.input_feature_channels;
+    int out = config.base.output_feature_channels;
     LSTMWeightsSize size;
     size.w = 4 * in * out;
     size.u = 4 * out * out;
@@ -141,7 +138,7 @@ LSTM lstm_create(LSTMConfig config){
     LSTM filter = malloc(sizeof(struct LSTMStruct));
     filter->config = config;
     filter->weights = recurrent_weights_create(lstm_weights_size_from_config(config));
-    int out = config.output_feature_channels;
+    int out = config.base.output_feature_channels;
     filter->c = f_malloc(out);
     filter->h = f_malloc(out);
     filter->training_data = NULL;
@@ -240,11 +237,11 @@ int LSTMApplyInference(LSTM filter, const float *input, float* output){
     if(filter->training_data != NULL){
         return -1;
     }
-    int out = filter->config.output_feature_channels;
-    int in = filter->config.input_feature_channels;
-    for (int i = 0; i < filter->config.timesteps; ++i){
+    int out = filter->config.base.output_feature_channels;
+    int in = filter->config.base.input_feature_channels;
+    for (int i = 0; i < filter->config.base.timesteps; ++i){
         float state[out];
-        int output_offset = filter->config.return_sequences ? i * out : 0;
+        int output_offset = filter->config.base.return_sequences ? i * out : 0;
         LSTMCellForward(
             filter->weights,
             filter->config.activations,
@@ -266,7 +263,7 @@ int LSTMApplyInference(LSTM filter, const float *input, float* output){
 }
 
 void lstm_zero_state(LSTM filter){
-    int size = filter->config.output_feature_channels;
+    int size = filter->config.base.output_feature_channels;
     f_zero(filter->c, size);
     f_zero(filter->h, size);
 }
@@ -425,17 +422,17 @@ int LSTMApplyTrainingBatch(LSTM filter, const float *input, float* output){
     if (filter->training_data == NULL){
         return -1;
     }
-    int out = filter->config.output_feature_channels;
-    int in = filter->config.input_feature_channels;
+    int out = filter->config.base.output_feature_channels;
+    int in = filter->config.base.input_feature_channels;
     int batch = filter->training_data->config.mini_batch_size;
-    int ts = filter->config.timesteps;
+    int ts = filter->config.base.timesteps;
 
     int input_buffer_size = batch * ts * in;
     f_copy(filter->training_data->input, input, input_buffer_size);
 
     for (int b = 0; b < batch; ++b){
         lstm_zero_state(filter);
-        for (int i = 0; i < filter->config.timesteps; ++i){
+        for (int i = 0; i < filter->config.base.timesteps; ++i){
 
             const float *x_t = input + i * in + b * ts * in;
 
@@ -461,7 +458,7 @@ int LSTMApplyTrainingBatch(LSTM filter, const float *input, float* output){
             f_copy(filter->c, c_t, out);
         }
     }
-    if (filter->config.return_sequences){
+    if (filter->config.base.return_sequences){
         f_copy(output, filter->training_data->output, batch * ts * out);
     } else {
         for (int b = 0; b < batch; ++b){
@@ -476,7 +473,7 @@ LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig training
     return recurrent_gradient_create(
         lstm_weights_size_from_config(config),
         training_config.mini_batch_size,
-        config.input_feature_channels * config.timesteps
+        config.base.input_feature_channels * config.base.timesteps
     );
 }
 
@@ -486,9 +483,9 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out) {
     }
 
     int batch = filter->training_data->config.mini_batch_size;
-    int ts = filter->config.timesteps;
-    int in = filter->config.input_feature_channels;
-    int out = filter->config.output_feature_channels;
+    int ts = filter->config.base.timesteps;
+    int in = filter->config.base.input_feature_channels;
+    int out = filter->config.base.output_feature_channels;
 
     float *c = filter->training_data->state;
     float *h = filter->training_data->output;
@@ -531,7 +528,7 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out) {
             float *d_c_t_init = t == ts - 1 ? NULL : dc + (b * out);
             float *d_h_t_init = t == ts - 1 ? NULL : dh + (b * out);
 
-            bool seq = filter->config.return_sequences;
+            bool seq = filter->config.base.return_sequences;
 
             //d_H_t
 

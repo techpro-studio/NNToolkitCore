@@ -42,19 +42,17 @@ LSTMActivations LSTMActivationsCreateDefault(int size);
 void LSTMActivationsDestroy(LSTMActivations activations);
 
 typedef struct {
-    int input_feature_channels;
-    int output_feature_channels;
+    RecurrentConfig base;
     bool v2;
-    bool return_sequences;
-    int timesteps;
     LSTMActivations activations;
 } LSTMConfig;
 
 LSTMConfig LSTMConfigCreate(
     int input_feature_channels,
     int output_feature_channels,
-    bool v2, bool return_sequences,
+    bool return_sequences,
     int timesteps,
+    bool v2,
     LSTMActivations activations
 );
 
