@@ -11,7 +11,7 @@ extern "C" {
 
 #include "recurrent.h"
 
-void bidirectional_reverse_batch(
+void bd_reverse_batch(
     const float* input,
     float *output,
     int size,
@@ -20,7 +20,7 @@ void bidirectional_reverse_batch(
 
 //MERGE CONCAT
 
-void bidirectional_merge_concat(
+void bd_merge_concat(
     const float *forward_result,
     const float *backward_result,
     float *output,
@@ -28,7 +28,7 @@ void bidirectional_merge_concat(
     int batch
 );
 
-void bidirectional_merge_concat_gradient(
+void bd_merge_concat_gradient(
     const float *d_out,
     float *d_forward_out,
     float *d_backward_out,
@@ -38,7 +38,7 @@ void bidirectional_merge_concat_gradient(
 
 //MERGE SUM
 
-void bidirectional_merge_sum(
+void bd_merge_sum(
     const float *forward_result,
     const float *backward_result,
     float *output,
@@ -46,7 +46,7 @@ void bidirectional_merge_sum(
     int batch
 );
 
-void bidirectional_merge_sum_gradient(
+void bd_merge_sum_gradient(
     const float *d_out,
     float *d_forward_out,
     float *d_backward_out,
@@ -54,6 +54,13 @@ void bidirectional_merge_sum_gradient(
     int batch
 );
 
+void bd_accumulate_d_x(
+    const float* forward_dx,
+    const float* backward_dx,
+    float *output,
+    int size,
+    int batch
+);
 
 #if defined __cplusplus
 }
