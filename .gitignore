@@ -1,14 +1,20 @@
 # Prerequisites
 *.d
 .swiftpm/
+#Makefile
+cmake-build-debug/
+*.cmake
+third_party/pffft/
+third_party/eigen3/
 
+*.cbp
 # Object files
 *.o
 *.ko
 *.obj
 *.elf
 
-# Linker output
+# Linker h
 *.ilk
 *.map
 *.exp

@@ -1,10 +1,10 @@
 Pod::Spec.new do |s|
   s.name             = 'NNToolkitCore'
-  s.version          = '0.2.0'
+  s.version          = '0.4.2'
   s.summary          = 'Core C library with NN filters'
-  s.description      = "LSTM. Conv1d. GRU. BatchNorm. Dense. Audio processing tools"
+  s.description      = "LSTM. Conv1d. GRU. RNN. Bidirectional. BatchNorm. Dense. Signal processing tools"
 
-  s.homepage         = 'https://github.com/techpro-studio/NNToolkit'
+  s.homepage         = 'https://github.com/techpro-studio/NNToolkitCore'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Oleksii Moiseenko' => 'oleksiimoiseenko@gmail.com' }
   s.source           = { :git => 'https://github.com/techpro-studio/NNToolkitCore.git', :tag => s.version }
@@ -14,8 +14,27 @@ Pod::Spec.new do |s|
   s.tvos.deployment_target = '9.0'
   s.osx.deployment_target = '10.9'
 
-  s.source_files = 'Sources/**/*.{h,c}'
+  s.public_header_files =
+  'nntoolkitcore/layers/*.{h}',
+  'nntoolkitcore/train/*.{h}',
+  'nntoolkitcore/signal/spectrogram.h',
+  'nntoolkitcore/signal/window.h',
+  'nntoolkitcore/core/debug.h',
+  'nntoolkitcore/core/ops.h'
 
-  s.weak_frameworks = 'Accelerate'
+  s.source_files =
+      'nntoolkitcore/core/*.h',
+      'nntoolkitcore/core/debug.c',
+      'nntoolkitcore/core/apple_ops.c',
+      'nntoolkitcore/core/memory.c',
+      'nntoolkitcore/layers/**/*',
+      'nntoolkitcore/train/*.{h,c}',
+      'nntoolkitcore/signal/*.{h,c}'
+
+  s.pod_target_xcconfig = {
+      'HEADER_SEARCH_PATHS' =>
+        '"${PODS_TARGET_SRCROOT}" '
+    }
+  s.frameworks = 'Accelerate'
    
 end
