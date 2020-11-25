@@ -4,7 +4,7 @@
 
 #include "nntoolkitcore/train/optimizers.h"
 #include "nntoolkitcore/core/ops.h"
-#include "string.h"
+#include "nntoolkitcore/core/memory.h"
 #include "stdlib.h"
 
 void sum_batch_gradient(float * gradients, float* gradient, int size, int batch){
@@ -14,8 +14,8 @@ void sum_batch_gradient(float * gradients, float* gradient, int size, int batch)
 }
 
 int sgd_optimize(SGD optimizer, float *gradient, float *weights, int size) {
-    float* buffer = malloc(size * sizeof(float));
-    op_vec_mul_sc(buffer, optimizer.learning_rate, buffer, size);
+    float* buffer = f_malloc(size);
+    op_vec_mul_sc(gradient, optimizer.learning_rate, buffer, size);
     op_vec_sub(weights, buffer, weights, size);
     free(buffer);
     return 0;
