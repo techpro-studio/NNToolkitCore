@@ -45,7 +45,7 @@ typedef struct {
     float *d_X;
 } ConvGradient;
 
-typedef struct Conv1dFilterStruct* Conv1d;
+typedef struct Conv1dStruct* Conv1d;
 
 ConvWeights* Conv1dGetWeights(Conv1d filter);
 

@@ -20,7 +20,7 @@ typedef struct {
     void *buffer;
 } Conv1dInferenceData;
 
-struct Conv1dFilterStruct {
+struct Conv1dStruct {
     Conv1dConfig config;
     ConvWeights *weights;
     Conv1dInferenceData *inference_data;
@@ -74,7 +74,7 @@ ConvTrainingConfig ConvTrainingConfigCreate(int mini_batch_size) {
 }
 
 Conv1d conv1d_create(Conv1dConfig config) {
-    Conv1d filter = malloc(sizeof(struct Conv1dFilterStruct));
+    Conv1d filter = malloc(sizeof(struct Conv1dStruct));
     filter->config = config;
     filter->weights = malloc(sizeof(ConvWeights));
     int W_size = config.kernel_size * config.input_feature_channels * config.output_feature_channels;
@@ -110,7 +110,7 @@ void Conv1dDestroy(Conv1d filter) {
     free(filter);
 }
 
-static void conv_1d_one(const struct Conv1dFilterStruct *filter, const float *input, float *output,
+static void conv_1d_one(const struct Conv1dStruct *filter, const float *input, float *output,
                         float *input_transposed_buffer) {
     float *float_input = input_transposed_buffer;
     op_mat_transp((float *) input, float_input, filter->config.input_feature_channels, filter->config.input_size);
