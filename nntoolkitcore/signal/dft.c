@@ -40,10 +40,9 @@ void DFTPerform(DFTSetup setup, ComplexFloatSplit* input, ComplexFloatSplit* out
     int nfft = setup->config.nfft;
     kiss_fft_cpx in[nfft];
     kiss_fft_cpx out[nfft];
-    join_complex_split((ComplexFloat *)in, input, nfft);
+    join_complex_split(input, (ComplexFloat *)in, nfft);
     kiss_fft(setup->implementer, in, out);
-    split_complex(h, (ComplexFloat *) out, nfft);
-
+    split_complex((ComplexFloat *) out, output, nfft);
 #endif
 }
 
@@ -57,7 +56,7 @@ void DFTSetupDestroy(DFTSetup setup) {
 #endif
 }
 
-void split_complex(ComplexFloatSplit *split, ComplexFloat *complex, int size) {
+void split_complex(const ComplexFloat *complex, ComplexFloatSplit *split,  int size) {
 #if USE_APPLE_FFT
     vDSP_ctoz((DSPComplex *)complex, 1, (DSPSplitComplex *) split, 2, size);
 #else
@@ -77,7 +76,7 @@ DFTConfig DFTConfigCreate(int nfft, bool forward, bool complex) {
     return result;
 }
 
-void join_complex_split(ComplexFloat *complex, ComplexFloatSplit *split, int size) {
+void join_complex_split(const ComplexFloatSplit *split, ComplexFloat *complex, int size) {
     P_LOOP_START(size, i)
         ComplexFloat c = { split->real_p[i], split->imag_p[i]};
         complex[i] = c;
