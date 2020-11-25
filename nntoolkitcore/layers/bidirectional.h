@@ -18,6 +18,14 @@ void bd_reverse_input_batch(
     int batch
 );
 
+
+void bd_reverse_backward_batch(
+    const float* input,
+    float *output,
+    RecurrentConfig config,
+    int batch
+);
+
 //MERGE CONCAT
 
 int bd_merge_concat_buffer_size(RecurrentConfig config);

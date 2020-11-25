@@ -24,6 +24,14 @@ void bd_reverse_input_batch(const float *input, float *output, RecurrentConfig c
     reverse_batch(input, output, config.input_feature_channels, config.timesteps, batch);
 }
 
+void bd_reverse_backward_batch(
+    const float* input,
+    float *output,
+    RecurrentConfig config,
+    int batch){
+    reverse_batch(input, output, config.output_feature_channels, config.timesteps, batch);
+}
+
 int bd_merge_concat_buffer_size(RecurrentConfig config){
     int rows = config.return_sequences ? config.timesteps : 1;
     return 2 * rows * config.output_feature_channels;
@@ -95,7 +103,7 @@ void bd_accumulate_d_x(
     RecurrentConfig config,
     int batch
 ) {
-    reverse_batch(backward_dx, output,  config.output_feature_channels, config.timesteps, batch);
-    op_vec_add(forward_dx, output, output, config.output_feature_channels * config.timesteps * batch);
+    reverse_batch(backward_dx, output,  config.input_feature_channels, config.timesteps, batch);
+    op_vec_add(forward_dx, output, output, config.input_feature_channels * config.timesteps * batch);
 }
 
