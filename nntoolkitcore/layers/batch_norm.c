@@ -205,7 +205,7 @@ int BatchNormApplyTrainingBatch(BatchNorm filter, const float *input, float *out
     P_LOOP_START(feat, f)
         op_vec_sum(transposed + f * N, mean + f, N);
     P_LOOP_END
-    op_vec_div_sc(mean, (float) N, mean, N);
+    op_vec_div_sc(mean, (float) N, mean, feat);
 
     // VARIANCE
     float *variance = filter->training_data->variance;
@@ -218,27 +218,29 @@ int BatchNormApplyTrainingBatch(BatchNorm filter, const float *input, float *out
                    N);
         op_vec_sum(filter->training_data->minus_mean_squared + f * N, variance + f, N);
     P_LOOP_END
-    op_vec_div_sc(variance, (float)N, variance, N);
+    op_vec_div_sc(variance, (float)N, variance, feat);
+
+
 
     //BATCH_NORM
     for (int n = 0; n < N; ++n) {
         batch_norm_buff buffer = {
-                filter->training_data->x_mu + n * feat,
-                filter->training_data->var_eps + n * feat,
-                filter->training_data->sqrt_var + n * feat,
-                filter->training_data->x_norm + n * feat,
-                filter->training_data->gamma_x_norm + n * feat,
+            filter->training_data->x_mu + n * feat,
+            filter->training_data->var_eps + n * feat,
+            filter->training_data->sqrt_var + n * feat,
+            filter->training_data->x_norm + n * feat,
+            filter->training_data->gamma_x_norm + n * feat,
         };
         batch_norm(
-                input + n * feat,
-                mean,
-                variance,
-                filter->weights->gamma,
-                filter->weights->beta,
-                output + n * feat,
-                buffer,
-                filter->config.epsilon,
-                feat
+            input + n * feat,
+            mean,
+            variance,
+            filter->weights->gamma,
+            filter->weights->beta,
+            output + n * feat,
+            buffer,
+            filter->config.epsilon,
+            feat
         );
     }
 
@@ -253,6 +255,8 @@ int BatchNormApplyTrainingBatch(BatchNorm filter, const float *input, float *out
     op_vec_mul_sc(variance, 1 - momentum, buffer, feat);
     op_vec_mul_sc(filter->weights->moving_variance, momentum, filter->weights->moving_variance, feat);
     op_vec_add(buffer, filter->weights->moving_variance, filter->weights->moving_variance, feat);
+
+
 
     return 0;
 }

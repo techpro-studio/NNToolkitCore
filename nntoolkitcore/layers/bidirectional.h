@@ -5,11 +5,11 @@
 #ifndef bidirectional_h
 #define bidirectional_h
 
+#include "recurrent.h"
+
 #if defined __cplusplus
 extern "C" {
 #endif
-
-#include "recurrent.h"
 
 void bd_reverse_input_batch(
     const float* input,

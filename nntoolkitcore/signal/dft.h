@@ -8,7 +8,11 @@
 #include "stdbool.h"
 #include "nntoolkitcore/core/types.h"
 
-typedef struct DFTSetupStruct* DFTSetup;
+#if defined __cplusplus
+extern "C" {
+#endif
+
+typedef struct DFTSetupStruct *DFTSetup;
 
 typedef struct {
     int nfft;
@@ -30,12 +34,16 @@ DFTConfig DFTConfigCreate(int nfft, bool forward, bool complex);
 
 DFTSetup DFTSetupCreate(DFTConfig config);
 
-void DFTPerform(DFTSetup setup, ComplexFloatSplit* input, ComplexFloatSplit* output);
+void DFTPerform(DFTSetup setup, ComplexFloatSplit *input, ComplexFloatSplit *output);
 
 void DFTSetupDestroy(DFTSetup setup);
 
-void split_complex(const ComplexFloat *complex, ComplexFloatSplit*split, int size);
+void split_complex(const ComplexFloat *complex, ComplexFloatSplit *split, int size);
 
-void join_complex_split(const ComplexFloatSplit *split, ComplexFloat *complex,  int size);
+void join_complex_split(const ComplexFloatSplit *split, ComplexFloat *complex, int size);
+
+#if defined __cplusplus
+}
+#endif
 
 #endif //fft_h

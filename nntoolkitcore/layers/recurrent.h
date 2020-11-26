@@ -5,11 +5,12 @@
 #ifndef recurrent_h
 #define recurrent_h
 
+#include "shared.h"
+#include "stdbool.h"
+
 #if defined __cplusplus
 extern "C" {
 #endif
-
-#include "stdbool.h"
 
 typedef struct {
     float *W;
@@ -18,9 +19,7 @@ typedef struct {
     float *b_h;
 } RecurrentWeights;
 
-typedef struct {
-    int mini_batch_size;
-} RecurrentTrainingConfig;
+typedef DefaultTrainingConfig RecurrentTrainingConfig;
 
 typedef struct {
     int input_feature_channels;
@@ -44,11 +43,6 @@ typedef struct {
     int b_h;
     int sum;
 } RecurrentWeightsSize;
-
-
-inline static RecurrentTrainingConfig RecurrentTrainingConfigCreate(int mini_batch_size) {
-    return (RecurrentTrainingConfig) {mini_batch_size};
-}
 
 inline static RecurrentConfig RecurrentConfigCreate(
         int input_feature_channels,

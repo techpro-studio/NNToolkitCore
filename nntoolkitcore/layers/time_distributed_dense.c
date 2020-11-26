@@ -23,11 +23,6 @@ struct TimeDistributedDenseStruct {
     Dense dense;
 };
 
-TimeDistributedDenseTrainingConfig TimeDistributedDenseTrainingConfigCreate(int batch){
-    TimeDistributedDenseTrainingConfig config = { batch };
-    return config;
-}
-
 TimeDistributedDenseConfig TimeDistributedDenseConfigCreate(int ts, DenseConfig dense){
     TimeDistributedDenseConfig config;
     config.dense = dense;
@@ -51,7 +46,7 @@ TimeDistributedDense TimeDistributedDenseCreateForInference(TimeDistributedDense
 
 TimeDistributedDense TimeDistributedDenseCreateForTraining(TimeDistributedDenseConfig config, TimeDistributedDenseTrainingConfig training_config) {
     TimeDistributedDense ts_filter = TimeDistributedDenseCreate(config);
-    DenseTrainingConfig dense_training_config = DenseTrainingConfigCreate(training_config.mini_batch_size * config.ts);
+    DenseTrainingConfig dense_training_config = DefaultTrainingConfigCreate(training_config.mini_batch_size * config.ts);
     ts_filter->dense = DenseCreateForTraining(config.dense, dense_training_config);
     ts_filter->training_data = malloc(sizeof(TimeDistributedDenseTrainingData));
     ts_filter->training_data->config = training_config;

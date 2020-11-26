@@ -75,12 +75,6 @@ void DenseDestroy(Dense filter) {
     free(filter);
 }
 
-DenseTrainingConfig DenseTrainingConfigCreate(int batch) {
-    DenseTrainingConfig config;
-    config.mini_batch_size = batch;
-    return config;
-}
-
 Dense DenseCreateForTraining(DenseConfig config, DenseTrainingConfig training_config) {
     Dense filter = DenseCreateForInference(config);
     filter->training_data = dense_training_data_create(config, training_config);
