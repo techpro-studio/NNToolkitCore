@@ -67,12 +67,6 @@ Conv1dConfig Conv1dConfigCreate(int input_feature_channels, int output_feature_c
     return config;
 }
 
-ConvTrainingConfig ConvTrainingConfigCreate(int mini_batch_size) {
-    ConvTrainingConfig result;
-    result.mini_batch_size = mini_batch_size;
-    return result;
-}
-
 Conv1d conv1d_create(Conv1dConfig config) {
     Conv1d filter = malloc(sizeof(struct Conv1dStruct));
     filter->config = config;

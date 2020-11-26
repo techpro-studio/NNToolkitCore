@@ -10,36 +10,42 @@
 
 #include <stdio.h>
 #include "dense.h"
+#include "shared.h"
+
+#if defined __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
     DenseConfig dense;
     int ts;
 } TimeDistributedDenseConfig;
 
-typedef struct {
-    int mini_batch_size;
-} TimeDistributedDenseTrainingConfig;
+typedef DefaultTrainingConfig TimeDistributedDenseTrainingConfig;
 
 TimeDistributedDenseConfig TimeDistributedDenseConfigCreate(int ts, DenseConfig dense);
 
-TimeDistributedDenseTrainingConfig TimeDistributedDenseTrainingConfigCreate(int batch);
+typedef struct TimeDistributedDenseStruct *TimeDistributedDense;
 
-typedef struct TimeDistributedDenseStruct* TimeDistributedDense;
+DenseWeights *TimeDistributedDenseGetWeights(TimeDistributedDense filter);
 
-DenseWeights* TimeDistributedDenseGetWeights(TimeDistributedDense filter);
-
-DenseGradient* TimeDistributedDenseGradientCreate(TimeDistributedDense filter);
+DenseGradient *TimeDistributedDenseGradientCreate(TimeDistributedDense filter);
 
 TimeDistributedDense TimeDistributedDenseCreateForInference(TimeDistributedDenseConfig config);
 
-TimeDistributedDense TimeDistributedDenseCreateForTraining(TimeDistributedDenseConfig config, TimeDistributedDenseTrainingConfig training_config);
+TimeDistributedDense TimeDistributedDenseCreateForTraining(TimeDistributedDenseConfig config,
+                                                           TimeDistributedDenseTrainingConfig training_config);
 
-int TimeDistributedDenseApplyInference(TimeDistributedDense filter, const float *input, float* output);
+int TimeDistributedDenseApplyInference(TimeDistributedDense filter, const float *input, float *output);
 
-int TimeDistributedDenseApplyTrainingBatch(TimeDistributedDense filter, const float *input, float* output);
+int TimeDistributedDenseApplyTrainingBatch(TimeDistributedDense filter, const float *input, float *output);
 
 void TimeDistributedDenseCalculateGradient(TimeDistributedDense filter, DenseGradient *gradient, float *d_out);
 
 void TimeDistributedDenseDestroy(TimeDistributedDense filter);
+
+#if defined __cplusplus
+}
+#endif
 
 #endif /* time_distributed_h */

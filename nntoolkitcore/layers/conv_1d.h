@@ -9,19 +9,15 @@
 #ifndef conv_1d_h
 #define conv_1d_h
 
-#include <stdio.h>
 
+#include <stdio.h>
+#include "shared.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-typedef struct {
-    int mini_batch_size;
-} ConvTrainingConfig;
-
-
-ConvTrainingConfig ConvTrainingConfigCreate(int mini_batch_size);
+typedef DefaultTrainingConfig ConvTrainingConfig;
 
 typedef struct {
     int input_feature_channels;

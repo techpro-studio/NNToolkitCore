@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include "activation.h"
-
+#include "shared.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -28,11 +28,7 @@ typedef struct {
     float *d_X;
 } DenseGradient;
 
-typedef struct {
-    int mini_batch_size;
-} DenseTrainingConfig;
-
-DenseTrainingConfig DenseTrainingConfigCreate(int batch);
+typedef DefaultTrainingConfig DenseTrainingConfig;
 
 typedef struct {
     int input_size;
