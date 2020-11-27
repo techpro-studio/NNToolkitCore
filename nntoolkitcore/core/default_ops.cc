@@ -334,7 +334,10 @@ void op_vec_reciprocal(const float *a, float *c, int size){
 #if NEON
     int parts = size / 4, remaining = size % 4;
     for (int i = 0; i < parts; ++i){
-        vst1q_f32(c + i * 4, vrecpeq_f32(vld1q_f32(a + 4 * i)));
+        float32x4_t inp = vld1q_f32(a + 4 * i);
+        float32x4_t reciprocal = vrecpeq_f32(inp);
+        float32x4_t result = vmulq_f32(vrecpsq_f32(inp, reciprocal), reciprocal);
+        vst1q_f32(c + i * 4, result);
     }
     op_vec_reciprocal_c(a + parts * 4, c + parts * 4, remaining);
 #else
@@ -611,8 +614,10 @@ void op_vec_sum(const float *a, float* c, int size) {
     }
     float sum4[4];
     vst1q_f32(sum4, sum);
-    *c = sum4[0] + sum4[1] + sum4[2] + sum4[3];
-    op_vec_sum_c(a + parts * 4, c, remaining);
+    float c1 = sum4[0] + sum4[1] + sum4[2] + sum4[3];
+    float c2 = 0.0f;
+    op_vec_sum_c(a + parts * 4, &c2, remaining);
+    *c = c1 + c2;
 #else
     op_vec_sum_c(a, c, size);
 #endif
