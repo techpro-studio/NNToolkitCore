@@ -254,6 +254,8 @@ static inline void op_vec_add_c(const float *a, const float * b, float *c, int s
     }
 }
 
+
+
 void op_vec_add(const float *a, const float * b, float *c, int size){
 #if NEON
     int parts = size / 4, remaining = size % 4;
@@ -592,10 +594,13 @@ void op_vec_sub(const float *a, const float *b, float *c, int size){
 }
 
 static void op_vec_sum_c(const float *a, float *c, int size){
+    float sum = 0.0f;
     for (int i = 0; i < size; ++i){
-        *c += a[i];
+        sum += a[i];
     }
+    *c = sum;
 }
+
 
 void op_vec_sum(const float *a, float* c, int size) {
 #if NEON
@@ -612,7 +617,6 @@ void op_vec_sum(const float *a, float* c, int size) {
     op_vec_sum_c(a, c, size);
 #endif
 }
-
 
 
 static void op_vec_magnitudes_c(const float *a, const float *b, float *c, int size){
