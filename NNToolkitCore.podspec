@@ -25,8 +25,7 @@ Pod::Spec.new do |s|
   s.source_files =
       'nntoolkitcore/core/*.h',
       'nntoolkitcore/core/debug.c',
-#       'nntoolkitcore/core/apple_ops.c',
-      'nntoolkitcore/core/default_ops.cc',
+      'nntoolkitcore/core/apple_ops.c',
       'nntoolkitcore/core/memory.c',
       'nntoolkitcore/layers/**/*',
       'nntoolkitcore/train/*.{h,c}',

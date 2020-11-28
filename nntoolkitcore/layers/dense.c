@@ -103,6 +103,14 @@ DenseGradient *DenseGradientCreate(DenseConfig config, DenseTrainingConfig train
     );
 }
 
+DenseGradient *DenseGradientCreateFromFilter(Dense dense) {
+    if (dense->training_data == NULL){
+        return NULL;
+    }
+    return DenseGradientCreate(dense->config, dense->training_data->config);
+}
+
+
 void DenseGradientDestroy(DenseGradient *gradient) {
     default_gradient_destroy(gradient);
 }
@@ -175,4 +183,5 @@ void DenseCalculateGradient(Dense filter, DenseGradient *gradient, float *d_out)
     P_LOOP_END
     default_gradient_sum(filter->training_data->batch_gradients, gradient, dense_weight_size_from_config(filter->config), batch);
 }
+
 

@@ -183,11 +183,6 @@ int Conv1dApplyTrainingBatch(Conv1d filter, const float *input, float *output) {
 }
 
 void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, const float *d_out) {
-//    int db_size = filter->config.output_feature_channels *
-//                  filter->training_data->config.mini_batch_size;
-//    for (int o = 0; o < filter->config.output_size; ++o) {
-//        op_vec_add(gradient->d_b,d_out + o * db_size, gradient->d_b, db_size);
-//    }
     int k_size = filter->config.kernel_size;
     int batch = filter->training_data->config.mini_batch_size;
     int in_ftrs = filter->config.input_feature_channels;

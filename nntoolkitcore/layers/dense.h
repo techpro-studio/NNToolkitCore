@@ -36,6 +36,8 @@ void DenseGradientDestroy(DenseGradient *gradient);
 
 typedef struct DenseStruct* Dense;
 
+DenseGradient* DenseGradientCreateFromFilter(Dense dense);
+
 DenseWeights* DenseGetWeights(Dense filter);
 
 DenseConfig DenseConfigCreate(int input_size, int output_size, ActivationFunction activation);
