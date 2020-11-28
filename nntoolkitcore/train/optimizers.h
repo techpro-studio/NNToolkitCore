@@ -9,8 +9,6 @@
 extern "C" {
 #endif
 
-void sum_batch_gradient(float *gradients, float *gradient, int size, int batch);
-
 typedef struct {
     float learning_rate;
 } SGD;

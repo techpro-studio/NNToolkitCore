@@ -8,9 +8,19 @@
 #include "shared.h"
 #include "stdbool.h"
 
+
 #if defined __cplusplus
 extern "C" {
 #endif
+
+
+typedef struct {
+    int w;
+    int u;
+    int b_i;
+    int b_h;
+    int sum;
+} RecurrentWeightsSize;
 
 typedef struct {
     float *W;
@@ -36,13 +46,7 @@ typedef struct {
     float *d_X;
 } RecurrentGradient;
 
-typedef struct {
-    int w;
-    int u;
-    int b_i;
-    int b_h;
-    int sum;
-} RecurrentWeightsSize;
+
 
 inline static RecurrentConfig RecurrentConfigCreate(
         int input_feature_channels,

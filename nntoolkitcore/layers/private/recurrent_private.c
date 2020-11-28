@@ -8,17 +8,16 @@
 #include "nntoolkitcore/core/ops.h"
 
 RecurrentGradient *recurrent_gradient_create(
-        RecurrentWeightsSize sizes,
-        int batch,
-        int input_size
+    RecurrentWeightsSize sizes,
+    int input_size
 ) {
     RecurrentGradient *gradient = malloc(sizeof(RecurrentGradient));
-    int buffer_size = sizes.sum * batch + batch * input_size;
+    int buffer_size = sizes.sum + input_size;
     gradient->d_W = f_malloc(buffer_size);
-    gradient->d_U = gradient->d_W + sizes.w * batch;
-    gradient->d_b_i = gradient->d_U + sizes.u * batch;
-    gradient->d_b_h = gradient->d_b_i + sizes.b_i * batch;
-    gradient->d_X = gradient->d_b_h + sizes.b_h * batch;
+    gradient->d_U = gradient->d_W + sizes.w;
+    gradient->d_b_i = gradient->d_U + sizes.u;
+    gradient->d_b_h = gradient->d_b_i + sizes.b_i;
+    gradient->d_X = gradient->d_b_h + sizes.b_h;
     return gradient;
 }
 

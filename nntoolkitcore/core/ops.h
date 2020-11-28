@@ -9,12 +9,12 @@
 #ifndef ops_h
 #define ops_h
 
+#include "stdbool.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-#include "stdbool.h"
 
 void op_vec_sub(const float *a, const float *b, float *result, int size);
 

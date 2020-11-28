@@ -472,7 +472,7 @@ int LSTMApplyTrainingBatch(LSTM filter, const float *input, float* output){
 LSTMGradient * LSTMGradientCreate(LSTMConfig config, LSTMTrainingConfig training_config) {
     return recurrent_gradient_create(
         lstm_weights_size_from_config(config),
-        training_config.mini_batch_size,
+        training_config.mini_batch_size *
         config.base.input_feature_channels * config.base.timesteps
     );
 }
@@ -493,7 +493,7 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out) {
     float *zifgo = filter->training_data->zifgo;
 
     LSTMWeightsSize sizes = lstm_weights_size_from_config(filter->config);
-    LSTMGradient *current_gradient = recurrent_gradient_create(sizes, batch, in * ts);
+    LSTMGradient *current_gradient = recurrent_gradient_create(sizes, batch, in * ts, true);
 
     float *dc = filter->training_data->dC;
     float *dh = filter->training_data->dH;

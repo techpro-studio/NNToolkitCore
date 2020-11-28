@@ -36,14 +36,15 @@ set (PUBLIC_HEADERS
     nntoolkitcore/layers/batch_norm.h
     nntoolkitcore/layers/conv_1d.h
     nntoolkitcore/core/debug.h
-)
+        )
+
 
 set(PRIVATE_HEADERS
     nntoolkitcore/core/types.h
     nntoolkitcore/core/ops.h
     nntoolkitcore/core/loop.h
     nntoolkitcore/core/memory.h
-        nntoolkitcore/layers/shared.h)
+    nntoolkitcore/layers/shared.h)
 
 set(SOURCES
     nntoolkitcore/layers/activation.c
@@ -63,7 +64,7 @@ set(SOURCES
     nntoolkitcore/layers/private/recurrent_private.h
     nntoolkitcore/core/memory.c
     nntoolkitcore/layers/bidirectional.c
-)
+        nntoolkitcore/layers/private/gradient_sum.c nntoolkitcore/layers/private/gradient_sum.h)
 
 if(APPLE)
     list(APPEND SOURCES nntoolkitcore/core/apple_ops.c)

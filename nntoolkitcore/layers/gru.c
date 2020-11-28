@@ -238,7 +238,7 @@ GRU GRUCreateForTraining(GRUConfig config, GRUTrainingConfig training_config) {
 GRUGradient *GRUGradientCreate(GRUConfig config, GRUTrainingConfig training_config) {
     return recurrent_gradient_create(
         gru_weights_size_from_config(config),
-        training_config.mini_batch_size,
+        training_config.mini_batch_size *
         config.base.input_feature_channels * config.base.timesteps
     );
 }
@@ -461,7 +461,7 @@ void GRUCalculateGradient(GRU filter, GRUGradient *gradient, float *d_out) {
     float *h_pr_Uh = filter->training_data->h_pr_Uh;
 
     GRUWeightsSize sizes = gru_weights_size_from_config(filter->config);
-    GRUGradient *current_gradient = recurrent_gradient_create(sizes, batch, in * ts);
+    GRUGradient *current_gradient = recurrent_gradient_create(sizes, batch, in * ts, true);
 
     float *dh = filter->training_data->d_H;
 

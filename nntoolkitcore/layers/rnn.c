@@ -121,7 +121,7 @@ RNN RNNCreateForTraining(RNNConfig config, RecurrentTrainingConfig training_conf
 RNNGradient *RNNGradientCreate(RNNConfig config, RNNTrainingConfig training_config) {
     return recurrent_gradient_create(
             rnn_weights_size_from_config(config),
-            training_config.mini_batch_size,
+            training_config.mini_batch_size *
             config.base.timesteps * config.base.input_feature_channels
     );
 }
@@ -301,7 +301,7 @@ void RNNCalculateGradient(RNN filter, RNNGradient *gradient, float *d_out) {
     float *gate = filter->training_data->gate;
 
     RNNWeightsSize sizes = rnn_weights_size_from_config(filter->config);
-    RNNGradient *current_gradient = recurrent_gradient_create(sizes, batch, in * ts);
+    RNNGradient *current_gradient = recurrent_gradient_create(sizes, batch, in * ts, true);
 
     float *dh = filter->training_data->dH;
 
@@ -324,7 +324,7 @@ void RNNCalculateGradient(RNN filter, RNNGradient *gradient, float *d_out) {
             current_gradients.d_bh_t = current_gradient->d_b_h + b * sizes.b_h;
 
             current_gradients.d_h_t_prev = dh + (b * out);
-            current_gradients.d_x_t = current_gradient->d_X + (t * in + b * ts * in);
+            current_gradients.d_x_t = gradient->d_X + (t * in + b * ts * in);
 
 
             float *d_h_t_init = t == ts - 1 ? NULL : dh + (b * out);
@@ -347,7 +347,7 @@ void RNNCalculateGradient(RNN filter, RNNGradient *gradient, float *d_out) {
             recurrent_gradient_sum(current_gradient, gradient, sizes, b);
         }
     }
-    f_copy(gradient->d_X, current_gradient->d_X, in * ts * batch);
+//    f_copy(gradient->d_X, current_gradient->d_X, in * ts * batch);
     recurrent_gradient_destroy(current_gradient);
 }
 
