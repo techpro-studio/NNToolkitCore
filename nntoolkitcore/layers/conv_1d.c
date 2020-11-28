@@ -67,6 +67,12 @@ Conv1dConfig Conv1dConfigCreate(int input_feature_channels, int output_feature_c
     return config;
 }
 
+ConvWeightsSize conv1d_weight_size_from_config(Conv1dConfig config){
+    int w_size = config.kernel_size * config.input_feature_channels * config.output_feature_channels;
+    int sum = w_size + config.output_feature_channels;
+    return (DefaultWeightsSize) { .w = w_size, .b = config.output_feature_channels, .sum = sum };
+}
+
 Conv1d conv1d_create(Conv1dConfig config) {
     Conv1d filter = malloc(sizeof(struct Conv1dStruct));
     filter->config = config;
