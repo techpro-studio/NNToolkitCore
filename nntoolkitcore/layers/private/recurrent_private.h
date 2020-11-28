@@ -12,8 +12,8 @@ RecurrentWeights *recurrent_weights_create(RecurrentWeightsSize sizes);
 void recurrent_weights_destroy(RecurrentWeights *weights);
 
 RecurrentGradient *recurrent_gradient_create(
-        RecurrentWeightsSize sizes,
-        int input_size
+    RecurrentWeightsSize sizes,
+    int input_size
 );
 
 void recurrent_gradient_destroy(RecurrentGradient *gradient);

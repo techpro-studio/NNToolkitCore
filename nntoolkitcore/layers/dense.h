@@ -18,16 +18,9 @@
 extern "C" {
 #endif
 
-typedef struct {
-    float *W;
-    float *b;
-} DenseWeights;
-
-typedef struct {
-    float *d_W;
-    float *d_b;
-    float *d_X;
-} DenseGradient;
+typedef DefaultWeights DenseWeights;
+typedef DefaultWeightsSize DenseWeightsSize;
+typedef DefaultGradient DenseGradient;
 
 typedef DefaultTrainingConfig DenseTrainingConfig;
 

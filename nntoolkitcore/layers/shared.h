@@ -17,6 +17,24 @@ inline static DefaultTrainingConfig DefaultTrainingConfigCreate(int mini_batch_s
     return (DefaultTrainingConfig) {mini_batch_size};
 }
 
+typedef struct {
+    int w;
+    int b;
+    int sum;
+} DefaultWeightsSize;
+
+typedef struct {
+    float *W;
+    float *b;
+} DefaultWeights;
+
+typedef struct {
+    float *d_W;
+    float *d_b;
+    float *d_X;
+} DefaultGradient;
+
+
 #if defined __cplusplus
 }
 #endif

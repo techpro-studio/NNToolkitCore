@@ -10,6 +10,7 @@
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/memory.h"
 #include "nntoolkitcore/core/loop.h"
+#include "nntoolkitcore/layers/private/weights_private.h"
 
 typedef struct {
     DenseTrainingConfig config;
@@ -17,22 +18,38 @@ typedef struct {
     float *z;
     float *a;
     float *dz;
+    DefaultGradient **batch_gradients;
 } DenseTrainingData;
+
+DenseWeightsSize dense_weight_size_from_config(DenseConfig config){
+    int w_size = config.input_size * config.output_size;
+    int sum = w_size + config.output_size;
+    return (DefaultWeightsSize) { .w = w_size, .b = config.output_size, .sum = sum };
+}
 
 DenseTrainingData *dense_training_data_create(DenseConfig config, DenseTrainingConfig training_config) {
     DenseTrainingData *data = malloc(sizeof(DenseTrainingData));
     data->config = training_config;
-    int x_size = config.input_size * training_config.mini_batch_size;
-    int z_size = config.output_size * training_config.mini_batch_size;
+    int b = training_config.mini_batch_size;
+    int x_size = config.input_size * b;
+    int z_size = config.output_size * b;
     int buff_size = x_size + 3 * z_size;
     data->x = f_malloc(buff_size);
     data->z = data->x + x_size;
     data->a = data->z + z_size;
     data->dz = data->a + z_size;
+    data->batch_gradients = malloc( b * sizeof(DefaultGradient*));
+    for (int i = 0; i < b; ++i){
+        data->batch_gradients[i] = default_gradient_create(dense_weight_size_from_config(config), 0);
+    }
     return data;
 }
 
 void dense_training_data_destroy(DenseTrainingData *data) {
+    for (int i = 0; i < data->config.mini_batch_size; ++i){
+        default_gradient_destroy(data->batch_gradients[i]);
+    }
+    free(data->batch_gradients);
     free(data->x);
     free(data);
 }
@@ -55,20 +72,18 @@ DenseConfig DenseConfigCreate(int input_size, int output_size, ActivationFunctio
     return config;
 }
 
+
+
 Dense DenseCreateForInference(DenseConfig config) {
     Dense filter = malloc(sizeof(struct DenseStruct));
     filter->config = config;
     filter->training_data = NULL;
-    filter->weights = malloc(sizeof(DenseWeights));
-    int weights_size = config.input_size * (config.output_size + 1);
-    filter->weights->W = f_malloc(weights_size);
-    filter->weights->b = filter->weights->W + config.input_size * config.output_size;
+    filter->weights = default_weights_create(dense_weight_size_from_config(config));
     return filter;
 }
 
 void DenseDestroy(Dense filter) {
-    free(filter->weights->W);
-    free(filter->weights);
+    default_weights_destroy(filter->weights);
     if (filter->training_data) {
         dense_training_data_destroy(filter->training_data);
     }
@@ -82,19 +97,14 @@ Dense DenseCreateForTraining(DenseConfig config, DenseTrainingConfig training_co
 }
 
 DenseGradient *DenseGradientCreate(DenseConfig config, DenseTrainingConfig training_config) {
-    DenseGradient *grad = malloc(sizeof(DenseGradient));
-    int d_w_size = config.input_size * config.output_size * training_config.mini_batch_size;
-    int d_x_size = config.input_size * training_config.mini_batch_size;
-    int grad_size = d_w_size + d_x_size + config.output_size * training_config.mini_batch_size;
-    grad->d_W = f_malloc(grad_size);
-    grad->d_X = grad->d_W + d_w_size;
-    grad->d_b = grad->d_X + d_x_size;
-    return grad;
+    return default_gradient_create(
+        dense_weight_size_from_config(config),
+        training_config.mini_batch_size * config.input_size
+    );
 }
 
 void DenseGradientDestroy(DenseGradient *gradient) {
-    free(gradient->d_W);
-    free(gradient);
+    default_gradient_destroy(gradient);
 }
 
 DenseConfig DenseGetConfig(Dense filter) {
@@ -146,7 +156,8 @@ int DenseApplyTrainingBatch(Dense filter, const float *input, float *output) {
 void DenseCalculateGradient(Dense filter, DenseGradient *gradient, float *d_out) {
     int out = filter->config.output_size;
     int in = filter->config.input_size;
-    P_LOOP_START(filter->training_data->config.mini_batch_size, b)
+    int batch = filter->training_data->config.mini_batch_size;
+    P_LOOP_START(batch, b)
                 // dz = d_out * d_activation ?? 1;
         float *dz = filter->training_data->dz + b * out;
         if (filter->config.activation) {
@@ -156,11 +167,12 @@ void DenseCalculateGradient(Dense filter, DenseGradient *gradient, float *d_out)
             f_copy(dz, d_out + b * out, out);
         }
         //db = dz;
-        f_copy(gradient->d_b + b * out, dz, out);
+        f_copy(filter->training_data->batch_gradients[b]->d_b, dz, out);
         // DW = dz * X;
-        op_mat_mul(filter->training_data->x + b * in, dz, gradient->d_W + b * in * out, in, out, 1);
+        op_mat_mul(filter->training_data->x + b * in, dz, filter->training_data->batch_gradients[b]->d_W, in, out, 1);
         // DX = dz * W;
         op_mat_mul(filter->weights->W, dz, gradient->d_X + b * in, in, 1, out);
     P_LOOP_END
+    default_gradient_sum(filter->training_data->batch_gradients, gradient, dense_weight_size_from_config(filter->config), batch);
 }
 

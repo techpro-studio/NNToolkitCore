@@ -59,20 +59,22 @@ DenseWeights* TimeDistributedDenseGetWeights(TimeDistributedDense filter) {
 }
 
 DenseGradient* TimeDistributedDenseGradientCreate(TimeDistributedDense filter){
-    DenseGradient* grad = malloc(sizeof(DenseGradient));
-
-    int in = filter->config.dense.input_size;
-    int out = filter->config.dense.output_size;
     int batch = filter->training_data->config.mini_batch_size;
     int ts = filter->config.ts;
+    return DenseGradientCreate(filter->config.dense, DefaultTrainingConfigCreate(ts * batch));
+//    DenseGradient* grad = malloc(sizeof(DenseGradient));
+//
+//    int in = filter->config.dense.input_size;
+//    int out = filter->config.dense.output_size;
 
-    int d_w_size =  in * out * ts * batch;
-    int d_x_size = in * ts * batch;
-    int buff_size = d_w_size + d_x_size + out * ts * batch;
-    grad->d_W = (float *) f_malloc(buff_size);
-    grad->d_X = grad->d_W + d_w_size;
-    grad->d_b = grad->d_X + d_x_size;
-    return grad;
+//
+//    int d_w_size =  in * out * ts * batch;
+//    int d_x_size = in * ts * batch;
+//    int buff_size = d_w_size + d_x_size + out * ts * batch;
+//    grad->d_W = (float *) f_malloc(buff_size);
+//    grad->d_X = grad->d_W + d_w_size;
+//    grad->d_b = grad->d_X + d_x_size;
+//    return grad;
 }
 
 
@@ -81,7 +83,7 @@ int TimeDistributedDenseApplyInference(TimeDistributedDense filter, const float 
         return -1;
     }
     P_LOOP_START(filter->config.ts, ts)
-                        DenseApplyInference(filter->dense, input + ts * filter->config.dense.input_size,
+        DenseApplyInference(filter->dense, input + ts * filter->config.dense.input_size,
                                             output + ts * filter->config.dense.output_size);
     P_LOOP_END
     return 0;
@@ -96,20 +98,20 @@ int TimeDistributedDenseApplyTrainingBatch(TimeDistributedDense filter, const fl
 }
 
 void TimeDistributedDenseCalculateGradient(TimeDistributedDense filter, DenseGradient *gradient, float *d_out){
-    DenseGradient *dense_gradient = DenseGradientCreate(filter->config.dense, filter->training_data->dense_config);
-    DenseCalculateGradient(filter->dense, dense_gradient, d_out);
+//    DenseGradient *dense_gradient = DenseGradientCreate(filter->config.dense, filter->training_data->dense_config);
+    DenseCalculateGradient(filter->dense, gradient, d_out);
 
-    int d_W_size = filter->config.dense.input_size * filter->config.dense.output_size;
-    int d_b_size = filter->config.dense.output_size;
-    int ts = filter->config.ts;
-    int batch = filter->training_data->config.mini_batch_size;
-    P_LOOP_START(batch, b)
-        for (int t = 0; t < ts; ++t){
-            op_vec_add(gradient->d_W + b * d_W_size, dense_gradient->d_W + (t * d_W_size + b * ts * d_W_size), gradient->d_W + b * d_W_size, d_W_size);
-            op_vec_add(gradient->d_b + b * d_b_size, dense_gradient->d_b + (t * d_b_size + b * ts * d_b_size), gradient->d_b + b * d_b_size, d_b_size);
-        }
-    P_LOOP_END
-    f_copy(gradient->d_X, dense_gradient->d_X, filter->config.dense.input_size * ts * batch);
+//    int d_W_size = filter->config.dense.input_size * filter->config.dense.output_size;
+//    int d_b_size = filter->config.dense.output_size;
+//    int ts = filter->config.ts;
+//    int batch = filter->training_data->config.mini_batch_size;
+//    P_LOOP_START(batch, b)
+//        for (int t = 0; t < ts; ++t){
+//            op_vec_add(gradient->d_W + b * d_W_size, dense_gradient->d_W + (t * d_W_size + b * ts * d_W_size), gradient->d_W + b * d_W_size, d_W_size);
+//            op_vec_add(gradient->d_b + b * d_b_size, dense_gradient->d_b + (t * d_b_size + b * ts * d_b_size), gradient->d_b + b * d_b_size, d_b_size);
+//        }
+//    P_LOOP_END
+//    f_copy(gradient->d_X, dense_gradient->d_X, filter->config.dense.input_size * ts * batch);
 }
 
 void TimeDistributedDenseDestroy(TimeDistributedDense filter){

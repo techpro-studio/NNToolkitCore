@@ -64,7 +64,7 @@ set(SOURCES
     nntoolkitcore/layers/private/recurrent_private.h
     nntoolkitcore/core/memory.c
     nntoolkitcore/layers/bidirectional.c
-        nntoolkitcore/layers/private/gradient_sum.c nntoolkitcore/layers/private/gradient_sum.h)
+        nntoolkitcore/layers/private/weights_private.c nntoolkitcore/layers/private/weights_private.h)
 
 if(APPLE)
     list(APPEND SOURCES nntoolkitcore/core/apple_ops.c)
