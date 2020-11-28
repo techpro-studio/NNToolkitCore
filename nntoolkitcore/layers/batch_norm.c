@@ -97,10 +97,10 @@ void BatchNormDestroy(BatchNorm filter) {
 BatchNormGradient *BatchNormGradientCreate(BatchNormConfig config, BatchNormTrainingConfig training_config) {
     BatchNormGradient *grad = malloc(sizeof(BatchNormGradient));
     int feat = config.feature_channels;
-    int buff = 2 * feat * training_config.mini_batch_size + feat * config.count * training_config.mini_batch_size;
+    int buff = 2 * feat + feat * config.count * training_config.mini_batch_size;
     grad->d_beta = f_malloc(buff);
-    grad->d_gamma = grad->d_beta + feat * training_config.mini_batch_size;
-    grad->d_x = grad->d_gamma + feat * training_config.mini_batch_size;
+    grad->d_gamma = grad->d_beta + feat;
+    grad->d_x = grad->d_gamma + feat;
     return grad;
 }
 
