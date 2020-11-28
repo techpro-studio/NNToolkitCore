@@ -10,10 +10,12 @@
 #include "nntoolkitcore/core/loop.h"
 #include "nntoolkitcore/core/ops.h"
 #include "nntoolkitcore/core/memory.h"
+#include "nntoolkitcore/layers/private/weights_private.h"
 
 typedef struct {
     ConvTrainingConfig config;
     float *input_transposed;
+    DefaultGradient **batch_gradients;
 } Conv1dTrainingData;
 
 typedef struct {
@@ -27,18 +29,12 @@ struct Conv1dStruct {
     Conv1dTrainingData *training_data;
 };
 
-static Conv1dTrainingData *conv1d_training_data_create(Conv1dConfig config, ConvTrainingConfig training_config) {
-    Conv1dTrainingData *data = malloc(sizeof(Conv1dTrainingData));
-    data->config = training_config;
-    data->input_transposed = malloc(config.input_feature_channels * config.input_size
-                                    * training_config.mini_batch_size * sizeof(float));
-    return data;
+ConvWeightsSize conv1d_weight_size_from_config(Conv1dConfig config) {
+    int w_size = config.kernel_size * config.input_feature_channels * config.output_feature_channels;
+    int sum = w_size + config.output_feature_channels;
+    return (DefaultWeightsSize) {.w = w_size, .b = config.output_feature_channels, .sum = sum};
 }
 
-static void conv_training_data_destroy(Conv1dTrainingData *training_data) {
-    free(training_data->input_transposed);
-    free(training_data);
-}
 
 static Conv1dInferenceData *conv1d_inference_data_create(Conv1dConfig config) {
     Conv1dInferenceData *data = malloc(sizeof(Conv1dInferenceData));
@@ -46,7 +42,30 @@ static Conv1dInferenceData *conv1d_inference_data_create(Conv1dConfig config) {
     return data;
 }
 
-static void conv1d_inference_data_destroy(Conv1dInferenceData* data) {
+static Conv1dTrainingData *conv1d_training_data_create(Conv1dConfig config, ConvTrainingConfig training_config) {
+    Conv1dTrainingData *data = malloc(sizeof(Conv1dTrainingData));
+    int b = training_config.mini_batch_size;
+    data->config = training_config;
+    data->input_transposed = malloc(config.input_feature_channels * config.input_size
+                                    * b * sizeof(float));
+    data->batch_gradients = malloc(b * sizeof(DefaultGradient *));
+    for (int i = 0; i < b; ++i) {
+        data->batch_gradients[i] = default_gradient_create(conv1d_weight_size_from_config(config), 0);
+    }
+    return data;
+}
+
+static void conv_training_data_destroy(Conv1dTrainingData *training_data) {
+    for (int i = 0; i < training_data->config.mini_batch_size; ++i) {
+        default_gradient_destroy(training_data->batch_gradients[i]);
+    }
+    free(training_data->batch_gradients);
+    free(training_data->input_transposed);
+    free(training_data);
+}
+
+
+static void conv1d_inference_data_destroy(Conv1dInferenceData *data) {
     free(data->buffer);
     free(data);
 }
@@ -70,11 +89,7 @@ Conv1dConfig Conv1dConfigCreate(int input_feature_channels, int output_feature_c
 Conv1d conv1d_create(Conv1dConfig config) {
     Conv1d filter = malloc(sizeof(struct Conv1dStruct));
     filter->config = config;
-    filter->weights = malloc(sizeof(ConvWeights));
-    int W_size = config.kernel_size * config.input_feature_channels * config.output_feature_channels;
-    int weights_size = W_size + config.output_feature_channels;
-    filter->weights->W = f_malloc(weights_size);
-    filter->weights->b = filter->weights->W + W_size;
+    filter->weights = default_weights_create(conv1d_weight_size_from_config(config));
     filter->training_data = NULL;
     filter->inference_data = NULL;
     return filter;
@@ -140,19 +155,13 @@ int Conv1dApplyInference(Conv1d filter, const float *input, float *output) {
 }
 
 ConvGradient *Conv1dCreateGradient(Conv1dConfig config, ConvTrainingConfig training_config) {
-    ConvGradient *gradient = malloc(sizeof(ConvGradient));
-    int d_x_size = config.input_size * config.input_feature_channels * training_config.mini_batch_size;
-    int d_w_size = config.input_feature_channels * config.output_feature_channels * config.kernel_size * training_config.mini_batch_size;
-    int grad_size = d_x_size + d_w_size + config.output_feature_channels * training_config.mini_batch_size;
-    gradient->d_W = f_malloc(grad_size);
-    gradient->d_X = gradient->d_W + d_w_size;
-    gradient->d_b = gradient->d_X + d_x_size;
-    return gradient;
+    return default_gradient_create(conv1d_weight_size_from_config(config),
+                                   training_config.mini_batch_size *
+                                   config.input_size * config.input_feature_channels);
 }
 
 void ConvGradientDestroy(ConvGradient *gradient) {
-    free(gradient->d_W);
-    free(gradient);
+    default_gradient_destroy(gradient);
 }
 
 int Conv1dApplyTrainingBatch(Conv1d filter, const float *input, float *output) {
@@ -174,13 +183,6 @@ int Conv1dApplyTrainingBatch(Conv1d filter, const float *input, float *output) {
 }
 
 void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, const float *d_out) {
-    int db_size = filter->config.output_feature_channels *
-    filter->training_data->config.mini_batch_size;
-    for (int o = 0; o < filter->config.output_size; ++o){
-        op_vec_add(gradient->d_b, d_out + o * db_size, gradient->d_b, db_size);
-    }
-
-
     int k_size = filter->config.kernel_size;
     int batch = filter->training_data->config.mini_batch_size;
     int in_ftrs = filter->config.input_feature_channels;
@@ -199,6 +201,12 @@ void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, const float 
     //  out_n  d4  d5  d6
 
     for (int b = 0; b < batch; ++b) {
+        //db
+        float *db_batched = filter->training_data->batch_gradients[b]->d_b;
+        for (int o = 0; o < filter->config.output_size; ++o){
+            op_vec_add(db_batched, d_out + o * out_ftrs +  b * out_size, db_batched, out_ftrs);
+        }
+
         for (int out_f = 0; out_f < out_ftrs; ++out_f) {
             for (int out_n = 0; out_n < filter->config.output_size; ++out_n) {
 
@@ -219,7 +227,7 @@ void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, const float 
 
                     float d_kernel[k_size];
                     op_vec_mul_sc(row_ptr, d_o, d_kernel, k_size);
-                    float *d_W = gradient->d_W + W_size * b + weights_offset;
+                    float *d_W = filter->training_data->batch_gradients[b]->d_W + weights_offset;
                     op_vec_add(d_W, d_kernel, d_W, k_size);
 
                     // d_X;
@@ -233,6 +241,7 @@ void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, const float 
         }
         op_mat_transp(d_x_transposed + b * inp_size, gradient->d_X + b * inp_size, filter->config.input_size, in_ftrs);
     }
+    default_gradient_sum(filter->training_data->batch_gradients, gradient, conv1d_weight_size_from_config(filter->config), batch);
 }
 
 

@@ -30,16 +30,9 @@ typedef struct {
 
 Conv1dConfig Conv1dConfigCreate(int input_feature_channels, int output_feature_channels, int kernel_size, int stride, int inputSize);
 
-typedef struct {
-    float *W;
-    float *b;
-} ConvWeights;
-
-typedef struct {
-    float *d_W;
-    float *d_b;
-    float *d_X;
-} ConvGradient;
+typedef DefaultWeights ConvWeights;
+typedef DefaultWeightsSize ConvWeightsSize;
+typedef DefaultGradient ConvGradient;
 
 typedef struct Conv1dStruct* Conv1d;
 

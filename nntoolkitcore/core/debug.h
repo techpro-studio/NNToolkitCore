@@ -6,8 +6,8 @@
 //  Copyright © 2020 Alex. All rights reserved.
 //
 
-#ifndef degub_h
-#define degub_h
+#ifndef debug_h
+#define debug_h
 
 #include <stdio.h>
 #if defined __cplusplus
@@ -24,4 +24,4 @@ void print_tensor(const float *tensor, int *shape, int shapeSize);
 }
 #endif
 
-#endif /* degub_h */
+#endif /* debug_h */

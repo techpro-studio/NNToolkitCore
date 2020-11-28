@@ -13,20 +13,14 @@
 #include "activation.h"
 #include "shared.h"
 
+
 #if defined __cplusplus
 extern "C" {
 #endif
 
-typedef struct {
-    float *W;
-    float *b;
-} DenseWeights;
-
-typedef struct {
-    float *d_W;
-    float *d_b;
-    float *d_X;
-} DenseGradient;
+typedef DefaultWeights DenseWeights;
+typedef DefaultWeightsSize DenseWeightsSize;
+typedef DefaultGradient DenseGradient;
 
 typedef DefaultTrainingConfig DenseTrainingConfig;
 
@@ -41,6 +35,8 @@ DenseGradient* DenseGradientCreate(DenseConfig config, DenseTrainingConfig train
 void DenseGradientDestroy(DenseGradient *gradient);
 
 typedef struct DenseStruct* Dense;
+
+DenseGradient* DenseGradientCreateFromFilter(Dense dense);
 
 DenseWeights* DenseGetWeights(Dense filter);
 

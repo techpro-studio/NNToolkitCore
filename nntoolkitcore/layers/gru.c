@@ -28,6 +28,7 @@ typedef struct {
     float *h_pr_Uh;
     float* Z_gates;
     float *computation_buffer;
+    RecurrentGradient *current_weights_gradient;
 } GRUTrainingData;
 
 typedef struct {
@@ -71,6 +72,7 @@ GRU gru_create(GRUConfig config){
 
 void gru_training_data_destroy(GRUTrainingData *data){
     free(data->input);
+    recurrent_gradient_destroy(data->current_weights_gradient);
     free(data);
 }
 
@@ -93,6 +95,8 @@ GRUTrainingData *gru_training_data_create(GRUConfig config, RecurrentTrainingCon
     int output_size = batch * out * config.base.timesteps;
     // input + output+ Z_gates + d_h + buffer
     int training_buffer = input_size + 8 * output_size + batch * out + 8 * out;
+    //input size 0 since we need w8s only
+    data->current_weights_gradient = recurrent_gradient_create(gru_weights_size_from_config(config), 0);
     data->config = training_config;
     data->input = f_malloc(training_buffer);
     data->output = data->input + input_size;
@@ -121,10 +125,6 @@ void GRUDestroy(GRU filter) {
     free(filter);
 }
 
-
-#if DEBUG
-#include "nntoolkitcore/core/debug.h"
-#endif
 
 static void GRUCellForward(
     GRUWeights *weights,
@@ -238,7 +238,7 @@ GRU GRUCreateForTraining(GRUConfig config, GRUTrainingConfig training_config) {
 GRUGradient *GRUGradientCreate(GRUConfig config, GRUTrainingConfig training_config) {
     return recurrent_gradient_create(
         gru_weights_size_from_config(config),
-        training_config.mini_batch_size,
+        training_config.mini_batch_size *
         config.base.input_feature_channels * config.base.timesteps
     );
 }
@@ -461,8 +461,6 @@ void GRUCalculateGradient(GRU filter, GRUGradient *gradient, float *d_out) {
     float *h_pr_Uh = filter->training_data->h_pr_Uh;
 
     GRUWeightsSize sizes = gru_weights_size_from_config(filter->config);
-    GRUGradient *current_gradient = recurrent_gradient_create(sizes, batch, in * ts);
-
     float *dh = filter->training_data->d_H;
 
     for (int b = 0; b < batch; ++b) {
@@ -479,13 +477,13 @@ void GRUCalculateGradient(GRU filter, GRUGradient *gradient, float *d_out) {
 
             CellBackwardGradients current_gradients;
 
-            current_gradients.d_W_t = current_gradient->d_W + b * sizes.w;
-            current_gradients.d_U_t = current_gradient->d_U + b * sizes.u;
-            current_gradients.d_bi_t = current_gradient->d_b_i + b * sizes.b_i;
-            current_gradients.d_bh_t = current_gradient->d_b_h + b * sizes.b_h;
+            current_gradients.d_W_t = filter->training_data->current_weights_gradient->d_W;
+            current_gradients.d_U_t = filter->training_data->current_weights_gradient->d_U;
+            current_gradients.d_bi_t = filter->training_data->current_weights_gradient->d_b_i;
+            current_gradients.d_bh_t = filter->training_data->current_weights_gradient->d_b_h;
 
             current_gradients.d_h_t_prev = dh + (b * out);
-            current_gradients.d_x_t = current_gradient->d_X + (t * in + b * ts * in);
+            current_gradients.d_x_t = gradient->d_X + (t * in + b * ts * in);
 
 
             int computation_buffer_size = 20 * out;
@@ -508,11 +506,9 @@ void GRUCalculateGradient(GRU filter, GRUGradient *gradient, float *d_out) {
                             current_gradients, computation_buffer);
             f_zero(computation_buffer, computation_buffer_size);
 
-            recurrent_gradient_sum(current_gradient, gradient, sizes, b);
+            recurrent_gradient_sum(filter->training_data->current_weights_gradient, gradient, sizes);
         }
     }
-    f_copy(gradient->d_X, current_gradient->d_X, in * ts * batch);
-    recurrent_gradient_destroy(current_gradient);
 }
 
 
