@@ -40,12 +40,9 @@ void recurrent_weights_destroy(RecurrentWeights *weights) {
     free(weights);
 }
 
-void
-recurrent_gradient_sum(RecurrentGradient *current, RecurrentGradient *root, RecurrentWeightsSize sizes, int batch) {
-    op_vec_add(root->d_W + batch * sizes.w, current->d_W + batch * sizes.w, root->d_W + batch * sizes.w, sizes.w);
-    op_vec_add(root->d_U + batch * sizes.u, current->d_U + batch * sizes.u, root->d_U + batch * sizes.u, sizes.u);
-    op_vec_add(root->d_b_i + batch * sizes.b_i, current->d_b_i + batch * sizes.b_i, root->d_b_i + batch * sizes.b_i,
-               sizes.b_i);
-    op_vec_add(root->d_b_h + batch * sizes.b_h, current->d_b_h + batch * sizes.b_h, root->d_b_h + batch * sizes.b_h,
-               sizes.b_h);
+void recurrent_gradient_sum(RecurrentGradient *current, RecurrentGradient *root, RecurrentWeightsSize sizes) {
+    op_vec_add(root->d_W, current->d_W, root->d_W, sizes.w);
+    op_vec_add(root->d_U, current->d_U, root->d_U, sizes.u);
+    op_vec_add(root->d_b_i, current->d_b_i, root->d_b_i, sizes.b_i);
+    op_vec_add(root->d_b_h, current->d_b_h, root->d_b_h, sizes.b_h);
 }

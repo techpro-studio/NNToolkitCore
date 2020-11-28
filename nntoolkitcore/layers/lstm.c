@@ -33,6 +33,7 @@ typedef struct {
     float *dH;
     float *dC;
     float *computation_buffer;
+    RecurrentGradient *current_weights_gradient;
 } LSTMTrainingData;
 
 typedef struct {
@@ -41,6 +42,7 @@ typedef struct {
 
 void lstm_training_data_destroy(LSTMTrainingData *data){
     free(data->input);
+    recurrent_gradient_destroy(data->current_weights_gradient);
     free(data->computation_buffer);
     free(data);
 }
@@ -48,6 +50,18 @@ void lstm_training_data_destroy(LSTMTrainingData *data){
 void lstm_inference_data_destroy(LSTMInferenceData *data){
     free(data->computation_buffer);
     free(data);
+}
+
+LSTMWeightsSize lstm_weights_size_from_config(LSTMConfig config){
+    int in = config.base.input_feature_channels;
+    int out = config.base.output_feature_channels;
+    LSTMWeightsSize size;
+    size.w = 4 * in * out;
+    size.u = 4 * out * out;
+    size.b_i = 4 * out;
+    size.b_h = 4 * out;
+    size.sum = size.w + size.u + size.b_h + size.b_i;
+    return size;
 }
 
 LSTMTrainingData* lstm_training_data_create(LSTMConfig config, LSTMTrainingConfig training_config){
@@ -64,7 +78,8 @@ LSTMTrainingData* lstm_training_data_create(LSTMConfig config, LSTMTrainingConfi
     */
     int input = batch * in * ts;
     int training_cache_size = input + batch * ts * 10 * out + 2 * batch * out;
-
+    // input size zero since we need w8s only
+    training_data->current_weights_gradient = recurrent_gradient_create(lstm_weights_size_from_config(config), 0);
     training_data->input = f_malloc(training_cache_size);
     training_data->zifgo = training_data->input + input;
     training_data->state = training_data->zifgo + 8 * batch * ts * out;
@@ -122,17 +137,7 @@ LSTMConfig LSTMConfigCreate(int input_feature_channels, int output_feature_chann
     return config;
 }
 
-LSTMWeightsSize lstm_weights_size_from_config(LSTMConfig config){
-    int in = config.base.input_feature_channels;
-    int out = config.base.output_feature_channels;
-    LSTMWeightsSize size;
-    size.w = 4 * in * out;
-    size.u = 4 * out * out;
-    size.b_i = 4 * out;
-    size.b_h = 4 * out;
-    size.sum = size.w + size.u + size.b_h + size.b_i;
-    return size;
-}
+
 
 LSTM lstm_create(LSTMConfig config){
     LSTM filter = malloc(sizeof(struct LSTMStruct));
@@ -493,7 +498,6 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out) {
     float *zifgo = filter->training_data->zifgo;
 
     LSTMWeightsSize sizes = lstm_weights_size_from_config(filter->config);
-    LSTMGradient *current_gradient = recurrent_gradient_create(sizes, batch, in * ts, true);
 
     float *dc = filter->training_data->dC;
     float *dh = filter->training_data->dH;
@@ -516,14 +520,14 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out) {
 
             CellBackwardGradients current_gradients;
 
-            current_gradients.d_W_t = current_gradient->d_W + b * sizes.w;
-            current_gradients.d_U_t = current_gradient->d_U + b * sizes.u;
-            current_gradients.d_bi_t = current_gradient->d_b_i + b * sizes.b_i;
-            current_gradients.d_bh_t = current_gradient->d_b_h + b * sizes.b_h;
+            current_gradients.d_W_t = filter->training_data->current_weights_gradient->d_W;
+            current_gradients.d_U_t = filter->training_data->current_weights_gradient->d_U;
+            current_gradients.d_bi_t = filter->training_data->current_weights_gradient->d_b_i;
+            current_gradients.d_bh_t = filter->training_data->current_weights_gradient->d_b_h;
 
             current_gradients.d_c_t_prev = dc + (b * out);
             current_gradients.d_h_t_prev = dh + (b * out);
-            current_gradients.d_x_t = current_gradient->d_X + (t * in + b * ts * in);
+            current_gradients.d_x_t = gradient->d_X + (t * in + b * ts * in);
 
             float *d_c_t_init = t == ts - 1 ? NULL : dc + (b * out);
             float *d_h_t_init = t == ts - 1 ? NULL : dh + (b * out);
@@ -546,9 +550,7 @@ void LSTMCalculateGradient(LSTM filter, LSTMGradient *gradient, float *d_out) {
             LSTMCellBackward(filter->weights, filter->config.activations, in, out, d_h_t, d_c_t_init, cache,
                              current_gradients, computation_buffer);
             f_zero(computation_buffer, computation_buffer_size);
-            recurrent_gradient_sum(current_gradient, gradient, sizes, b);
+            recurrent_gradient_sum(filter->training_data->current_weights_gradient, gradient, sizes);
         }
     }
-    f_copy(gradient->d_X, current_gradient->d_X, in * ts * batch);
-    recurrent_gradient_destroy(current_gradient);
 }
