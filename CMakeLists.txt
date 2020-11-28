@@ -64,7 +64,7 @@ set(SOURCES
     nntoolkitcore/layers/private/recurrent_private.h
     nntoolkitcore/core/memory.c
     nntoolkitcore/layers/bidirectional.c
-        nntoolkitcore/layers/private/weights_private.c nntoolkitcore/layers/private/weights_private.h)
+        nntoolkitcore/layers/private/weights_private.c nntoolkitcore/layers/private/weights_private.h nntoolkitcore/layers/recurrent.c)
 
 if(APPLE)
     list(APPEND SOURCES nntoolkitcore/core/apple_ops.c)
