@@ -183,13 +183,11 @@ int Conv1dApplyTrainingBatch(Conv1d filter, const float *input, float *output) {
 }
 
 void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, const float *d_out) {
-    int db_size = filter->config.output_feature_channels *
-                  filter->training_data->config.mini_batch_size;
-    for (int o = 0; o < filter->config.output_size; ++o) {
-        op_vec_add(gradient->d_b,d_out + o * db_size, gradient->d_b, db_size);
-    }
-
-
+//    int db_size = filter->config.output_feature_channels *
+//                  filter->training_data->config.mini_batch_size;
+//    for (int o = 0; o < filter->config.output_size; ++o) {
+//        op_vec_add(gradient->d_b,d_out + o * db_size, gradient->d_b, db_size);
+//    }
     int k_size = filter->config.kernel_size;
     int batch = filter->training_data->config.mini_batch_size;
     int in_ftrs = filter->config.input_feature_channels;
@@ -208,6 +206,12 @@ void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, const float 
     //  out_n  d4  d5  d6
 
     for (int b = 0; b < batch; ++b) {
+        //db
+        float *db_batched = filter->training_data->batch_gradients[b]->d_b;
+        for (int o = 0; o < filter->config.output_size; ++o){
+            op_vec_add(db_batched, d_out + o * out_ftrs +  b * out_size, db_batched, out_ftrs);
+        }
+
         for (int out_f = 0; out_f < out_ftrs; ++out_f) {
             for (int out_n = 0; out_n < filter->config.output_size; ++out_n) {
 
@@ -242,7 +246,7 @@ void Conv1dCalculateGradient(Conv1d filter, ConvGradient *gradient, const float 
         }
         op_mat_transp(d_x_transposed + b * inp_size, gradient->d_X + b * inp_size, filter->config.input_size, in_ftrs);
     }
-
+    default_gradient_sum(filter->training_data->batch_gradients, gradient, conv1d_weight_size_from_config(filter->config), batch);
 }
 
 

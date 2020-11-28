@@ -36,8 +36,7 @@ set (PUBLIC_HEADERS
     nntoolkitcore/layers/batch_norm.h
     nntoolkitcore/layers/conv_1d.h
     nntoolkitcore/core/debug.h
-        )
-
+)
 
 set(PRIVATE_HEADERS
     nntoolkitcore/core/types.h
@@ -64,7 +63,10 @@ set(SOURCES
     nntoolkitcore/layers/private/recurrent_private.h
     nntoolkitcore/core/memory.c
     nntoolkitcore/layers/bidirectional.c
-        nntoolkitcore/layers/private/weights_private.c nntoolkitcore/layers/private/weights_private.h nntoolkitcore/layers/recurrent.c)
+    nntoolkitcore/layers/private/weights_private.c
+    nntoolkitcore/layers/private/weights_private.h
+    nntoolkitcore/layers/recurrent.c
+)
 
 if(APPLE)
     list(APPEND SOURCES nntoolkitcore/core/apple_ops.c)
