@@ -7,6 +7,10 @@ cmake-build-debug/
 third_party/pffft/
 third_party/eigen3/
 
+build/
+.vscode/
+.idea/
+
 *.cbp
 # Object files
 *.o
