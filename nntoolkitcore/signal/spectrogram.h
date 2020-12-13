@@ -17,6 +17,12 @@
 extern "C" {
 #endif
 
+typedef struct SpectrogramModeStruct* SpectrogramMode;
+
+SpectrogramMode SpectrogramModeCreatePSD(int fs);
+
+SpectrogramMode SpectrogramModeCreateMagnitude(void);
+
 typedef struct {
     int nfft;
     int noverlap;
@@ -32,7 +38,7 @@ SpectrogramConfig SpectrogramConfigCreate(int nfft, int noverlap, int input_size
 
 typedef struct SpectrogramStruct* Spectrogram;
 
-Spectrogram SpectrogramCreate(SpectrogramConfig config);
+Spectrogram SpectrogramCreate(SpectrogramConfig config, SpectrogramMode mode);
 
 void SpectrogramSetWindowFunc(Spectrogram filter, window_fn fn);
 

@@ -12,13 +12,36 @@
 #include "nntoolkitcore/core/memory.h"
 #include "stdlib.h"
 
+typedef void(*spectrogram_mode_run)(void *params, float* real_p, float* imag_p, float *freqs, const int size);
+
+inline static void magnitude(void *params, float* real_p, float* imag_p, float *freqs, const int size)
+{
+    op_vec_magnitudes(real_p, imag_p, freqs, size);
+    op_vec_sqrt(freqs, freqs, size);
+    op_vec_add_sc(freqs, 1.5849e-13f, freqs, size);
+    op_vec_db(freqs, 1.0f, freqs, size);
+}
 
 typedef void (*spectrogram_implementer)(Spectrogram filter, const float* input, float* output);
 
 
+struct SpectrogramModeStruct {
+    void *params;
+    spectrogram_mode_run run_fn;
+};
+
+SpectrogramMode SpectrogramModeCreatePSD(int fs){
+    
+}
+
+SpectrogramMode SpectrogramModeCreateMagnitude(){
+
+}
+
 struct SpectrogramStruct{
     SpectrogramConfig config;
     DFTSetup dft_setup;
+    SpectrogramMode *mode;
     float *window;
 };
 
@@ -35,15 +58,6 @@ SpectrogramConfig SpectrogramConfigCreate(int nfft, int noverlap, int input_size
     return config;
 }
 
-inline static void magnitude(float* real_p, float* imag_p, float *freqs, const int size)
-{
-    op_vec_magnitudes(real_p, imag_p, freqs, size);
-    op_vec_sqrt(freqs, freqs, size);
-    op_vec_add_sc(freqs, 1.5849e-13f, freqs, size);
-    op_vec_db(freqs, 1.0f, freqs, size);
-}
-
-
 static void real_spectrogram(Spectrogram filter, const float* input, float* output){
     P_LOOP_START(filter->config.ntime_series, timed)
         int nfft = filter->config.nfft;
@@ -57,13 +71,14 @@ static void real_spectrogram(Spectrogram filter, const float* input, float* outp
         ComplexFloatSplit output_split = {output_memory, output_memory + nfft};
         DFTPerform(filter->dft_setup, &input_split , &output_split);
         op_vec_mul_sc(output_memory, norm_factor, output_memory, nfft * 2);
-        magnitude(output_memory, output_memory + nfft, output + timed * nfreq, nfreq);
+        filter->mode->run_fn(filter->mode->params, output_memory, output_memory + nfft, output + timed * nfreq, nfreq);
     P_LOOP_END
 }
 
-Spectrogram SpectrogramCreate(SpectrogramConfig config){
+Spectrogram SpectrogramCreate(SpectrogramConfig config, SpectrogramMode mode){
     Spectrogram filter = malloc(sizeof(struct SpectrogramStruct));
     filter->config = config;
+    filter->mode = mode;
     filter->dft_setup = DFTSetupCreate(DFTConfigCreate(config.nfft, true, false));
     filter->window = malloc(config.nfft * sizeof(float));
     for (int i = 0; i < config.nfft; ++i)
