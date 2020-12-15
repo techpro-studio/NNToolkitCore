@@ -86,6 +86,8 @@ SpectrogramMode SpectrogramModeCreatePSD(int fs){
     return mode;
 }
 
+
+
 struct SpectrogramStruct{
     SpectrogramConfig config;
     DFTSetup dft_setup;
@@ -120,7 +122,8 @@ static void real_spectrogram(Spectrogram filter, const float* input, float* outp
         ComplexFloatSplit input_split = {input_re_im, input_re_im + nfft};
         ComplexFloatSplit output_split = {output_memory, output_memory + nfft};
         DFTPerform(filter->dft_setup, &input_split , &output_split);
-        op_vec_mul_sc(output_memory, norm_factor, output_memory, nfft * 2);
+        if(norm_factor != 1.0f)
+            op_vec_mul_sc(output_memory, norm_factor, output_memory, nfft * 2);
         filter->mode->run_fn(filter->mode->params, output_memory, output_memory + nfft, output + timed * nfreq, nfreq, filter->mode->window_scale_factor);
     P_LOOP_END
 }
@@ -133,19 +136,20 @@ Spectrogram SpectrogramCreate(SpectrogramConfig config, SpectrogramMode mode){
     filter->window = malloc(config.nfft * sizeof(float));
     for (int i = 0; i < config.nfft; ++i)
         filter->window[i] = 1.0f;
-    filter->mode->window_scale_factor = filter->mode->win_f_calc(filter->window, filter->mode->buffer, filter->config.nfft);
+    filter->mode->window_scale_factor = filter->mode->win_f_calc(filter->window, filter->config.nfft);
     return filter;
 }
 void SpectrogramSetWindowFunc(Spectrogram filter, window_fn fn) {
     fn(filter->window, filter->config.nfft);
     filter->mode->window_scale_factor
-     = filter->mode->win_f_calc(filter->window, filter->mode->buffer, filter->config.nfft);
+     = filter->mode->win_f_calc(filter->window, filter->config.nfft);
 }
 
 void complex_spectrogram(Spectrogram filter, const float* input, float* output) {
     P_LOOP_START(filter->config.ntime_series, timed)
         int nfft = filter->config.nfft;
         int nfreq = filter->config.nfreq;
+        float norm_factor = filter->config.fft_normalization_factor;
         float output_memory[nfft * 2];
         float input_memory[nfft * 2];
         ComplexFloatSplit input_split = {input_memory, input_memory + nfft};
@@ -154,6 +158,8 @@ void complex_spectrogram(Spectrogram filter, const float* input, float* output) 
         op_vec_mul(filter->window, input_split.real_p, input_split.real_p, nfft);
         op_vec_mul(filter->window, input_split.imag_p, input_split.imag_p, nfft);
         DFTPerform(filter->dft_setup, &input_split , &output_split);
+        if(norm_factor != 1.0f)
+            op_vec_mul_sc(output_memory, norm_factor, output_memory, nfft * 2);
         filter->mode->run_fn(filter->mode->params, output_memory, output_memory + nfft, output + timed * nfreq, nfreq, filter->mode->window_scale_factor);
     P_LOOP_END
 }

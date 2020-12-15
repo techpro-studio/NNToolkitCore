@@ -15,15 +15,15 @@
 
 #define simd_float_16_init(var, value) \
 float var##arr[16] = { value, value, value, value, value, value, value, value, value, value, value, value, value, value, value, value };\
-simd_float16 var = simd_make_float16(*(simd_float16 *)(var##arr));\
+simd_float16 var = simd_make_float16(*(simd_packed_float16 *)(var##arr));\
 
 #define simd_float_8_init(var, value) \
 float var##arr[8] = { value, value, value, value, value, value, value, value };\
-simd_float8 var = simd_make_float8(*(simd_float8 *)(var##arr));\
+simd_float8 var = simd_make_float8(*(simd_packed_float8 *)(var##arr));\
 
 #define simd_float_4_init(var, value) \
 float var##arr[4] = { value, value, value, value };\
-simd_float4 var = simd_make_float4(*(simd_float4 *)(var##arr));\
+simd_float4 var = simd_make_float4(*(simd_packed_float4 *)(var##arr));\
 
 #define simd_float_3_init(var, value) \
 float var##arr[3] = { value, value, value };\
@@ -31,7 +31,7 @@ simd_float3 var = simd_make_float3(*(simd_float3 *)(var##arr));\
 
 #define simd_float_2_init(var, value) \
 float var##arr[2] = { value, value };\
-simd_float2 var = simd_make_float2(*(simd_float2 *)(var##arr));\
+simd_float2 var = simd_make_float2(*(simd_packed_float2 *)(var##arr));\
 
 
 #define vector_dot_(NUM)  float op_vec_dot_##NUM(const float* a, const float *b, int size)\
@@ -83,7 +83,7 @@ float op_vec_dot_3(const float* a, const float *b, int size)
     {\
     simd_float_##NUM##_init(s_min, min)\
     simd_float_##NUM##_init(s_max, max)\
-        ((simd_float##NUM*) c)[i] = simd_clamp(((simd_float##NUM*) a)[i], s_min, s_max);\
+        ((simd_float##NUM*) c)[i] = simd_clamp(((simd_packed_float##NUM*) a)[i], s_min, s_max);\
     }\
     int left = size % NUM;\
     for (int i = 0; i < left; ++i)\
@@ -93,7 +93,6 @@ float op_vec_dot_3(const float* a, const float *b, int size)
 }
 
 op_vec_clamp_(2)
-op_vec_clamp_(3)
 op_vec_clamp_(4)
 op_vec_clamp_(8)
 op_vec_clamp_(16)
@@ -104,8 +103,8 @@ op_vec_clamp_(16)
     int iterations = size / NUM;\
     for (int i = 0; i < iterations; ++i)\
     {\
-    simd_float_##NUM##_init(s_b, b)\
-        ((simd_float##NUM*) c)[i] = simd_max(((simd_float##NUM*) a)[i], s_b);\
+        simd_float_##NUM##_init(s_b, b)\
+        ((simd_float##NUM*) c)[i] = simd_max(((simd_packed_float##NUM*) a)[i], s_b);\
     }\
     int left = size % NUM;\
     for (int i = 0; i < left; ++i)\
@@ -114,13 +113,22 @@ op_vec_clamp_(16)
     }\
 }
 
+void op_vec_max_sc_4(const float* a, float b, float *c, int size)\
+{\
+    int iterations = size / 4;
+    for (int i = 0; i < iterations; ++i)
+    {
+        simd_float_4_init(s_b, b)
+        simd_float4 s_a = ((simd_packed_float4 *) a)[i];
+        ((simd_packed_float4*) c)[i] = simd_max(s_a, s_b);
+    }
+    int left = size % 4;
+    for (int i = 0; i < left; ++i)
+    {
+        c[iterations * 4 + i] = simd_max(a[iterations * 4 + i], b);
+    }
+}
 
-
-op_vec_max_sc_(2)
-op_vec_max_sc_(3)
-op_vec_max_sc_(4)
-op_vec_max_sc_(8)
-op_vec_max_sc_(16)
 
 typedef enum {
     two = 2, three = 3, four = 4, eight = 8, sixteen = 16
@@ -146,24 +154,6 @@ optimal_vector_size get_optimal_vector_size(int size){
     return values[optimalIndex];
 }
 
-#define get_optimized(func) func##_fn func##_get_optimized(int size){\
-    optimal_vector_size value = get_optimal_vector_size(size);\
-    switch (value) {\
-        case two:\
-            return func##_2;\
-        case three:\
-            return func##_3;\
-        case four:\
-            return func##_4;\
-        case eight:\
-            return func##_8;\
-        case sixteen:\
-            return func##_16;\
-        default:\
-            return func##_4;\
-    }\
-}
-
 typedef float (*op_vec_dot_fn)(const float *a, const float *b, int size);
 
 typedef void (*op_vec_clamp_fn)(const float *a, float *c, float min, float max, int size);
@@ -176,9 +166,6 @@ op_vec_clamp_fn op_vec_clamp_get_optimized(int size);
 
 op_vec_max_sc_fn op_vec_max_sc_get_optimized(int size);
 
-get_optimized(op_vec_dot)
-get_optimized(op_vec_clamp)
-get_optimized(op_vec_max_sc)
 
 void op_vec_max(const float *a, const float *b, float *c, int size){
     vDSP_vmax(a, 1, b, 1, c, 1, size);
@@ -194,9 +181,6 @@ float op_vec_dot(const float *a, const float *b, int size) {
 #else
     return op_vec_dot_4(a, b, size);
 #endif
-//    float c;
-//    vDSP_dotpr(a, 1, b, 1, &c, size);
-//    return c;
 }
 
 void op_vec_clamp(const float *a, float *c, float min, float max, int size){
@@ -215,7 +199,7 @@ void op_vec_sub(const float *a, const float *b, float *result, int size){
     vDSP_vsub(b, 1, a, 1, result, 1, size);
 }
 
-void op_vec_sum(const float *a, float* result, int size){
+void op_vec_sum(const float *a, float* result, int size) {
     vDSP_sve(a, 1, result, size);
 }
 
@@ -246,6 +230,15 @@ void op_vec_sqrt(const float *a, float *c, int size){
 void op_vec_exp(const float *a, float *c, int size) {
     vvexpf(c, a, &size);
 }
+
+void op_vec_pow(const float *a, const float *b, float *c, int size) {
+    vvpowf(c, b, a, &size);
+}
+
+void op_vec_pow_sc(const float *a, const float b, float *c, int size) {
+    vvpowsf(c, &b, a, &size);
+}
+
 
 void op_vec_log(const float *a, float *c, int size) {
     vvlogf(c, a, &size);
@@ -279,5 +272,7 @@ void op_mat_mul(const float *a, const float *b, float *c, int M, int N, int K) {
 void op_mat_transp(const float *a, float *b, int M, int N) {
     vDSP_mtrans(a, 1, b, 1, M, N);
 }
+
+
 
 
