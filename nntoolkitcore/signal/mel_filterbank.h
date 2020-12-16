@@ -35,8 +35,6 @@ MelFilterBank MelFilterBankCreate(MelFilterBankConfig config);
 
 void MelFilterBankApply(MelFilterBank filter_bank, const float* spectrogram, float *mel_spectrogram, int timesteps);
 
-void print(MelFilterBank bank);
-
 void MelFilterBankDestroy(MelFilterBank filter_bank);
 
 #if defined __cplusplus

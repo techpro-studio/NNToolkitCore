@@ -256,7 +256,7 @@ void op_vec_div(const float *a, const float *b, float *c, int size) {
     vDSP_vdiv(b, 1, a, 1, c, 1, size);
 }
 
-void op_vec_magnitudes(float *a, float *b, float *c, int size) {
+void op_vec_magn_sq(float *a, float *b, float *c, int size) {
     DSPSplitComplex split = {a, b};
     vDSP_zvmags(&split, 1, c, 1, size);
 }

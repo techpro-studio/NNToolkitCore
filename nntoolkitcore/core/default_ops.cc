@@ -663,13 +663,13 @@ void op_vec_sum(const float *a, float* c, int size) {
 }
 
 
-static void op_vec_magnitudes_c(const float *a, const float *b, float *c, int size){
+static void op_vec_magn_sq_c(const float *a, const float *b, float *c, int size){
     for (int i = 0; i < size; ++i){
         c[i] = a[i] * a[i] + b[i] * b[i];
     }
 }
 
-void op_vec_magnitudes(float *a, float *b, float *c, int size) {
+void op_vec_magn_sq(float *a, float *b, float *c, int size) {
 #if NEON
     int parts = size / 4, remaining = size % 4;
     for (int i = 0; i < parts; ++i){
@@ -677,9 +677,9 @@ void op_vec_magnitudes(float *a, float *b, float *c, int size) {
         float32x4_t b_4 = vld1q_f32(b + 4 * i);
         vst1q_f32(c + i * 4, vaddq_f32(vmulq_f32(a_4, a_4), vmulq_f32(b_4, b_4)));
     }
-    op_vec_magnitudes_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
+    op_vec_magn_sq_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
 #else
-    op_vec_magnitudes_c(a, b, c, size);
+    op_vec_magn_sq_c(a, b, c, size);
 #endif
 }
 

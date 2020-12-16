@@ -47,7 +47,7 @@ void spectrogram_mode_destroy(SpectrogramMode mode){
 
 static void magnitude(void* params, float* real_p, float* imag_p, float *freqs, const int size, const float window_scale_factor)
 {
-    op_vec_magnitudes(real_p, imag_p, freqs, size);
+    op_vec_magn_sq(real_p, imag_p, freqs, size);
     op_vec_sqrt(freqs, freqs, size);
     op_vec_div_sc(freqs, window_scale_factor, freqs, size);
 }
@@ -65,7 +65,7 @@ SpectrogramMode SpectrogramModeCreateMagnitude(){
 
 static void psd(void *params, float* real_p, float* imag_p, float *freqs, const int size,  const float window_scale_factor)
 {
-    op_vec_magnitudes(real_p, imag_p, freqs, size);
+    op_vec_magn_sq(real_p, imag_p, freqs, size);
     op_vec_div_sc(freqs + 1, 2 * window_scale_factor, freqs, size - 1);
     freqs[0] = freqs[0] * window_scale_factor;
     freqs[size - 1] = freqs[size - 1] * window_scale_factor;
@@ -133,7 +133,7 @@ Spectrogram SpectrogramCreate(SpectrogramConfig config, SpectrogramMode mode){
     filter->config = config;
     filter->mode = mode;
     filter->dft_setup = DFTSetupCreate(DFTConfigCreate(config.nfft, true, false));
-    filter->window = malloc(config.nfft * sizeof(float));
+    filter->window = f_malloc(config.nfft);
     for (int i = 0; i < config.nfft; ++i)
         filter->window[i] = 1.0f;
     filter->mode->window_scale_factor = filter->mode->win_f_calc(filter->window, filter->config.nfft);

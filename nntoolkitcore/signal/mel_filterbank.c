@@ -48,13 +48,15 @@ static float* init_mel_freqs(MelFilterBankConfig config){
 
     hertz_to_mel(edges, edges, 2);
 
-    float step = (edges[1] - edges[0]) / config.n_mels + 1;
+    float step = (edges[1] - edges[0]) / (config.n_mels + 1);
+
 
     for (int i = 0; i < config.n_mels + 2; i++){
         band[i] = edges[0] + (step * i);
     }
 
-    mel_to_hertz(edges, edges, config.n_mels + 2);
+
+    mel_to_hertz(band, band, config.n_mels + 2);
 
     return band;
 }
@@ -64,7 +66,7 @@ static float * init_fft_freqs(MelFilterBankConfig config) {
     float *bin_hz = f_malloc(n_bins);
     float step = config.sample_rate / config.n_fft;
     for (int i = 0; i < n_bins; ++i){
-        bin_hz[i] = step * (i + 1);
+        bin_hz[i] = step * i;
     }
     return bin_hz;
 }
@@ -74,15 +76,22 @@ static void init_default_filter_bank(MelFilterBank bank){
     int n_bins = bank->config.n_fft / 2 + 1;
     float *lower_slope = f_malloc(n_bins);
     float *upper_slope = f_malloc(n_bins);
+
+
+
     for (int i = 0; i < n_mels; ++i){
         float lower_edge_mel = bank->mel_freqs[i];
         float center_mel = bank->mel_freqs[i + 1];
-        float upper_edge_mel = bank->mel_freqs[i + 1];
+        float upper_edge_mel = bank->mel_freqs[i + 2];
+
+
 
         op_vec_add_sc(bank->fft_freqs,  -1.0f * lower_edge_mel, lower_slope, n_bins);
         op_vec_div_sc(lower_slope, center_mel - lower_edge_mel, lower_slope, n_bins);
 
+
         op_vec_neg(bank->fft_freqs, upper_slope, n_bins);
+
         op_vec_add_sc(upper_slope, upper_edge_mel, upper_slope, n_bins);
         op_vec_div_sc(upper_slope, upper_edge_mel - center_mel, upper_slope, n_bins);
 
@@ -93,6 +102,15 @@ static void init_default_filter_bank(MelFilterBank bank){
 
         result[0] = 0.0f;
     }
+
+    float bank_tr[n_mels * n_bins];
+
+    op_mat_transp(bank->weights, bank_tr, n_bins, n_mels);
+
+    print_matrix(bank_tr, n_bins, n_mels);
+
+    free(lower_slope);
+    free(upper_slope);
 }
 
 MelFilterBank MelFilterBankCreate(MelFilterBankConfig config) {
@@ -104,11 +122,6 @@ MelFilterBank MelFilterBankCreate(MelFilterBankConfig config) {
     filter_bank->fft_freqs = init_fft_freqs(config);
     init_default_filter_bank(filter_bank);
     return filter_bank;
-}
-
-void print(MelFilterBank bank)
-{
-    print_matrix(bank->weights, bank->config.n_mels, bank->config.n_fft / 2 + 1);
 }
 
 
