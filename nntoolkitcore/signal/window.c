@@ -24,6 +24,12 @@ void hann_family_window(float * vector, int size, float alpha){
     base_hann_family_window(vector, size, alpha, size - 1);
 }
 
+void ones(float *vector, int size){
+    for (int i = 0; i < size; ++i){
+        vector[i] = 1.0f;
+    }
+}
+
 void periodic_hamming_window(float * vector, int size){
     periodic_hann_family_window(vector, size, 0.54f);
 }
