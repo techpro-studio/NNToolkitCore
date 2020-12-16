@@ -6,7 +6,6 @@
 #include "nntoolkitcore/core/ops.h"
 #include "stdlib.h"
 #include "nntoolkitcore/core/memory.h"
-#include "nntoolkitcore/core/debug.h"
 
 
 static void hertz_to_mel(const float *hz, float *mel, int size){
@@ -70,6 +69,8 @@ static float * init_fft_freqs(MelFilterBankConfig config) {
     }
     return bin_hz;
 }
+
+#include "nntoolkitcore/core/debug.h"
 
 static void init_default_filter_bank(MelFilterBank bank){
     int n_mels = bank->config.n_mels;

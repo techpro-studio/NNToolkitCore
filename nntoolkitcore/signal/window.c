@@ -17,11 +17,11 @@ void base_hann_family_window(float * vector, int size, int denominator, float al
 }
 
 void periodic_hann_family_window(float * vector, int size, float alpha){
-    base_hann_family_window(vector, size, alpha, size);
+    base_hann_family_window(vector, size, size, alpha);
 }
 
 void hann_family_window(float * vector, int size, float alpha){
-    base_hann_family_window(vector, size, alpha, size - 1);
+    base_hann_family_window(vector, size, size - 1, alpha);
 }
 
 void ones(float *vector, int size){

@@ -37,16 +37,17 @@ static void magnitude_calc_factor(Spectrogram filter) {
     op_vec_sum(filter->window, &(filter->scale_factor), filter->config.window_size);
 }
 
+
 static void psd(Spectrogram filter, float* real_p, float* imag_p, float *out) {
     int size = filter->config.nfreq;
     op_vec_magn_sq(real_p, imag_p, out, size);
-    op_vec_div_sc(out + 1, 2 * filter->scale_factor, out, size - 1);
+    op_vec_mul_sc(out + 1, 2.0f / filter->scale_factor , out + 1,  size - 2);
     out[0] = out[0] / filter->scale_factor;
     out[size - 1] = out[size - 1] / filter->scale_factor;
 }
 
 static void psd_calc_factor(Spectrogram filter) {
-    int fs = ((PSDConfig *)filter->params)->fs;
+    int fs = *((int *)filter->params);
     int size = filter->config.window_size;
     float buffer[size];
     float result = 0.0f;
@@ -79,11 +80,11 @@ Spectrogram spectrogram_create(SpectrogramConfig config, spectrogram_finish fini
     return filter;
 }
 
-Spectrogram SpectrogramCreatePSD(SpectrogramConfig config, PSDConfig psd_config){
+Spectrogram SpectrogramCreatePSD(SpectrogramConfig config, int fs){
     Spectrogram spectrogram = spectrogram_create(config, psd, psd_calc_factor);
-    PSDConfig* cfg = malloc(sizeof(PSDConfig));
-    *cfg = psd_config;
-    spectrogram->params = cfg;
+    int* fs_ptr = malloc(sizeof(int));
+    *fs_ptr = fs;
+    spectrogram->params = fs_ptr;
     SpectrogramSetWindowFunc(spectrogram, ones);
     return spectrogram;
 }

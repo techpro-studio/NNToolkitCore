@@ -32,11 +32,7 @@ SpectrogramConfig SpectrogramConfigCreate(int nfft, int window_size, int noverla
 
 typedef struct SpectrogramStruct* Spectrogram;
 
-typedef struct {
-    int fs;
-} PSDConfig;
-
-Spectrogram SpectrogramCreatePSD(SpectrogramConfig config, PSDConfig psd_config);
+Spectrogram SpectrogramCreatePSD(SpectrogramConfig config, int fs);
 Spectrogram SpectrogramCreateMagnitude(SpectrogramConfig config);
 
 void SpectrogramSetWindowFunc(Spectrogram filter, window_fn fn);
