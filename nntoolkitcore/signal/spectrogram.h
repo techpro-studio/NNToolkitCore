@@ -35,6 +35,8 @@ typedef struct SpectrogramStruct* Spectrogram;
 Spectrogram SpectrogramCreatePSD(SpectrogramConfig config, int fs);
 Spectrogram SpectrogramCreateMagnitude(SpectrogramConfig config);
 
+SpectrogramConfig SpectrogramGetConfig(Spectrogram filter);
+
 void SpectrogramSetWindowFunc(Spectrogram filter, window_fn fn);
 void SpectrogramSetScaleFactor(Spectrogram filter, float factor);
 

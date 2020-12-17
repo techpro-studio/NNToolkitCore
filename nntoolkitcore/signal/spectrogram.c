@@ -106,6 +106,10 @@ void SpectrogramSetWindowFunc(Spectrogram filter, window_fn fn) {
     filter->factor_calc(filter);
 }
 
+SpectrogramConfig SpectrogramGetConfig(Spectrogram filter){
+    return filter->config;
+}
+
 void SpectrogramApply(Spectrogram filter, const float *input, float* output){
     P_LOOP_START(filter->config.ntime_series, timed)
         int win_size = filter->config.window_size;
