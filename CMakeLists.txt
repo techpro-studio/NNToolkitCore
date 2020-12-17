@@ -76,14 +76,18 @@ endif()
 
 if (USE_SIGNAL_API)
     list(APPEND SOURCES
+        nntoolkitcore/signal/mel_filterbank.c
         nntoolkitcore/signal/dft.c
         nntoolkitcore/signal/dft.h
         nntoolkitcore/signal/spectrogram.c
+        nntoolkitcore/signal/log_mel_spectrogram.c
         nntoolkitcore/signal/window.c
     )
     list(APPEND PUBLIC_HEADERS
+        nntoolkitcore/signal/mel_filterbank.h
         nntoolkitcore/signal/window.h
         nntoolkitcore/signal/spectrogram.h
+        nntoolkitcore/signal/log_mel_spectrogram.h
     )
     if(NOT APPLE)
         list(APPEND SOURCES

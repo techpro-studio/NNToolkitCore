@@ -13,86 +13,125 @@
 #include "stdlib.h"
 
 
-typedef void (*spectrogram_implementer)(Spectrogram filter, const float* input, float* output);
-
+typedef void(*spectrogram_finish)(Spectrogram filter, float* real_p, float* imag_p, float *out);
+typedef void(*spectrogram_calculate_factor) (Spectrogram filter);
 
 struct SpectrogramStruct{
     SpectrogramConfig config;
     DFTSetup dft_setup;
     float *window;
+    void  *params;
+    float scale_factor;
+    spectrogram_calculate_factor factor_calc;
+    spectrogram_finish finish_fn;
 };
 
-SpectrogramConfig SpectrogramConfigCreate(int nfft, int noverlap, int input_size, bool complex, float fft_normalization_factor){
+static void magnitude(Spectrogram filter, float* real_p, float* imag_p, float *out) {
+    int size = filter->config.nfreq;
+    op_vec_magn_sq(real_p, imag_p, out, size);
+    op_vec_sqrt(out, out, size);
+    op_vec_div_sc(out, filter->scale_factor, out, size);
+}
+
+static void magnitude_calc_factor(Spectrogram filter) {
+    op_vec_sum(filter->window, &(filter->scale_factor), filter->config.window_size);
+}
+
+
+static void psd(Spectrogram filter, float* real_p, float* imag_p, float *out) {
+    int size = filter->config.nfreq;
+    op_vec_magn_sq(real_p, imag_p, out, size);
+    op_vec_mul_sc(out + 1, 2.0f / filter->scale_factor , out + 1,  size - 2);
+    out[0] = out[0] / filter->scale_factor;
+    out[size - 1] = out[size - 1] / filter->scale_factor;
+}
+
+static void psd_calc_factor(Spectrogram filter) {
+    int fs = *((int *)filter->params);
+    int size = filter->config.window_size;
+    float buffer[size];
+    float result = 0.0f;
+    op_vec_mul(filter->window, filter->window, buffer, size);
+    op_vec_sum(buffer, &result, size);
+    filter->scale_factor = result * fs;
+}
+
+SpectrogramConfig SpectrogramConfigCreate(int nfft, int window_size, int noverlap, int input_size, float fft_normalization_factor){
     SpectrogramConfig config;
     config.nfft = nfft;
+    config.window_size = window_size;
     config.noverlap = noverlap;
     config.input_size = input_size;
-    config.step = nfft - noverlap;
-    config.complex = complex;
-    config.nfreq = complex ? nfft : nfft / 2 + 1;
+    config.step = window_size - noverlap;
+    config.nfreq = nfft / 2 + 1;
     config.ntime_series = (input_size - noverlap) / config.step;
     config.fft_normalization_factor = fft_normalization_factor;
     return config;
 }
 
-inline static void magnitude(float* real_p, float* imag_p, float *freqs, const int size)
-{
-    op_vec_magnitudes(real_p, imag_p, freqs, size);
-    op_vec_sqrt(freqs, freqs, size);
-    op_vec_add_sc(freqs, 1.5849e-13f, freqs, size);
-    op_vec_db(freqs, 1.0f, freqs, size);
+Spectrogram spectrogram_create(SpectrogramConfig config, spectrogram_finish finish_fn, spectrogram_calculate_factor calc_fn){
+    Spectrogram filter = malloc(sizeof(struct SpectrogramStruct));
+    filter->config = config;
+    filter->finish_fn = finish_fn;
+    filter->factor_calc = calc_fn;
+    filter->params = NULL;
+    filter->dft_setup = DFTSetupCreate(DFTConfigCreate(config.nfft, true, false));
+    filter->window = f_malloc(config.window_size);
+    return filter;
 }
 
+Spectrogram SpectrogramCreatePSD(SpectrogramConfig config, int fs){
+    Spectrogram spectrogram = spectrogram_create(config, psd, psd_calc_factor);
+    int* fs_ptr = malloc(sizeof(int));
+    *fs_ptr = fs;
+    spectrogram->params = fs_ptr;
+    SpectrogramSetWindowFunc(spectrogram, ones);
+    return spectrogram;
+}
 
-static void real_spectrogram(Spectrogram filter, const float* input, float* output){
+Spectrogram SpectrogramCreateMagnitude(SpectrogramConfig config) {
+    Spectrogram spectrogram = spectrogram_create(config, magnitude, magnitude_calc_factor);
+    spectrogram->finish_fn = magnitude;
+    spectrogram->factor_calc = magnitude_calc_factor;
+    SpectrogramSetWindowFunc(spectrogram, ones);
+    return spectrogram;
+}
+
+void SpectrogramSetScaleFactor(Spectrogram filter, float factor) {
+    filter->scale_factor = factor;
+}
+
+void SpectrogramSetWindowFunc(Spectrogram filter, window_fn fn) {
+    fn(filter->window, filter->config.window_size);
+    filter->factor_calc(filter);
+}
+
+SpectrogramConfig SpectrogramGetConfig(Spectrogram filter){
+    return filter->config;
+}
+
+void SpectrogramApply(Spectrogram filter, const float *input, float* output){
     P_LOOP_START(filter->config.ntime_series, timed)
+        int win_size = filter->config.window_size;
         int nfft = filter->config.nfft;
         int nfreq = filter->config.nfreq;
+
         float norm_factor = filter->config.fft_normalization_factor;
         float input_re_im[nfft * 2];
         f_zero(input_re_im, nfft * 2);
         float output_memory[2 * nfft];
-        op_vec_mul(filter->window, input + timed * filter->config.step, input_re_im, nfft);
+
+        op_vec_mul(filter->window, input + timed * filter->config.step, input_re_im, win_size);
+
         ComplexFloatSplit input_split = {input_re_im, input_re_im + nfft};
         ComplexFloatSplit output_split = {output_memory, output_memory + nfft};
         DFTPerform(filter->dft_setup, &input_split , &output_split);
-        op_vec_mul_sc(output_memory, norm_factor, output_memory, nfft * 2);
-        magnitude(output_memory, output_memory + nfft, output + timed * nfreq, nfreq);
+
+        if(norm_factor != 1.0f)
+            op_vec_mul_sc(output_memory, norm_factor, output_memory, nfft * 2);
+
+        filter->finish_fn(filter, output_memory, output_memory + nfft, output + timed * nfreq);
     P_LOOP_END
-}
-
-Spectrogram SpectrogramCreate(SpectrogramConfig config){
-    Spectrogram filter = malloc(sizeof(struct SpectrogramStruct));
-    filter->config = config;
-    filter->dft_setup = DFTSetupCreate(DFTConfigCreate(config.nfft, true, false));
-    filter->window = malloc(config.nfft * sizeof(float));
-    for (int i = 0; i < config.nfft; ++i)
-        filter->window[i] = 1.0f;
-    return filter;
-}
-void SpectrogramSetWindowFunc(Spectrogram filter, window_fn fn) {
-    fn(filter->window, filter->config.nfft);
-}
-
-void complex_spectrogram(Spectrogram filter, const float* input, float* output) {
-    P_LOOP_START(filter->config.ntime_series, timed)
-        int nfft = filter->config.nfft;
-        int nfreq = filter->config.nfreq;
-        float output_memory[nfft * 2];
-        float input_memory[nfft * 2];
-        ComplexFloatSplit input_split = {input_memory, input_memory + nfft};
-        split_complex(((ComplexFloat *) input) + timed * filter->config.step, &input_split , nfft);
-        ComplexFloatSplit output_split = {output_memory, output_memory + nfft};
-        op_vec_mul(filter->window, input_split.real_p, input_split.real_p, nfft);
-        op_vec_mul(filter->window, input_split.imag_p, input_split.imag_p, nfft);
-        DFTPerform(filter->dft_setup, &input_split , &output_split);
-        magnitude(output_memory, output_memory + nfft, output + timed * nfreq, nfreq);
-    P_LOOP_END
-}
-
-void SpectrogramApply(Spectrogram filter, const float *input, float* output){
-    spectrogram_implementer impl = filter->config.complex ? complex_spectrogram : real_spectrogram;
-    impl(filter, input, output);
 }
 
 void SpectrogramDestroy(Spectrogram filter){

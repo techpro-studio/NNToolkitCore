@@ -2,6 +2,7 @@
 // Created by Alex on 07.11.2020.
 //
 
+
 #include "ops.h"
 #include "math.h"
 #include "third_party/eigen3/Eigen/Dense"
@@ -305,6 +306,44 @@ void op_vec_exp(const float *a, float *c, int size){
 #endif
 }
 
+static inline void op_vec_pow_c(const float *a, const float *b, float *c, int size) {
+    for (int i = 0; i < size; ++i){
+        c[i] = powf(a[i], b[i]);
+    }
+}
+// x ^^ m = exp(m * log(x))
+
+void op_vec_pow(const float *a, const float *b, float *c, int size){
+#if NEON
+    int parts = size / 4, remaining = size % 4;
+    for (int i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, exp_neon(vmulq_f32(vld1q_f32(b + 4 * i), log_neon(vld1q_f32(a + 4 * i)))));
+    }
+    op_vec_pow_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
+#else
+    op_vec_pow_c(a, b, c, size);
+#endif
+}
+
+static inline void op_vec_pow_sc_c(const float *a, const float b, float *c, int size) {
+    for (int i = 0; i < size; ++i){
+        c[i] = powf(a[i], b);
+    }
+}
+
+void op_vec_pow_sc(const float *a, const float b, float *c, int size) {
+#if NEON
+    int parts = size / 4, remaining = size % 4;
+    for (int i = 0; i < parts; ++i){
+        vst1q_f32(c + i * 4, exp_neon(vmulq_f32(vdupq_n_f32(b), log_neon(vld1q_f32(a + 4 * i)))));
+    }
+    op_vec_pow_sc_c(a + parts * 4, b, c + parts * 4, remaining);
+#else
+    op_vec_pow_sc_c(a, b, c, size);
+#endif
+}
+
+
 static inline void op_vec_log_c(const float *a, float *c, int size){
     for (int i = 0; i < size; ++i){
         c[i] = logf(a[i]);
@@ -465,7 +504,7 @@ void op_vec_add_sc(const float *a, float b, float *c, int size) {
 
 static void op_vec_sub_sc_c(const float *a, float b, float *c, int size){
     for (int i = 0; i < size; ++i){
-        c[i] = a[i] + b;
+        c[i] = a[i] - b;
     }
 }
 
@@ -624,13 +663,13 @@ void op_vec_sum(const float *a, float* c, int size) {
 }
 
 
-static void op_vec_magnitudes_c(const float *a, const float *b, float *c, int size){
+static void op_vec_magn_sq_c(const float *a, const float *b, float *c, int size){
     for (int i = 0; i < size; ++i){
         c[i] = a[i] * a[i] + b[i] * b[i];
     }
 }
 
-void op_vec_magnitudes(float *a, float *b, float *c, int size) {
+void op_vec_magn_sq(float *a, float *b, float *c, int size) {
 #if NEON
     int parts = size / 4, remaining = size % 4;
     for (int i = 0; i < parts; ++i){
@@ -638,9 +677,9 @@ void op_vec_magnitudes(float *a, float *b, float *c, int size) {
         float32x4_t b_4 = vld1q_f32(b + 4 * i);
         vst1q_f32(c + i * 4, vaddq_f32(vmulq_f32(a_4, a_4), vmulq_f32(b_4, b_4)));
     }
-    op_vec_magnitudes_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
+    op_vec_magn_sq_c(a + parts * 4, b + parts * 4, c + parts * 4, remaining);
 #else
-    op_vec_magnitudes_c(a, b, c, size);
+    op_vec_magn_sq_c(a, b, c, size);
 #endif
 }
 
@@ -706,6 +745,7 @@ void op_mat_transp(const float *a, float *b, int M, int N) {
     map_t mB(b, M, N);
     mB.noalias() = mA.transpose();
 }
+
 
 
 

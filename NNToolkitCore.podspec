@@ -18,6 +18,8 @@ Pod::Spec.new do |s|
   'nntoolkitcore/layers/*.{h}',
   'nntoolkitcore/train/*.{h}',
   'nntoolkitcore/signal/spectrogram.h',
+  'nntoolkitcore/signal/mel_filterbank.h',
+  'nntoolkitcore/signal/log_mel_spectrogram.h',
   'nntoolkitcore/signal/window.h',
   'nntoolkitcore/core/debug.h',
   'nntoolkitcore/core/ops.h'

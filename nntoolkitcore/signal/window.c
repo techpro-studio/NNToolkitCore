@@ -8,10 +8,34 @@
 #include "nntoolkitcore/signal/window.h"
 #include <math.h>
 
-void hann_family_window(float * vector, int size, float alpha){
+
+
+void base_hann_family_window(float * vector, int size, int denominator, float alpha){
     for (int i = 0; i < size; ++i){
-        vector[i] = alpha - (1 -  alpha) * cos(2 * M_PI * i / (size - 1));
+        vector[i] = alpha - (1 -  alpha) * cos(2 * M_PI * i / denominator);
     }
+}
+
+void periodic_hann_family_window(float * vector, int size, float alpha){
+    base_hann_family_window(vector, size, size, alpha);
+}
+
+void hann_family_window(float * vector, int size, float alpha){
+    base_hann_family_window(vector, size, size - 1, alpha);
+}
+
+void ones(float *vector, int size){
+    for (int i = 0; i < size; ++i){
+        vector[i] = 1.0f;
+    }
+}
+
+void periodic_hamming_window(float * vector, int size){
+    periodic_hann_family_window(vector, size, 0.54f);
+}
+
+void periodic_hann_window(float *vector, int size){
+    periodic_hann_family_window(vector, size, 0.5f);
 }
 
 void hamming_window(float * vector, int size){

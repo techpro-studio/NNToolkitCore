@@ -20,6 +20,12 @@ void hamming_window(float *vector, int size);
 
 void hann_window(float *vector, int size);
 
+void ones(float *vector, int size);
+
+void periodic_hamming_window(float *vector, int size);
+
+void periodic_hann_window(float *vector, int size);
+
 void blackman_window(float *vector, int size);
 
 #if defined __cplusplus
