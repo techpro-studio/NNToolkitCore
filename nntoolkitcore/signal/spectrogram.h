@@ -19,25 +19,28 @@ extern "C" {
 
 typedef struct {
     int nfft;
+    int window_size;
     int noverlap;
     int step;
     int input_size;
     int nfreq;
     int ntime_series;
     float fft_normalization_factor;
-    bool complex;
 } SpectrogramConfig;
 
-SpectrogramConfig SpectrogramConfigCreate(int nfft, int noverlap, int input_size, bool complex, float fft_normalization_factor);
+SpectrogramConfig SpectrogramConfigCreate(int nfft, int window_size, int noverlap, int input_size, float fft_normalization_factor);
 
 typedef struct SpectrogramStruct* Spectrogram;
 
-Spectrogram SpectrogramCreate(SpectrogramConfig config);
+Spectrogram SpectrogramCreatePSD(SpectrogramConfig config, int fs);
+Spectrogram SpectrogramCreateMagnitude(SpectrogramConfig config);
+
+SpectrogramConfig SpectrogramGetConfig(Spectrogram filter);
 
 void SpectrogramSetWindowFunc(Spectrogram filter, window_fn fn);
+void SpectrogramSetScaleFactor(Spectrogram filter, float factor);
 
 void SpectrogramApply(Spectrogram filter, const float *input, float* output);
-
 void SpectrogramDestroy(Spectrogram filter);
 
 #if defined __cplusplus
