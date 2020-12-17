@@ -44,10 +44,8 @@ void op_vec_sqrt(const float *a, float *c, int size);
 
 void op_vec_exp(const float *a, float *c, int size);
 
-#warning new
 void op_vec_pow(const float *a, const float *b, float *c, int size);
 
-#warning new
 void op_vec_pow_sc(const float *a, const float b, float *c, int size);
 
 void op_vec_min(const float *a, const float *b, float *c, int size);
